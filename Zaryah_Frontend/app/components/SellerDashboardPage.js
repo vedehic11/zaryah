@@ -13,7 +13,7 @@ import { apiService } from '../services/api'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 
-export const SellerDashboardPage = () => {
+export default function SellerDashboardPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(true)

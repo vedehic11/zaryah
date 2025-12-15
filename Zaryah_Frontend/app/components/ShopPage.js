@@ -243,5 +243,4 @@ export const ShopPage = () => {
       </div>
     </div>
   )
-}  )
 }

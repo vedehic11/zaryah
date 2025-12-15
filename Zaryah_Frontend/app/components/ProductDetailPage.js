@@ -483,14 +483,7 @@ export const ProductDetailPage = ({ productId }) => {
       />
     </div>
   )
-}                  <Reviews 
-                    productId={productId} 
-                    showWriteReview={true}
-                    onWriteReview={handleWriteReview}
-                  />
-                )}
-
-                {activeTab === 'seller' && (
+}
                   <div>
                     <div className="flex items-center space-x-4 mb-6">
                       <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
