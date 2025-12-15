@@ -18,7 +18,7 @@ export const ProductCard = ({ product }) => {
   const { addToCart } = useCart()
   
   // Check if this is a dummy product (not from database)
-  const isDummyProduct = !product.id || product.id.startsWith('dummy-') || product._id?.startsWith('dummy-')
+  const isDummyProduct = !product.id || (typeof product.id === 'string' && product.id.startsWith('dummy-')) || (typeof product._id === 'string' && product._id?.startsWith('dummy-'))
   const productId = product.id || product._id
 
   const checkAuthAndRedirect = () => {
