@@ -484,39 +484,5 @@ export const ProductDetailPage = ({ productId }) => {
     </div>
   )
 }
-                  <div>
-                    <div className="flex items-center space-x-4 mb-6">
-                      <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
-                        <span className="text-2xl font-bold text-primary-600">
-                          {product.seller?.businessName ? product.seller.businessName.charAt(0) : '?'}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-semibold">{product.seller?.businessName || 'Loading seller info...'}</h3>
-                        <p className="text-gray-600">{product.seller?.businessAddress || 'Address not available'}</p>
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                          <span className="text-sm text-gray-600">4.9 seller rating</span>
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-gray-700 leading-relaxed">
-                      {product.seller?.businessDescription || 'A passionate seller dedicated to providing quality products and excellent service.'}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* Review Modal */}
-      <ReviewModal
-        isOpen={showReviewModal}
-        onClose={() => setShowReviewModal(false)}
-        product={product}
-      />
-    </div>
-  )
-}
+        )}
