@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: 'Inter', system-ui, sans-serif;
+  --font-poppins: 'Poppins', system-ui, sans-serif;
+  --font-playfair: 'Playfair Display', serif;
+}
+
+body {
+  font-family: var(--font-inter);
+}
+
+.font-display {
+  font-family: var(--font-poppins);
+}
+
+.font-serif {
+  font-family: var(--font-playfair);
+}

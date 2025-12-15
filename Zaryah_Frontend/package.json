@@ -1,0 +1,34 @@
+{
+  "name": "zaryah-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p $PORT",
+    "lint": "next lint",
+    "test:env": "node test-env.js",
+    "test:supabase": "node test-supabase.js",
+    "test:all": "npm run test:env && npm run test:supabase"
+  },
+  "dependencies": {
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "@supabase/supabase-js": "^2.86.0",
+    "autoprefixer": "10.4.15",
+    "chart.js": "^4.4.0",
+    "cloudinary": "^2.8.0",
+    "framer-motion": "^10.16.4",
+    "lucide-react": "^0.344.0",
+    "next": "^16.0.5",
+    "postcss": "8.4.29",
+    "react": "^19.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^19.2.0",
+    "react-hot-toast": "^2.4.1",
+    "tailwindcss": "3.3.3"
+  },
+  "devDependencies": {
+    "dotenv": "^17.2.3"
+  }
+}
