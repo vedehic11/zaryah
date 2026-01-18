@@ -27,34 +27,46 @@ import {
 import { UserAvatar } from './UserAvatar'
 import { DocumentViewerModal } from './DocumentViewerModal'
 import { apiService } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 
-export const AdminSellerManagementPage = () => {
+export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
+  const { user, isLoading } = useAuth()
   const [sellers, setSellers] = useState([])
   const [filteredSellers, setFilteredSellers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState(initialView === 'pending' ? 'pending' : 'all')
   const [sortBy, setSortBy] = useState('registrationDate')
   const [sortOrder, setSortOrder] = useState('desc')
   const [selectedDocument, setSelectedDocument] = useState(null)
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false)
 
-  // Fetch sellers from backend
+  // Update statusFilter when initialView prop changes
   useEffect(() => {
-    // Fetch sellers from backend
-    setLoading(true)
-    apiService.getSellersForAdmin()
-      .then(data => {
-        setSellers(data)
-        setFilteredSellers(data)
-      })
-      .catch(err => {
-        console.error('Error fetching sellers:', err)
-        toast.error('Failed to fetch sellers')
-      })
-      .finally(() => setLoading(false))
-  }, [])
+    setStatusFilter(initialView === 'pending' ? 'pending' : 'all')
+  }, [initialView])
+
+  // Fetch sellers from backend only when authenticated
+  useEffect(() => {
+    if (!isLoading && user?.userType === 'Admin') {
+      setLoading(true)
+      apiService.getSellersForAdmin()
+        .then(data => {
+          setSellers(data || [])
+          setFilteredSellers(data || [])
+        })
+        .catch(err => {
+          console.error('Error fetching sellers:', err)
+          toast.error('Failed to fetch sellers')
+        })
+        .finally(() => setLoading(false))
+    } else if (!isLoading) {
+      // Not an admin, show error
+      toast.error('You do not have permission to access this page')
+      setLoading(false)
+    }
+  }, [user, isLoading])
 
   // Filter and sort sellers
   useEffect(() => {
@@ -217,275 +229,180 @@ export const AdminSellerManagementPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cream-50 to-primary-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-charcoal-900 font-serif">Seller Management</h1>
-          <p className="text-charcoal-600 mt-2">Manage seller registrations and approvals</p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl p-6 shadow-soft border border-primary-100"
-          >
-            <div className="flex items-center">
-              <div className="bg-primary-600 p-3 rounded-lg shadow-soft">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-charcoal-600">Total Sellers</p>
-                <p className="text-2xl font-bold text-charcoal-900">{sellers.length}</p>
-              </div>
-            </div>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white rounded-xl p-6 shadow-soft border border-primary-100"
-          >
-            <div className="flex items-center">
-              <div className="bg-green-600 p-3 rounded-lg shadow-soft">
-                <CheckCircle className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-charcoal-600">Approved</p>
-                <p className="text-2xl font-bold text-charcoal-900">
-                  {sellers.filter(s => s.isApproved).length}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-xl p-6 shadow-soft border border-primary-100"
-          >
-            <div className="flex items-center">
-              <div className="bg-orange-600 p-3 rounded-lg shadow-soft">
-                <Clock className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-charcoal-600">Pending</p>
-                <p className="text-2xl font-bold text-charcoal-900">
-                  {sellers.filter(s => !s.isApproved && s.isVerified).length}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white rounded-xl p-6 shadow-soft border border-primary-100"
-          >
-            <div className="flex items-center">
-              <div className="bg-yellow-600 p-3 rounded-lg shadow-soft">
-                <AlertCircle className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-charcoal-600">Unverified</p>
-                <p className="text-2xl font-bold text-charcoal-900">
-                  {sellers.filter(s => !s.isVerified).length}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+    <div className="bg-gray-50 py-4">
+      <div className="max-w-full px-4 sm:px-6 lg:px-8">
+        {/* Header - Only shown if not embedded in dashboard */}
+        {typeof window !== 'undefined' && window.location.pathname === '/admin/sellers' && (
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Seller Management</h1>
+            <p className="text-gray-600 mt-1">Manage seller registrations and approvals</p>
+          </div>
+        )}
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-xl shadow-soft border border-primary-100 p-6 mb-8">
-          <div className="flex flex-col lg:flex-row gap-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex flex-col lg:flex-row gap-3">
             {/* Search */}
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-charcoal-400 w-5 h-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search sellers by name, business, or email..."
+                  placeholder="Search by name, business, or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
 
-            {/* Status Filter */}
-            <div className="flex items-center space-x-4">
+            {/* Status Filter - Only show when viewing all sellers */}
+            {initialView === 'all' && (
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending Approval</option>
                 <option value="approved">Approved</option>
                 <option value="unverified">Unverified</option>
               </select>
+            )}
 
-              {/* Sort */}
-              <div className="flex items-center space-x-2">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-2 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value="registrationDate">Registration Date</option>
-                  <option value="name">Name</option>
-                  <option value="businessName">Business Name</option>
-                  <option value="products">Products</option>
-                  <option value="sales">Sales</option>
-                </select>
-                <button
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="p-2 text-charcoal-400 hover:text-primary-600 transition-colors"
-                >
-                  {sortOrder === 'asc' ? <SortAsc className="w-5 h-5" /> : <SortDesc className="w-5 h-5" />}
-                </button>
-              </div>
+            {/* Sort */}
+            <div className="flex items-center gap-2">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="registrationDate">Date</option>
+                <option value="name">Name</option>
+                <option value="businessName">Business</option>
+              </select>
+              <button
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                className="p-2 text-gray-500 hover:text-blue-600 transition-colors"
+                title="Toggle sort order"
+              >
+                {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+              </button>
             </div>
           </div>
         </div>
 
         {/* Sellers List */}
-        <div className="bg-white rounded-xl shadow-soft border border-primary-100 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-cream-50 border-b border-primary-200">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-charcoal-900">Seller</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-charcoal-900">Business</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-charcoal-900">Contact</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-charcoal-900">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-charcoal-900">Stats</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-charcoal-900">Actions</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Seller</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Username</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Business</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Contact</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-primary-200">
-                {filteredSellers.map((seller, index) => (
-                  <motion.tr
-                    key={seller.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="hover:bg-cream-50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <UserAvatar user={seller} size="md" showName={true} />
+              <tbody className="divide-y divide-gray-200">
+                {filteredSellers.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
+                      No sellers found
                     </td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-medium text-charcoal-900">{seller.businessName}</p>
-                        <p className="text-sm text-charcoal-600">{seller.businessDescription}</p>
-                        <div className="flex items-center mt-1 text-xs text-charcoal-500">
-                          <MapPin className="w-3 h-3 mr-1" />
-                          <span>{seller.businessAddress}</span>
+                  </tr>
+                ) : (
+                  filteredSellers.map((seller, index) => (
+                    <motion.tr
+                      key={seller.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.02 }}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <UserAvatar user={seller} size="sm" showName={true} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-block bg-gray-100 px-3 py-1 rounded-full text-sm font-medium text-gray-800">@{seller.username}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">{seller.businessName}</p>
+                          <p className="text-xs text-gray-600 truncate">{seller.businessDescription}</p>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center text-sm">
-                          <Mail className="w-4 h-4 mr-2 text-charcoal-400" />
-                          <span>{seller.email}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm">
+                          <p className="text-gray-900">{seller.primaryMobile}</p>
+                          <p className="text-xs text-gray-600">{seller.email}</p>
                         </div>
-                        <div className="flex items-center text-sm">
-                          <Phone className="w-4 h-4 mr-2 text-charcoal-400" />
-                          <span>{seller.primaryMobile}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(seller)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center text-sm">
-                          <Building className="w-4 h-4 mr-2 text-charcoal-400" />
-                          <span>{seller.stats.products} products</span>
-                        </div>
-                        <div className="flex items-center text-sm">
-                          <Star className="w-4 h-4 mr-2 text-charcoal-400" />
-                          <span>{seller.stats.sales} sales</span>
-                        </div>
-                        {seller.stats.rating > 0 && (
-                          <div className="flex items-center text-sm">
-                            <Star className="w-4 h-4 mr-2 text-yellow-400 fill-current" />
-                            <span>{seller.stats.rating} rating</span>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleViewDocuments(seller)}
-                          className="p-2 text-charcoal-400 hover:text-primary-600 transition-colors"
-                          title="View Documents"
-                        >
-                          <FileText className="w-4 h-4" />
-                        </button>
-                        
-                        {!seller.isVerified && (
-                          <button
-                            onClick={() => handleVerify(seller.id)}
-                            className="p-2 text-green-600 hover:text-green-700 transition-colors"
-                            title="Verify Seller"
+                      </td>
+                      <td className="px-4 py-3">
+                        {getStatusBadge(seller)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-2">
+                          {!seller.isApproved && (
+                            <>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleApprove(seller.id)}
+                                className="px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-xs font-medium transition-colors"
+                              >
+                                Approve
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleReject(seller.id)}
+                                className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-xs font-medium transition-colors"
+                              >
+                                Reject
+                              </motion.button>
+                            </>
+                          )}
+                          {seller.isApproved && (
+                            <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
+                              ✓ Approved
+                            </span>
+                          )}
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                              setSelectedDocument(seller.idDocument)
+                              setIsDocumentViewerOpen(true)
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-blue-600 transition-colors"
+                            title="View documents"
                           >
-                            <CheckCircle className="w-4 h-4" />
-                          </button>
-                        )}
-                        
-                        {seller.isVerified && !seller.isApproved && (
-                          <>
-                            <button
-                              onClick={() => handleApprove(seller.id)}
-                              className="p-2 text-green-600 hover:text-green-700 transition-colors"
-                              title="Approve Seller"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleReject(seller.id)}
-                              className="p-2 text-red-600 hover:text-red-700 transition-colors"
-                              title="Reject Seller"
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
+                            <Eye className="w-4 h-4" />
+                          </motion.button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </div>
-
-        {filteredSellers.length === 0 && (
-          <div className="text-center py-12">
-            <Users className="w-12 h-12 text-charcoal-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-charcoal-900 mb-2">No sellers found</h3>
-            <p className="text-charcoal-600">Try adjusting your search or filter criteria.</p>
-          </div>
-        )}
       </div>
 
       {/* Document Viewer Modal */}
-      <DocumentViewerModal
-        isOpen={isDocumentViewerOpen}
-        onClose={() => setIsDocumentViewerOpen(false)}
-        document={selectedDocument}
-      />
+      {isDocumentViewerOpen && (
+        <DocumentViewerModal
+          documentUrl={selectedDocument}
+          onClose={() => {
+            setIsDocumentViewerOpen(false)
+            setSelectedDocument(null)
+          }}
+        />
+      )}
     </div>
   )
-} 
+}

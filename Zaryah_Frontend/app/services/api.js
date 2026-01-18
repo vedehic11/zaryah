@@ -248,14 +248,18 @@ class ApiService {
   }
 
   async registerSeller(sellerData) {
+    console.log('API Service: registerSeller called with data:', Object.keys(sellerData))
     const formData = new FormData()
     Object.keys(sellerData).forEach(key => {
       if (sellerData[key] instanceof File) {
+        console.log(`Adding file field: ${key}`)
         formData.append(key, sellerData[key])
       } else if (sellerData[key] !== null && sellerData[key] !== undefined) {
+        console.log(`Adding form field: ${key} = ${sellerData[key]}`)
         formData.append(key, sellerData[key])
       }
     })
+    console.log('Sending seller registration request to /api/sellers')
     return this.request('/sellers', { method: 'POST', body: formData })
   }
 
@@ -308,11 +312,85 @@ class ApiService {
   }
 
   // Payment endpoints
-  async createPaymentOrder(amount) {
+  async createPaymentOrder(data) {
     return this.request('/payment/create-order', {
       method: 'POST',
-      body: JSON.stringify({ amount }),
+      body: JSON.stringify(data),
     })
+  }
+
+  async verifyPayment(paymentData) {
+    return this.request('/payment/create-order', {
+      method: 'PATCH',
+      body: JSON.stringify(paymentData),
+    })
+  }
+
+  // Wallet endpoints
+  async getWallet() {
+    return this.request('/wallet', { method: 'GET' })
+  }
+
+  async requestWithdrawal(withdrawalData) {
+    return this.request('/wallet/withdraw', {
+      method: 'POST',
+      body: JSON.stringify(withdrawalData),
+    })
+  }
+
+  async getWithdrawals() {
+    return this.request('/wallet/withdraw', { method: 'GET' })
+  }
+
+  // Admin wallet endpoints
+  async getAdminWithdrawals(status = null) {
+    const params = status ? `?status=${status}` : ''
+    return this.request(`/admin/withdrawals${params}`, { method: 'GET' })
+  }
+
+  async approveWithdrawal(withdrawalId, action, reason = null) {
+    return this.request(`/admin/withdrawals/${withdrawalId}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ action, rejection_reason: reason }),
+    })
+  }
+
+  async getAdminEarnings(period = 'all', sellerId = null) {
+    const params = new URLSearchParams()
+    if (period) params.append('period', period)
+    if (sellerId) params.append('seller_id', sellerId)
+    return this.request(`/admin/earnings?${params.toString()}`, { method: 'GET' })
+  }
+
+  // Order status webhook
+  async updateOrderStatusWebhook(orderId, status, trackingData = null) {
+    return this.request('/webhooks/order-status', {
+      method: 'POST',
+      body: JSON.stringify({ order_id: orderId, status, tracking_data: trackingData }),
+      headers: {
+        'x-webhook-signature': process.env.NEXT_PUBLIC_WEBHOOK_SECRET || ''
+      }
+    })
+  }
+
+  // Support ticket endpoints
+  async createSupportTicket(ticketData) {
+    return this.request('/support/tickets', {
+      method: 'POST',
+      body: JSON.stringify(ticketData),
+    })
+  }
+
+  async getSupportTickets() {
+    return this.request('/support/tickets', { method: 'GET' })
+  }
+
+  async getOrdersForBuyer(buyerId) {
+    return this.request(`/orders?userType=buyer`, { method: 'GET' })
+  }
+
+  async getOrdersForSeller(sellerId) {
+    return this.request(`/orders?userType=seller`, { method: 'GET' })
   }
 }
 

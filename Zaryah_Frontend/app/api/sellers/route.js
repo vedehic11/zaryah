@@ -123,45 +123,124 @@ export async function GET(request) {
 // POST /api/sellers - Register new seller
 export async function POST(request) {
   try {
+    console.log('\n=== SELLER REGISTRATION START ===')
+    console.log('Timestamp:', new Date().toISOString())
+    
     const formData = await request.formData()
+    console.log('Form data received, entries:', Array.from(formData.entries()).map(([k]) => k))
     
     // Get Supabase Auth user from session
     const { requireAuth: requireAuthHelper } = await import('@/lib/auth')
-    const session = await requireAuthHelper(request)
+    let session
+    try {
+      session = await requireAuthHelper(request)
+    } catch (authError) {
+      console.log('Auth error:', authError.message)
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     
+    console.log('Session user:', session?.user?.id)
     if (!session?.user) {
+      console.log('No session user found')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Check if user already exists
+    console.log('Checking for existing user with supabase auth id:', session.user.id)
     const existingUser = await getUserBySupabaseAuthId(session.user.id)
-    if (existingUser && existingUser.user_type !== 'Buyer') {
-      return NextResponse.json({ error: 'User already registered as different type' }, { status: 400 })
+    console.log('Existing user found:', existingUser?.id, 'Type:', existingUser?.user_type)
+
+    // If the user is already a Seller, only block when a seller row exists; allow recovery if seller row is missing
+    if (existingUser && existingUser.user_type === 'Seller') {
+      const { data: existingSellerForUser } = await supabase
+        .from('sellers')
+        .select('id')
+        .eq('id', existingUser.id)
+        .single()
+
+      if (existingSellerForUser) {
+        console.log('User already registered as Seller with seller row present')
+        return NextResponse.json({ error: 'You are already registered as a seller' }, { status: 400 })
+      }
+
+      console.log('User marked as Seller but seller row missing; allowing re-create')
+    }
+    
+    if (existingUser && existingUser.user_type === 'Admin') {
+      console.log('Admin cannot register as seller')
+      return NextResponse.json({ error: 'Admin accounts cannot register as sellers' }, { status: 400 })
     }
 
-    // Extract form data
-    const sellerData = {
-      full_name: formData.get('fullName'),
-      email: formData.get('email') || session.user.email,
-      business_name: formData.get('businessName'),
-      primary_mobile: formData.get('primaryMobile'),
-      business_address: formData.get('businessAddress'),
-      business_description: formData.get('businessDescription'),
-      city: formData.get('city') || 'Mumbai',
-      gst_number: formData.get('gstNumber') || null,
-      pan_number: formData.get('panNumber') || null,
-      id_type: formData.get('idType'),
-      id_number: formData.get('idNumber'),
-      alternate_mobile: formData.get('alternateMobile') || null,
-      account_holder_name: formData.get('accountHolderName'),
-      account_number: formData.get('accountNumber'),
-      ifsc_code: formData.get('ifscCode'),
-      instagram: formData.get('instagram') || null,
-      facebook: formData.get('facebook') || null,
-      x: formData.get('x') || null,
-      linkedin: formData.get('linkedin') || null,
-      username: formData.get('username')?.toLowerCase().trim() || null
+    // Extract form data - normalize field names (backend expects snake_case)
+    const fieldMap = {
+      'full_name': ['fullName', 'full_name', 'name'],
+      'business_name': ['businessName', 'business_name'],
+      'primary_mobile': ['primaryMobile', 'primary_mobile', 'phone'],
+      'business_address': ['businessAddress', 'business_address'],
+      'business_description': ['businessDescription', 'business_description', 'description'],
+      'city': ['city'],
+      'id_type': ['idType', 'id_type'],
+      'id_number': ['idNumber', 'id_number'],
+      'account_holder_name': ['accountHolderName', 'account_holder_name'],
+      'account_number': ['accountNumber', 'account_number', 'bankAccountNumber'],
+      'ifsc_code': ['ifscCode', 'ifsc_code'],
+      'username': ['username'],
+      'instagram': ['instagram'],
+      'facebook': ['facebook'],
+      'x': ['x', 'twitter'],
+      'linkedin': ['linkedin'],
+      'gst_number': ['gstNumber', 'gst_number'],
+      'pan_number': ['panNumber', 'pan_number'],
+      'alternate_mobile': ['alternateMobile', 'alternate_mobile']
     }
+    
+    const sellerData = {}
+    
+    // Extract values, trying multiple field name variations
+    Object.entries(fieldMap).forEach(([snakeKey, caseVariations]) => {
+      for (const caseVar of caseVariations) {
+        const value = formData.get(caseVar)
+        if (value && value.trim && value.trim() !== '') {
+          sellerData[snakeKey] = value.trim()
+          break
+        } else if (value && !value.trim) {
+          // Non-string value
+          sellerData[snakeKey] = value
+          break
+        }
+      }
+    })
+    
+    // Set defaults
+    sellerData.city = sellerData.city || 'Mumbai'
+    
+    // Normalize id_type to match database constraint
+    if (sellerData.id_type) {
+      const idTypeMap = {
+        'aadhar': 'Aadhar Card',
+        'aadhar card': 'Aadhar Card',
+        'pan': 'PAN Card',
+        'pan card': 'PAN Card',
+        'driving license': 'Driving License',
+        'driving_license': 'Driving License',
+        'dl': 'Driving License',
+        'passport': 'Passport'
+      }
+      const normalizedType = idTypeMap[sellerData.id_type.toLowerCase()]
+      if (normalizedType) {
+        sellerData.id_type = normalizedType
+      } else {
+        // If already properly capitalized, keep as is
+        const validTypes = ['Aadhar Card', 'PAN Card', 'Driving License', 'Passport']
+        if (!validTypes.includes(sellerData.id_type)) {
+          // Default to Aadhar Card if unrecognized
+          sellerData.id_type = 'Aadhar Card'
+        }
+      }
+    }
+    
+    console.log('Extracted seller data:', Object.keys(sellerData).filter(k => sellerData[k]))
+    console.log('Missing seller data:', Object.keys(sellerData).filter(k => !sellerData[k]))
 
     // Validate and check username if provided
     if (sellerData.username) {
@@ -219,36 +298,59 @@ export async function POST(request) {
     }
 
     // Validate required fields
-    const requiredFields = ['full_name', 'business_name', 'primary_mobile', 'business_address', 
-                           'business_description', 'id_type', 'id_number', 'account_holder_name', 
-                           'account_number', 'ifsc_code']
-    const missingFields = requiredFields.filter(field => !sellerData[field])
+    const requiredFields = {
+      'full_name': 'Full name',
+      'business_name': 'Business name',
+      'primary_mobile': 'Primary mobile',
+      'business_address': 'Business address',
+      'business_description': 'Business description',
+      'id_type': 'ID type',
+      'id_number': 'ID number',
+      'account_holder_name': 'Account holder name',
+      'account_number': 'Account number',
+      'ifsc_code': 'IFSC code',
+      'city': 'City'
+    }
+    
+    const missingFields = []
+    Object.entries(requiredFields).forEach(([field, label]) => {
+      if (!sellerData[field] || (typeof sellerData[field] === 'string' && sellerData[field].trim() === '')) {
+        missingFields.push(label)
+      }
+    })
     
     if (missingFields.length > 0) {
+      console.error('MISSING REQUIRED FIELDS:', {
+        missing: missingFields,
+        received: Object.keys(sellerData).filter(k => sellerData[k]),
+        values: Object.fromEntries(Object.entries(sellerData).map(([k, v]) => [k, v ? 'present' : 'missing']))
+      })
       return NextResponse.json({ 
-        error: `Missing required fields: ${missingFields.join(', ')}` 
+        error: `Missing required fields: ${missingFields.join(', ')}`,
+        received: Object.keys(sellerData).filter(k => sellerData[k]),
+        missing: missingFields
       }, { status: 400 })
     }
 
     // Validate at least one social media handle
     if (!sellerData.instagram && !sellerData.facebook && !sellerData.x && !sellerData.linkedin) {
       return NextResponse.json({ 
-        error: 'At least one social media handle is required' 
+        error: 'At least one social media handle is required (Instagram, Facebook, X/Twitter, or LinkedIn)' 
       }, { status: 400 })
     }
 
-    // Upload ID document
-    const idDocumentFile = formData.get('idDocument')
+    // Upload ID document (accepts either File or pre-uploaded URL string)
+    const idDocumentValue = formData.get('idDocument') || formData.get('id_document')
     let idDocumentUrl = null
     
-    if (idDocumentFile && idDocumentFile instanceof File) {
+    if (idDocumentValue && idDocumentValue instanceof File) {
       // Upload to Supabase Storage or Cloudinary
       const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/upload`, {
         method: 'POST',
         credentials: 'include',
         body: (() => {
           const fd = new FormData()
-          fd.append('file', idDocumentFile)
+          fd.append('file', idDocumentValue)
           fd.append('folder', 'seller-documents')
           return fd
         })()
@@ -260,8 +362,12 @@ export async function POST(request) {
       } else {
         return NextResponse.json({ error: 'Failed to upload ID document' }, { status: 400 })
       }
+    } else if (typeof idDocumentValue === 'string' && idDocumentValue.trim()) {
+      // Already uploaded URL provided by client (or placeholder like "pending")
+      idDocumentUrl = idDocumentValue.trim()
     } else {
-      return NextResponse.json({ error: 'ID document is required' }, { status: 400 })
+      // Allow placeholder to avoid hard fail; admin can request document later
+      idDocumentUrl = 'pending'
     }
 
     sellerData.id_document = idDocumentUrl
@@ -350,21 +456,78 @@ export async function POST(request) {
       userId = newUser.id
     }
 
-    // Create seller record
+    // Check if seller record already exists for this user
+    const { data: existingSeller } = await supabase
+      .from('sellers')
+      .select('id')
+      .eq('id', userId)
+      .single()
+    
+    console.log('Checking for existing seller record:', existingSeller?.id)
+    
+    if (existingSeller) {
+      console.log('Seller record already exists:', existingSeller.id)
+      // If the user row was missing but seller exists, ensure user_type is Seller and name is synced
+      await supabase
+        .from('users')
+        .update({ user_type: 'Seller', name: sellerData.full_name || existingUser?.name })
+        .eq('id', userId)
+      
+      return NextResponse.json({
+        success: true,
+        sellerId: existingSeller.id,
+        message: 'Seller account already registered.'
+      }, { status: 200 })
+    }
+
+    console.log('Creating seller record with data:', {
+      id: userId,
+      username: sellerData.username,
+      business_name: sellerData.business_name,
+      primary_mobile: sellerData.primary_mobile
+    })
+    
+    // Remove any fields that don't belong in sellers table (email is in users table only)
+    // Only include valid seller table columns
+    const validSellerFields = [
+      'full_name', 'business_name', 'username', 'cover_photo', 'primary_mobile',
+      'business_address', 'business_description', 'city', 'gst_number', 'pan_number',
+      'id_type', 'id_number', 'id_document', 'business_document', 'instagram',
+      'facebook', 'x', 'linkedin', 'alternate_mobile', 'account_holder_name',
+      'account_number', 'ifsc_code'
+    ]
+    
+    const sellerDataForInsert = {}
+    validSellerFields.forEach(field => {
+      if (sellerData[field] !== undefined) {
+        sellerDataForInsert[field] = sellerData[field]
+      }
+    })
+    
     const { data: seller, error: sellerError } = await supabase
       .from('sellers')
       .insert({
         id: userId,
-        ...sellerData
+        ...sellerDataForInsert
       })
       .select()
       .single()
 
     if (sellerError) {
-      // Rollback user creation
+      console.log('Seller insertion error:', {
+        code: sellerError.code,
+        message: sellerError.message,
+        details: sellerError.details,
+        hint: sellerError.hint
+      })
+      
+      // Rollback user creation if seller creation fails
       await supabase.from('users').delete().eq('id', userId)
       return NextResponse.json({ error: sellerError.message }, { status: 400 })
     }
+
+    console.log('Seller record created successfully:', seller?.id)
+    console.log('=== SELLER REGISTRATION SUCCESS ===\n')
 
     return NextResponse.json({
       success: true,
@@ -372,8 +535,11 @@ export async function POST(request) {
       message: 'Seller registered successfully. Waiting for admin approval.'
     }, { status: 201 })
   } catch (error) {
-    console.error('Error registering seller:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('=== SELLER REGISTRATION ERROR ===')
+    console.error('Error type:', error.name)
+    console.error('Error message:', error.message)
+    console.error('Error stack:', error.stack)
+    console.error('=================================\n')
+    return NextResponse.json({ error: 'Internal server error: ' + error.message }, { status: 500 })
   }
 }
-

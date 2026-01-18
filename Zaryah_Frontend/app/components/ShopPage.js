@@ -5,7 +5,6 @@ import { motion } from 'framer-motion'
 import { Search, Filter, Grid, List, SlidersHorizontal } from 'lucide-react'
 import { ProductCard } from './ProductCard'
 import { apiService } from '../services/api'
-import { dummyProducts } from '../data/dummyProducts'
 
 export const ShopPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -22,10 +21,9 @@ export const ShopPage = () => {
     const fetchProducts = async () => {
       try {
         const products = await apiService.getApprovedProducts();
-        setProducts(products.length > 0 ? products : dummyProducts);
+        setProducts(products || []);
       } catch (e) {
-        // Fallback to dummy products if API fails
-        setProducts(dummyProducts);
+        setProducts([]);
       } finally {
         setLoading(false);
       }

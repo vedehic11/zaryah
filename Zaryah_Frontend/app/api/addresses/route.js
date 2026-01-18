@@ -49,8 +49,8 @@ export async function POST(request) {
     const body = await request.json()
     const { name, phone, address, city, state, pincode, country = 'India', isDefault = false } = body
 
-    // Validate required fields
-    if (!name || !phone || !address || !city || !pincode) {
+    // Validate required fields (phone is optional)
+    if (!name || !address || !city || !pincode) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 

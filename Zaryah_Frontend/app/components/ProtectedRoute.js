@@ -13,8 +13,8 @@ export const ProtectedRoute = ({ children, requiredRole }) => {
       router.push('/login')
     } else if (!isLoading && user && requiredRole) {
       // Check both role and userType for compatibility
-      const userRole = user.role || user.userType?.toLowerCase()
-      const requiredRoleLower = requiredRole.toLowerCase()
+      const userRole = user.role || user.userType?.toLowerCase() || user.user_type?.toLowerCase()
+      const requiredRoleLower = requiredRole?.toLowerCase()
       if (userRole !== requiredRoleLower) {
         router.push('/')
       }
@@ -34,8 +34,8 @@ export const ProtectedRoute = ({ children, requiredRole }) => {
   }
 
   // Check both role and userType for compatibility
-  const userRole = user.role || user.userType?.toLowerCase()
-  const requiredRoleLower = requiredRole.toLowerCase()
+  const userRole = user.role || user.userType?.toLowerCase() || user.user_type?.toLowerCase()
+  const requiredRoleLower = requiredRole?.toLowerCase()
   if (requiredRole && userRole !== requiredRoleLower) {
     return (
       <div className="min-h-screen flex items-center justify-center">

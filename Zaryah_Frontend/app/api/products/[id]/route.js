@@ -13,11 +13,9 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
     }
 
-    // Check if this is a dummy product ID (not a valid UUID)
-    if (id.startsWith('dummy-') || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-      return NextResponse.json({ 
-        error: 'This is a demo product. Please use products from the database.' 
-      }, { status: 404 })
+    // Basic UUID guard to avoid invalid queries
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return NextResponse.json({ error: 'Invalid product id' }, { status: 400 })
     }
 
     console.log('Fetching product with ID:', id)
@@ -30,7 +28,9 @@ export async function GET(request, { params }) {
           id,
           business_name,
           full_name,
-          business_description
+          business_description,
+          business_address,
+          city
         ),
         product_ratings (
           id,
@@ -72,6 +72,7 @@ export async function GET(request, { params }) {
       name: product.name,
       description: product.description,
       price: parseFloat(product.price),
+      mrp: product.mrp ? parseFloat(product.mrp) : null,
       images: product.images || [],
       video_url: product.video_url,
       category: product.category,
@@ -80,12 +81,33 @@ export async function GET(request, { params }) {
       stock: product.stock,
       customisable: product.customisable,
       custom_questions: product.custom_questions,
+      customQuestions: product.custom_questions,
       features: product.features || [],
       delivery_time_min: product.delivery_time_min,
       delivery_time_max: product.delivery_time_max,
       delivery_time_unit: product.delivery_time_unit,
       instant_delivery: product.instant_delivery,
+      instantDelivery: product.instant_delivery,
       instantDeliveryEligible: product.instant_delivery, // For compatibility
+      size_options: product.size_options || [],
+      sizeOptions: product.size_options || [],
+      material: product.material,
+      care_instructions: product.care_instructions,
+      careInstructions: product.care_instructions,
+      return_available: product.return_available,
+      returnAvailable: product.return_available,
+      exchange_available: product.exchange_available,
+      exchangeAvailable: product.exchange_available,
+      return_days: product.return_days,
+      returnDays: product.return_days,
+      cod_available: product.cod_available,
+      codAvailable: product.cod_available,
+      legal_disclaimer: product.legal_disclaimer,
+      legalDisclaimer: product.legal_disclaimer,
+      is_genuine: product.is_genuine,
+      isGenuine: product.is_genuine,
+      is_quality_checked: product.is_quality_checked,
+      isQualityChecked: product.is_quality_checked,
       status: product.status,
       createdAt: product.created_at,
       created_at: product.created_at,
@@ -99,8 +121,11 @@ export async function GET(request, { params }) {
         business_name: seller.business_name,
         full_name: seller.full_name,
         business_description: seller.business_description,
+        business_address: seller.business_address,
         businessName: seller.business_name, // For compatibility
         sellerName: seller.business_name, // For compatibility
+        businessDescription: seller.business_description,
+        businessAddress: seller.business_address,
         city: seller.city
       },
       // Ratings with user info

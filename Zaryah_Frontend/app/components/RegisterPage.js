@@ -11,8 +11,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { useAddress } from '../contexts/AddressContext'
 import { OtpVerification } from './OtpVerification'
 import { AddressDetectionModal } from './AddressDetectionModal'
-import { generateUniqueUsername } from '@/lib/username-generator'
 import Link from 'next/link'
+import { apiService } from '../services/api'
 
 export const RegisterPage = () => {
   const { user } = useAuth()
@@ -35,22 +35,16 @@ export const RegisterPage = () => {
       isDefault: true
     },
     businessName: '',
+    username: '',
     description: '',
-    mobile: '',
-    verificationDoc: '',
+    businessAddress: '',
     idNumber: '',
     idType: 'aadhar',
-    instagramHandle: '',
-    facebookHandle: '',
-    twitterHandle: '',
-    linkedinHandle: '',
-    alternateMobile: '',
-    businessAddress: '',
-    gstNumber: '',
-    panNumber: '',
+    accountHolderName: '',
     bankAccountNumber: '',
     ifscCode: '',
-    accountHolderName: '',
+    socialMediaHandle: '', // Single social media handle
+    socialMediaPlatform: 'instagram', // Platform selection
     acceptTerms: false,
     acceptPrivacyPolicy: false,
     acceptSellerAgreement: false
@@ -61,6 +55,8 @@ export const RegisterPage = () => {
   const [uploadedFiles, setUploadedFiles] = useState({ idDocument: null, businessDocuments: [] })
   const [isDragOver, setIsDragOver] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [usernameAvailable, setUsernameAvailable] = useState(null)
+  const [checkingUsername, setCheckingUsername] = useState(false)
   const { register, isLoading, pendingVerification } = useAuth()
   const { addAddress, requestLocation, userCity, isLocationLoading } = useAddress()
   const router = useRouter()
@@ -127,9 +123,46 @@ export const RegisterPage = () => {
     return <FileText className="h-4 w-4" />
   }
 
+  // Check username availability with debounce
+  const checkUsernameAvailability = async (username) => {
+    if (!username || username.length < 3) {
+      setUsernameAvailable(null)
+      return
+    }
+
+    // Validate format
+    const usernameRegex = /^[a-z0-9_-]+$/
+    if (!usernameRegex.test(username)) {
+      setUsernameAvailable(false)
+      setErrors(prev => ({ ...prev, username: 'Only lowercase letters, numbers, hyphens, and underscores allowed' }))
+      return
+    }
+
+    setCheckingUsername(true)
+    try {
+      const response = await fetch(`/api/sellers/check-username?username=${encodeURIComponent(username)}`)
+      const data = await response.json()
+      setUsernameAvailable(data.available)
+      if (!data.available) {
+        setErrors(prev => ({ ...prev, username: 'This username is already taken' }))
+      } else {
+        setErrors(prev => {
+          const newErrors = { ...prev }
+          delete newErrors.username
+          return newErrors
+        })
+      }
+    } catch (error) {
+      console.error('Error checking username:', error)
+    } finally {
+      setCheckingUsername(false)
+    }
+  }
+
   // --- Input Change & Validation ---
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
+    
     if (name.startsWith('address.')) {
       const addressField = name.split('.')[1]
       setFormData(prev => ({
@@ -142,9 +175,23 @@ export const RegisterPage = () => {
     } else {
       setFormData(prev => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : value
+        [name]: type === 'checkbox' ? checked : value,
+        // Auto-populate address.fullName with name
+        ...(name === 'name' && { address: { ...prev.address, fullName: value } })
       }))
+      
+      // Check username availability with debounce
+      if (name === 'username') {
+        setUsernameAvailable(null)
+        const lowerValue = value.toLowerCase()
+        if (lowerValue.length >= 3) {
+          setTimeout(() => {
+            checkUsernameAvailability(lowerValue)
+          }, 500)
+        }
+      }
     }
+    
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
@@ -167,7 +214,6 @@ export const RegisterPage = () => {
     
     if (currentStep === 2) {
       // Address validation
-      if (!formData.address.fullName.trim()) newErrors['address.fullName'] = 'Full name is required'
       if (!formData.address.phone.trim()) newErrors['address.phone'] = 'Phone number is required'
       if (!formData.address.address.trim()) newErrors['address.address'] = 'Address is required'
       if (!formData.address.city.trim()) newErrors['address.city'] = 'City is required'
@@ -178,8 +224,11 @@ export const RegisterPage = () => {
     if (currentStep === 3 && formData.role === 'seller') {
       // Business info validation
       if (!formData.businessName.trim()) newErrors.businessName = 'Business name is required'
+      if (!formData.username.trim()) newErrors.username = 'Username is required'
+      else if (formData.username.length < 3) newErrors.username = 'Username must be at least 3 characters'
+      else if (!/^[a-z0-9_-]+$/.test(formData.username)) newErrors.username = 'Only lowercase letters, numbers, hyphens, and underscores allowed'
+      else if (usernameAvailable === false) newErrors.username = 'This username is already taken'
       if (!formData.description.trim()) newErrors.description = 'Business description is required'
-      if (!formData.mobile.trim()) newErrors.mobile = 'Mobile number is required'
       if (!formData.businessAddress.trim()) newErrors.businessAddress = 'Business address is required'
     }
     
@@ -190,11 +239,17 @@ export const RegisterPage = () => {
       if (!formData.accountHolderName.trim()) newErrors.accountHolderName = 'Account holder name is required'
       if (!formData.bankAccountNumber.trim()) newErrors.bankAccountNumber = 'Bank account number is required'
       if (!formData.ifscCode.trim()) newErrors.ifscCode = 'IFSC code is required'
-      const socialHandles = [formData.instagramHandle, formData.facebookHandle, formData.twitterHandle, formData.linkedinHandle]
-      if (!socialHandles.some(handle => handle && handle.trim())) newErrors.socialMedia = 'At least one social media handle is required'
+      if (!formData.socialMediaHandle.trim()) newErrors.socialMediaHandle = 'Social media handle is required'
     }
     
     setErrors(newErrors)
+    
+    // Debug: log validation results
+    if (Object.keys(newErrors).length > 0) {
+      console.log('Validation errors:', newErrors)
+      console.log('Current form data:', formData)
+    }
+    
     return Object.keys(newErrors).length === 0
   }
 
@@ -221,6 +276,9 @@ export const RegisterPage = () => {
         // For sellers, register now
         handleSubmit()
       }
+    } else {
+      // Show toast if validation fails
+      toast.error('Please fill all required fields correctly')
     }
   }
   const prevStep = () => setCurrentStep(prev => prev - 1)
@@ -297,10 +355,6 @@ export const RegisterPage = () => {
         }
         
         toast.success('Documents uploaded!', { id: 'upload' })
-        
-        // Generate unique username from business name
-        const username = await generateUniqueUsername(formData.businessName)
-        uploadedDocUrls.username = username
       }
       
       // Register with Supabase Auth (works for both buyers and sellers)
@@ -313,25 +367,19 @@ export const RegisterPage = () => {
         formData.address,
         formData.businessName,
         formData.description,
-        formData.mobile,
+        formData.address.phone,
         uploadedDocUrls.idDocument || 'pending',
         {
           idType: formData.idType,
           idNumber: formData.idNumber,
-          instagram: formData.instagramHandle,
-          facebook: formData.facebookHandle,
-          twitter: formData.twitterHandle,
-          linkedin: formData.linkedinHandle,
-          alternateMobile: formData.alternateMobile,
+          [formData.socialMediaPlatform]: formData.socialMediaHandle,
           businessAddress: formData.businessAddress,
-          gstNumber: formData.gstNumber,
-          panNumber: formData.panNumber,
           accountHolderName: formData.accountHolderName,
           accountNumber: formData.bankAccountNumber,
           ifscCode: formData.ifscCode,
           businessDocument: uploadedDocUrls.businessDocuments,
           coverPhoto: uploadedDocUrls.coverPhoto,
-          username: uploadedDocUrls.username
+          username: formData.username
         }
       )
       
@@ -341,12 +389,72 @@ export const RegisterPage = () => {
           // The OTP modal will be shown via pendingVerification state
           return
         }
+
+        // Wait a bit for user to be synced in auth context
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        // For sellers, register the seller profile on the /api/sellers endpoint
+        if (formData.role === 'seller') {
+          console.log('Registering seller profile after auth...')
+          try {
+            // Prepare seller data for registration - use snake_case field names to match API endpoint
+            const sellerData = {
+              full_name: formData.name,
+              email: formData.email,
+              business_name: formData.businessName,
+              primary_mobile: formData.address.phone,
+              business_address: formData.businessAddress || '',
+              business_description: formData.description,
+              city: formData.city,
+              id_type: formData.idType,
+              id_number: formData.idNumber,
+              account_holder_name: formData.accountHolderName,
+              account_number: formData.bankAccountNumber,
+              ifsc_code: formData.ifscCode,
+              [formData.socialMediaPlatform]: formData.socialMediaHandle,
+              username: formData.username,
+              idDocument: uploadedDocUrls.idDocument,
+              businessDocument: uploadedDocUrls.businessDocuments,
+              coverPhoto: uploadedDocUrls.coverPhoto
+            }
+            
+            console.log('Calling registerSeller with data:', sellerData)
+            await apiService.registerSeller(sellerData)
+            console.log('Seller profile registered successfully')
+          } catch (sellerError) {
+            console.error('Seller registration error:', sellerError)
+            toast.error(`Seller registration failed: ${sellerError.message}`)
+            // Don't prevent navigation - user account exists even if seller profile creation failed
+          }
+        }
+        
+        // Get user from auth context to send verification email
+        if (user?.id) {
+          try {
+            const verifyResponse = await fetch('/api/email/send-verification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: formData.email,
+                userId: user.id,
+                username: formData.name || formData.username
+              })
+            });
+
+            if (!verifyResponse.ok) {
+              console.error('Failed to send verification email');
+            }
+          } catch (emailError) {
+            console.error('Verification email error:', emailError);
+          }
+        }
         
         // Navigate based on role
         if (formData.role === 'seller') {
-          toast.success('Registration successful! Your seller account is pending approval.')
+          toast.success('Registration successful! Please check your email to verify your account. Your seller account is pending approval.')
           router.push('/seller/dashboard')
         } else {
+          toast.success('Registration successful! Please check your email to verify your account.')
           router.push('/')
         }
       }
@@ -574,31 +682,6 @@ export const RegisterPage = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="address.fullName" className="block text-sm font-medium text-gray-700 mb-2">
-            Full Name *
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <User className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              id="address.fullName"
-              name="address.fullName"
-              type="text"
-              value={formData.address.fullName}
-              onChange={handleInputChange}
-              className={`block w-full pl-10 pr-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
-                errors['address.fullName'] ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder="Enter full name"
-            />
-          </div>
-          {errors['address.fullName'] && (
-            <p className="mt-1 text-sm text-red-600">{errors['address.fullName']}</p>
-          )}
-        </div>
-        
-        <div>
           <label htmlFor="address.phone" className="block text-sm font-medium text-gray-700 mb-2">
             Phone Number *
           </label>
@@ -768,30 +851,54 @@ export const RegisterPage = () => {
       </div>
       
       <div>
-        <label htmlFor="mobile" className="block text-sm font-medium text-gray-700 mb-2">
-          Mobile Number *
+        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+          Username * <span className="text-gray-500 text-xs">(This will be your shop URL)</span>
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Phone className="h-5 w-5 text-gray-400" />
+            <User className="h-5 w-5 text-gray-400" />
           </div>
           <input
-            id="mobile"
-            name="mobile"
-            type="tel"
-            value={formData.mobile}
+            id="username"
+            name="username"
+            type="text"
+            value={formData.username}
             onChange={handleInputChange}
             className={`block w-full pl-10 pr-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
-              errors.mobile ? 'border-red-300' : 'border-gray-300'
+              errors.username ? 'border-red-300' : usernameAvailable === true ? 'border-green-300' : 'border-gray-300'
             }`}
-            placeholder="Enter your mobile number"
+            placeholder="your-username"
           />
+          {checkingUsername && (
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+            </div>
+          )}
+          {!checkingUsername && usernameAvailable === true && (
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+            </div>
+          )}
+          {!checkingUsername && usernameAvailable === false && (
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+            </div>
+          )}
         </div>
-        {errors.mobile && (
-          <p className="mt-1 text-sm text-red-600">{errors.mobile}</p>
+        {!errors.username && usernameAvailable === true && (
+          <p className="mt-1 text-sm text-green-600 flex items-center gap-1">
+            <CheckCircle className="w-4 h-4" /> Username is available!
+          </p>
         )}
+        {errors.username && (
+          <p className="mt-1 text-sm text-red-600">{errors.username}</p>
+        )}
+        <p className="mt-1 text-xs text-gray-500">
+          Only lowercase letters, numbers, hyphens, and underscores. Min 3 characters.
+        </p>
       </div>
       
+
       <div>
         <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
           Business Description *
@@ -886,12 +993,6 @@ export const RegisterPage = () => {
         </div>
         {errors.idDocument && (<p className="mt-1 text-sm text-red-600">{errors.idDocument}</p>)}
       </div>
-      {/* Business Address */}
-      <div>
-        <label htmlFor="businessAddress" className="block text-sm font-medium text-gray-700 mb-2">Business Address *</label>
-        <textarea id="businessAddress" name="businessAddress" rows={3} value={formData.businessAddress} onChange={handleInputChange} className={`block w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${errors.businessAddress ? 'border-red-300' : 'border-gray-300'}`} placeholder="Enter your complete business address" />
-        {errors.businessAddress && (<p className="mt-1 text-sm text-red-600">{errors.businessAddress}</p>)}
-      </div>
       {/* Bank Details */}
       <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
         <h4 className="text-md font-semibold text-gray-700 mb-4">Bank Account Details (for payments) *</h4>
@@ -913,34 +1014,54 @@ export const RegisterPage = () => {
           </div>
         </div>
       </div>
-      {/* Social Media Handles */}
+      {/* Social Media Handle */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">Social Media Handles (At least one required) *</label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label className="block text-sm font-medium text-gray-700 mb-3">Social Media Handle *</label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label htmlFor="instagramHandle" className="block text-sm font-medium text-gray-600 mb-2">Instagram Handle</label>
-            <div className="relative"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Instagram className="h-5 w-5 text-pink-500" /></div><input id="instagramHandle" name="instagramHandle" type="text" value={formData.instagramHandle} onChange={handleInputChange} className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" placeholder="@your_handle" /></div>
+            <label htmlFor="socialMediaPlatform" className="block text-sm font-medium text-gray-600 mb-2">Platform</label>
+            <select
+              id="socialMediaPlatform"
+              name="socialMediaPlatform"
+              value={formData.socialMediaPlatform}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+            >
+              <option value="instagram">Instagram</option>
+              <option value="facebook">Facebook</option>
+              <option value="x">X (Twitter)</option>
+              <option value="linkedin">LinkedIn</option>
+            </select>
           </div>
-          <div>
-            <label htmlFor="facebookHandle" className="block text-sm font-medium text-gray-600 mb-2">Facebook Page/Profile</label>
-            <div className="relative"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Facebook className="h-5 w-5 text-blue-600" /></div><input id="facebookHandle" name="facebookHandle" type="text" value={formData.facebookHandle} onChange={handleInputChange} className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" placeholder="Your Facebook page URL" /></div>
-          </div>
-          <div>
-            <label htmlFor="twitterHandle" className="block text-sm font-medium text-gray-600 mb-2">Twitter Handle</label>
-            <div className="relative"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Twitter className="h-5 w-5 text-blue-400" /></div><input id="twitterHandle" name="twitterHandle" type="text" value={formData.twitterHandle} onChange={handleInputChange} className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" placeholder="@your_handle" /></div>
-          </div>
-          <div>
-            <label htmlFor="linkedinHandle" className="block text-sm font-medium text-gray-600 mb-2">LinkedIn Profile</label>
-            <div className="relative"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Linkedin className="h-5 w-5 text-blue-700" /></div><input id="linkedinHandle" name="linkedinHandle" type="text" value={formData.linkedinHandle} onChange={handleInputChange} className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" placeholder="Your LinkedIn profile URL" /></div>
+          <div className="md:col-span-2">
+            <label htmlFor="socialMediaHandle" className="block text-sm font-medium text-gray-600 mb-2">Handle/URL</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                {formData.socialMediaPlatform === 'instagram' && <Instagram className="h-5 w-5 text-pink-500" />}
+                {formData.socialMediaPlatform === 'facebook' && <Facebook className="h-5 w-5 text-blue-600" />}
+                {formData.socialMediaPlatform === 'x' && <Twitter className="h-5 w-5 text-gray-900" />}
+                {formData.socialMediaPlatform === 'linkedin' && <Linkedin className="h-5 w-5 text-blue-700" />}
+              </div>
+              <input
+                id="socialMediaHandle"
+                name="socialMediaHandle"
+                type="text"
+                value={formData.socialMediaHandle}
+                onChange={handleInputChange}
+                className={`block w-full pl-10 pr-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
+                  errors.socialMediaHandle ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder={
+                  formData.socialMediaPlatform === 'instagram' ? '@your_handle' :
+                  formData.socialMediaPlatform === 'facebook' ? 'facebook.com/yourpage' :
+                  formData.socialMediaPlatform === 'x' ? '@your_handle' :
+                  'linkedin.com/in/yourprofile'
+                }
+              />
+            </div>
+            {errors.socialMediaHandle && (<p className="mt-1 text-sm text-red-600">{errors.socialMediaHandle}</p>)}
           </div>
         </div>
-        {errors.socialMedia && (<p className="mt-1 text-sm text-red-600">{errors.socialMedia}</p>)}
-      </div>
-      {/* Additional Contact */}
-      <div>
-        <label htmlFor="alternateMobile" className="block text-sm font-medium text-gray-700 mb-2">Alternate Mobile Number *</label>
-        <div className="relative"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Phone className="h-5 w-5 text-gray-400" /></div><input id="alternateMobile" name="alternateMobile" type="tel" value={formData.alternateMobile} onChange={handleInputChange} className={`block w-full pl-10 pr-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${errors.alternateMobile ? 'border-red-300' : 'border-gray-300'}`} placeholder="10-digit alternate mobile number" /></div>
-        {errors.alternateMobile && (<p className="mt-1 text-sm text-red-600">{errors.alternateMobile}</p>)}
       </div>
     </div>
   )

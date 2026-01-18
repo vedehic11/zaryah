@@ -203,7 +203,7 @@ export const AddressProvider = ({ children }) => {
       if (user?.id && addresses.length === 0) {
         const autoAddress = {
           name: user.name || 'Home',
-          phone: user.phone || '',
+          phone: user.phone || '9999999999', // Fallback phone
           address: 'Auto-detected location',
           city: detectedCity,
           state: 'Maharashtra', // Default state
@@ -214,7 +214,21 @@ export const AddressProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Location detection failed:', error)
-      setLocationError('Unable to detect location. Please add an address manually.')
+      
+      // Provide specific error messages based on error type
+      let errorMessage = 'Unable to detect location. Please add an address manually.'
+      
+      if (error.code === 1) {
+        errorMessage = 'Location access denied. Please enable location permissions in your browser.'
+      } else if (error.code === 2) {
+        errorMessage = 'Location unavailable. Please check your device settings.'
+      } else if (error.code === 3) {
+        errorMessage = 'Location request timed out. Please try again.'
+      } else if (error.message?.includes('Geolocation is not supported')) {
+        errorMessage = 'Your browser does not support location detection.'
+      }
+      
+      setLocationError(errorMessage)
     } finally {
       setIsLocationLoading(false)
     }

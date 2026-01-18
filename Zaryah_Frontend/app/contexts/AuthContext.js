@@ -104,13 +104,19 @@ export const AuthProvider = ({ children }) => {
 
       // If user doesn't exist in our users table, create them
       if (!userData) {
-        // Check if this is a pending seller registration
+        // Check if this is a pending registration
         let pendingSellerData = null
+        let pendingBuyerData = null
         try {
-          const storedData = sessionStorage.getItem('pendingSellerData')
-          if (storedData) {
-            pendingSellerData = JSON.parse(storedData)
+          const storedSellerData = sessionStorage.getItem('pendingSellerData')
+          const storedBuyerData = sessionStorage.getItem('pendingBuyerData')
+          if (storedSellerData) {
+            pendingSellerData = JSON.parse(storedSellerData)
             sessionStorage.removeItem('pendingSellerData')
+          }
+          if (storedBuyerData) {
+            pendingBuyerData = JSON.parse(storedBuyerData)
+            sessionStorage.removeItem('pendingBuyerData')
           }
         } catch (e) {
           // Ignore sessionStorage errors
@@ -118,6 +124,7 @@ export const AuthProvider = ({ children }) => {
 
         const isSeller = pendingSellerData || authUser.user_metadata?.role === 'seller'
         const userType = isSeller ? 'Seller' : 'Buyer'
+        const pendingData = pendingSellerData || pendingBuyerData
 
         // Create user in our users table
         // NOTE: Admin users can ONLY be created via SQL script
@@ -175,56 +182,101 @@ export const AuthProvider = ({ children }) => {
           }
         } else {
           // User created successfully
-          if (isSeller && pendingSellerData) {
+          if (isSeller && pendingData) {
             // Create seller record with all business details
             const sellerRecord = {
               id: newUser.id,
-              full_name: pendingSellerData.name,
-              business_name: pendingSellerData.businessName,
-              username: pendingSellerData.verificationData?.username || null,
-              cover_photo: pendingSellerData.verificationData?.coverPhoto || null,
-              primary_mobile: pendingSellerData.mobile,
-              business_address: pendingSellerData.verificationData?.businessAddress || '',
-              business_description: pendingSellerData.description,
-              city: pendingSellerData.city,
-              id_type: pendingSellerData.verificationData?.idType || 'Aadhar Card',
-              id_number: pendingSellerData.verificationData?.idNumber || '',
-              id_document: pendingSellerData.verificationData?.idDocument || 'pending',
-              business_document: pendingSellerData.verificationData?.businessDocument || null,
-              account_holder_name: pendingSellerData.verificationData?.accountHolderName || pendingSellerData.name,
-              account_number: pendingSellerData.verificationData?.accountNumber || '',
-              ifsc_code: pendingSellerData.verificationData?.ifscCode || '',
-              instagram: pendingSellerData.verificationData?.instagram,
-              facebook: pendingSellerData.verificationData?.facebook,
-              x: pendingSellerData.verificationData?.twitter,
-              linkedin: pendingSellerData.verificationData?.linkedin,
-              alternate_mobile: pendingSellerData.verificationData?.alternateMobile,
-              gst_number: pendingSellerData.verificationData?.gstNumber,
-              pan_number: pendingSellerData.verificationData?.panNumber
+              full_name: pendingData.name,
+              business_name: pendingData.businessName,
+              username: pendingData.verificationData?.username || null,
+              cover_photo: pendingData.verificationData?.coverPhoto || null,
+              primary_mobile: pendingData.mobile,
+              business_address: pendingData.verificationData?.businessAddress || '',
+              business_description: pendingData.description,
+              city: pendingData.city,
+              id_type: pendingData.verificationData?.idType || 'Aadhar Card',
+              id_number: pendingData.verificationData?.idNumber || '',
+              id_document: pendingData.verificationData?.idDocument || 'pending',
+              business_document: pendingData.verificationData?.businessDocument || null,
+              account_holder_name: pendingData.verificationData?.accountHolderName || pendingData.name,
+              account_number: pendingData.verificationData?.accountNumber || '',
+              ifsc_code: pendingData.verificationData?.ifscCode || '',
+              instagram: pendingData.verificationData?.instagram,
+              facebook: pendingData.verificationData?.facebook,
+              x: pendingData.verificationData?.twitter,
+              linkedin: pendingData.verificationData?.linkedin,
+              alternate_mobile: pendingData.verificationData?.alternateMobile,
+              gst_number: pendingData.verificationData?.gstNumber,
+              pan_number: pendingData.verificationData?.panNumber
             }
 
             await supabaseClient
               .from('sellers')
               .insert(sellerRecord)
 
+            // Also create buyer record for sellers so they can purchase
+            const sellerBuyerRecord = {
+              userId: newUser.id,
+              city: pendingData?.city || authUser.user_metadata?.city || 'Mumbai',
+              address: pendingData?.address?.address || '',
+              state: pendingData?.address?.state || '',
+              pincode: pendingData?.address?.pincode || '',
+              phone: pendingData?.address?.phone || pendingData.mobile || ''
+            }
+
+            // Call API to create buyer record (bypasses RLS)
+            try {
+              const response = await fetch('/api/buyers', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(sellerBuyerRecord)
+              })
+
+              if (!response.ok) {
+                const errorData = await response.json()
+                console.error('Error creating buyer record for seller:', errorData)
+              } else {
+                console.log('Buyer record created successfully for seller')
+              }
+            } catch (buyerError) {
+              console.error('Failed to create buyer record for seller:', buyerError)
+            }
+
             toast.success('Seller registration submitted! Waiting for admin approval.')
           } else {
-            // Create buyer record
+            // Create buyer record for non-sellers
             const buyerRecord = {
-              id: newUser.id,
-              city: pendingSellerData?.city || 'Mumbai'
+              userId: newUser.id,
+              city: pendingData?.city || authUser.user_metadata?.city || 'Mumbai',
+              address: pendingData?.address?.address || '',
+              state: pendingData?.address?.state || '',
+              pincode: pendingData?.address?.pincode || '',
+              phone: pendingData?.address?.phone || ''
             }
 
-            if (pendingSellerData?.address) {
-              buyerRecord.address = pendingSellerData.address.address || ''
-              buyerRecord.state = pendingSellerData.address.state || ''
-              buyerRecord.pincode = pendingSellerData.address.pincode || ''
-              buyerRecord.phone = pendingSellerData.address.phone || ''
-            }
+            // Call API to create buyer record (bypasses RLS)
+            try {
+              console.log('Creating buyer record with data:', buyerRecord)
+              const response = await fetch('/api/buyers', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(buyerRecord)
+              })
 
-            await supabaseClient
-              .from('buyers')
-              .insert(buyerRecord)
+              if (!response.ok) {
+                const errorData = await response.json()
+                console.error('Error creating buyer record:', errorData)
+              } else {
+                const result = await response.json()
+                console.log('Buyer record created successfully:', result)
+              }
+            } catch (buyerError) {
+              console.error('Failed to create buyer record:', buyerError)
+            }
           }
 
           // Set the newly created user
@@ -350,22 +402,45 @@ export const AuthProvider = ({ children }) => {
       // If email confirmation is required
       if (data.user && !data.session) {
         // Store registration data temporarily for after email verification
+        const registrationData = {
+          email,
+          name,
+          city,
+          businessName,
+          description,
+          mobile,
+          address,
+          verificationData
+        }
+        
         if (role === 'seller') {
-          sessionStorage.setItem('pendingSellerData', JSON.stringify({
-            email,
-            name,
-            city,
-            businessName,
-            description,
-            mobile,
-            address,
-            verificationData
-          }))
+          sessionStorage.setItem('pendingSellerData', JSON.stringify(registrationData))
+        } else {
+          sessionStorage.setItem('pendingBuyerData', JSON.stringify(registrationData))
         }
         
         toast.success('Please check your email to confirm your account')
         setPendingVerification({ email, userType: role })
         return { success: true, requiresOtp: true }
+      }
+
+      // If immediate login (no email confirmation required)
+      // Store data temporarily for syncUser to use
+      const registrationData = {
+        email,
+        name,
+        city,
+        businessName,
+        description,
+        mobile,
+        address,
+        verificationData
+      }
+      
+      if (role === 'seller') {
+        sessionStorage.setItem('pendingSellerData', JSON.stringify(registrationData))
+      } else {
+        sessionStorage.setItem('pendingBuyerData', JSON.stringify(registrationData))
       }
 
       // User will be synced via onAuthStateChange

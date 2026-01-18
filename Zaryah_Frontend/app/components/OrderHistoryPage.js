@@ -42,7 +42,23 @@ export const OrderHistoryPage = () => {
     if (!user) return
     setLoading(true)
     apiService.getOrdersForBuyer(user.id)
-      .then(setOrders)
+      .then(data => {
+        // Transform order_items to products array for easier access
+        const transformedOrders = data.map(order => ({
+          ...order,
+          products: order.order_items?.map(item => ({
+            ...item.products,
+            quantity: item.quantity,
+            price: item.price,
+            gift_packaging: item.gift_packaging,
+            customizations: item.customizations,
+            order_item_id: item.id
+          })) || [],
+          seller: order.sellers || {},
+          buyer: order.buyers || {}
+        }))
+        setOrders(transformedOrders)
+      })
       .catch(() => setOrders([]))
       .finally(() => setLoading(false))
   }, [user])
@@ -50,6 +66,7 @@ export const OrderHistoryPage = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800'
+      case 'payment_failed': return 'bg-red-100 text-red-800'
       case 'confirmed': return 'bg-blue-100 text-blue-800'
       case 'dispatched': return 'bg-purple-100 text-purple-800'
       case 'delivered': return 'bg-green-100 text-green-800'
@@ -61,6 +78,7 @@ export const OrderHistoryPage = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'pending': return Clock
+      case 'payment_failed': return AlertCircle
       case 'confirmed': return CheckCircle
       case 'dispatched': return Truck
       case 'delivered': return CheckCircle
@@ -90,9 +108,37 @@ export const OrderHistoryPage = () => {
     setShowReviewModal(true)
   }
 
+  // Calculate order breakdown
+  const calculateOrderBreakdown = (order) => {
+    const products = order.products || []
+    const subtotal = products.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0)
+    // Only add ₹50 for items that actually have gift_packaging enabled
+    const giftPackagingFee = products.filter(item => item.gift_packaging === true).length * 50
+    const deliveryFee = subtotal >= 500 ? 0 : 40
+    const codFee = order.payment_method === 'cod' ? 10 : 0
+    const total = subtotal + giftPackagingFee + deliveryFee + codFee
+    
+    return {
+      subtotal,
+      giftPackagingFee,
+      deliveryFee,
+      codFee,
+      total
+    }
+  }
+
+  // Get display status - show payment_failed instead of pending for unpaid online orders
+  const getDisplayStatus = (order) => {
+    if (order.payment_method === 'online' && order.payment_status === 'pending') {
+      return 'payment_failed'
+    }
+    return order.status
+  }
+
   const filteredOrders = orders.filter(order => {
     if (filter === 'all') return true
-    return order.status === filter
+    const displayStatus = getDisplayStatus(order)
+    return displayStatus === filter
   })
 
   const formatDate = (dateString) => {
@@ -166,7 +212,8 @@ export const OrderHistoryPage = () => {
           <div className="flex flex-wrap gap-2">
             {[
               { key: 'all', label: 'All Orders', count: orders.length },
-              { key: 'pending', label: 'Pending', count: orders.filter(o => o.status === 'pending').length },
+              { key: 'pending', label: 'Pending', count: orders.filter(o => getDisplayStatus(o) === 'pending').length },
+              { key: 'payment_failed', label: 'Payment Failed', count: orders.filter(o => getDisplayStatus(o) === 'payment_failed').length },
               { key: 'confirmed', label: 'Confirmed', count: orders.filter(o => o.status === 'confirmed').length },
               { key: 'dispatched', label: 'Dispatched', count: orders.filter(o => o.status === 'dispatched').length },
               { key: 'delivered', label: 'Delivered', count: orders.filter(o => o.status === 'delivered').length },
@@ -198,7 +245,7 @@ export const OrderHistoryPage = () => {
           <div className="space-y-6">
             {filteredOrders.map((order, index) => (
               <motion.div
-                key={order._id}
+                key={order.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -213,16 +260,16 @@ export const OrderHistoryPage = () => {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-charcoal-900">
-                          Order #{order.orderId || order._id.slice(-8).toUpperCase()}
+                          Order #{order.id?.slice(-8)?.toUpperCase() || 'N/A'}
                         </h3>
                         <p className="text-sm text-charcoal-600">
-                          Placed on {formatDate(order.createdAt)}
+                          Placed on {formatDate(order.created_at || order.createdAt)}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(order.status)}`}>
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(getDisplayStatus(order))}`}>
+                        {getDisplayStatus(order) === 'payment_failed' ? 'Payment Failed' : getDisplayStatus(order).charAt(0).toUpperCase() + getDisplayStatus(order).slice(1)}
                       </span>
                       <button
                         onClick={() => {
@@ -272,14 +319,14 @@ export const OrderHistoryPage = () => {
                     <div className="flex items-center space-x-2">
                       <DollarSign className="w-4 h-4 text-green-600" />
                       <span className="text-sm text-charcoal-600">
-                        Total: <span className="font-semibold">{formatCurrency(order.totalAmount)}</span>
+                        Total: <span className="font-semibold">{formatCurrency(calculateOrderBreakdown(order).total)}</span>
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <User className="w-4 h-4 text-blue-600" />
                       <span className="text-sm text-charcoal-600">
                         Seller: <span className="font-semibold">
-                          {order.seller?.businessName || order.seller?.fullName || 'Unknown'}
+                          {order.seller?.business_name || order.seller?.full_name || 'Unknown'}
                         </span>
                       </span>
                     </div>
@@ -293,7 +340,7 @@ export const OrderHistoryPage = () => {
                 </div>
 
                 {/* Order Details (Expandable) */}
-                {showOrderDetails && selectedOrder?._id === order._id && (
+                {showOrderDetails && selectedOrder?.id === order.id && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -308,7 +355,7 @@ export const OrderHistoryPage = () => {
                           {order.products?.map((product, productIndex) => {
                             const productImage = getProductImage(product)
                             return (
-                              <div key={product._id || productIndex} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                              <div key={product.id || productIndex} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
                                 {/* Product Image */}
                                 <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center">
                                   {productImage ? (
@@ -333,6 +380,37 @@ export const OrderHistoryPage = () => {
                                   <p className="text-sm text-charcoal-600">
                                     Quantity: {product.quantity || 1} × {formatCurrency(product.price)}
                                   </p>
+                                  
+                                  {/* Gift Packaging Status */}
+                                  {product.gift_packaging && (
+                                    <div className="flex items-center space-x-1 mt-1">
+                                      <Package className="w-3 h-3 text-pink-600" />
+                                      <span className="text-xs text-pink-600 font-medium">Gift Packaging Added (+₹50)</span>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Customizations */}
+                                  {product.customizations && (
+                                    <div className="mt-2 space-y-1">
+                                      <p className="text-xs font-semibold text-charcoal-700">Customizations:</p>
+                                      {Array.isArray(product.customizations) ? (
+                                        product.customizations.length > 0 ? (
+                                          product.customizations.map((custom, idx) => (
+                                            <div key={idx} className="text-xs text-charcoal-600 pl-2 border-l-2 border-blue-300">
+                                              <span className="font-medium">{custom.question || 'Question'}:</span> {custom.answer || 'No answer'}
+                                            </div>
+                                          ))
+                                        ) : (
+                                          <p className="text-xs text-charcoal-500 pl-2">No customizations</p>
+                                        )
+                                      ) : (
+                                        <div className="text-xs text-charcoal-600 pl-2 bg-yellow-50 p-2 rounded">
+                                          <pre className="whitespace-pre-wrap">{JSON.stringify(product.customizations, null, 2)}</pre>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  
                                   {product.description && (
                                     <p className="text-xs text-charcoal-500 mt-1 line-clamp-2">
                                       {product.description}
@@ -359,40 +437,77 @@ export const OrderHistoryPage = () => {
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                               <span className="text-charcoal-600">Order ID:</span>
-                              <span className="font-medium">{order.orderId || order._id}</span>
+                              <span className="font-medium">{order.id}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-charcoal-600">Order Date:</span>
-                              <span className="font-medium">{formatDate(order.createdAt)}</span>
+                              <span className="font-medium">{formatDate(order.created_at || order.createdAt)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-charcoal-600">Payment Method:</span>
-                              <span className="font-medium">{order.paymentMethod || 'Online Payment'}</span>
+                              <span className="font-medium">{(order.payment_method || order.paymentMethod) === 'cod' ? 'Cash on Delivery' : 'Online Payment'}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-charcoal-600">Delivery Address:</span>
                               <span className="font-medium text-right max-w-xs">
-                                {order.deliveryAddress?.address || 'Address not available'}
+                                {order.address || order.deliveryAddress?.address || 'Address not available'}
                               </span>
                             </div>
                           </div>
                         </div>
 
                         <div>
-                          <h4 className="text-lg font-semibold text-charcoal-900 mb-3">Seller Information</h4>
+                          <h4 className="text-lg font-semibold text-charcoal-900 mb-3">Price Breakdown</h4>
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                              <span className="text-charcoal-600">Business Name:</span>
-                              <span className="font-medium">{order.seller?.businessName || 'N/A'}</span>
+                              <span className="text-charcoal-600">Subtotal:</span>
+                              <span className="font-medium">{formatCurrency(calculateOrderBreakdown(order).subtotal)}</span>
                             </div>
+                            {calculateOrderBreakdown(order).giftPackagingFee > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-charcoal-600">Gift Packaging:</span>
+                                <span className="font-medium">{formatCurrency(calculateOrderBreakdown(order).giftPackagingFee)}</span>
+                              </div>
+                            )}
                             <div className="flex justify-between">
-                              <span className="text-charcoal-600">Contact:</span>
-                              <span className="font-medium">{order.seller?.primaryMobile || 'N/A'}</span>
+                              <span className="text-charcoal-600">Delivery Charges:</span>
+                              <span className="font-medium">
+                                {calculateOrderBreakdown(order).deliveryFee === 0 ? (
+                                  <span className="text-green-600">FREE</span>
+                                ) : (
+                                  formatCurrency(calculateOrderBreakdown(order).deliveryFee)
+                                )}
+                              </span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-charcoal-600">Location:</span>
-                              <span className="font-medium">{order.seller?.businessAddress || 'N/A'}</span>
+                            {order.payment_method === 'cod' && (
+                              <div className="flex justify-between">
+                                <span className="text-charcoal-600">COD Charges:</span>
+                                <span className="font-medium">{formatCurrency(calculateOrderBreakdown(order).codFee)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between pt-2 border-t border-gray-200">
+                              <span className="text-charcoal-900 font-semibold">Total Amount:</span>
+                              <span className="font-bold text-green-600">{formatCurrency(calculateOrderBreakdown(order).total)}</span>
                             </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Seller Information */}
+                      <div className="mb-6">
+                        <h4 className="text-lg font-semibold text-charcoal-900 mb-3">Seller Information</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          <div className="flex justify-between md:flex-col md:justify-start">
+                            <span className="text-charcoal-600">Business Name:</span>
+                            <span className="font-medium">{order.seller?.business_name || order.seller?.businessName || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between md:flex-col md:justify-start">
+                            <span className="text-charcoal-600">Contact:</span>
+                            <span className="font-medium">{order.seller?.primary_mobile || order.seller?.primaryMobile || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between md:flex-col md:justify-start">
+                            <span className="text-charcoal-600">Location:</span>
+                            <span className="font-medium">{order.seller?.business_address || order.seller?.businessAddress || order.seller?.city || 'N/A'}</span>
                           </div>
                         </div>
                       </div>
@@ -439,9 +554,9 @@ export const OrderHistoryPage = () => {
           }}
           orders={selectedOrder ? [selectedOrder] : []}
           prefillData={selectedOrder ? {
-            subject: `Issue with Order #${selectedOrder.orderId || selectedOrder._id.slice(-8).toUpperCase()}`,
-            description: `I have an issue with my order:\n\nOrder Details:\n- Order ID: ${selectedOrder.orderId || selectedOrder._id}\n- Order Date: ${formatDate(selectedOrder.createdAt)}\n- Total Amount: ${formatCurrency(selectedOrder.totalAmount)}\n- Status: ${selectedOrder.status}\n- Seller: ${selectedOrder.seller?.businessName || selectedOrder.seller?.fullName || 'Unknown'}\n\nProducts:\n${selectedOrder.products?.map(p => `- ${p.name} (${p.quantity || 1} × ${formatCurrency(p.price)})`).join('\n')}`,
-            orderReference: selectedOrder._id,
+            subject: `Issue with Order #${selectedOrder.id?.slice(-8)?.toUpperCase() || 'N/A'}`,
+            description: `I have an issue with my order:\n\nOrder Details:\n- Order ID: ${selectedOrder.id}\n- Order Date: ${formatDate(selectedOrder.created_at || selectedOrder.createdAt)}\n- Total Amount: ${formatCurrency(selectedOrder.total_amount || selectedOrder.totalAmount)}\n- Status: ${selectedOrder.status}\n- Seller: ${selectedOrder.seller?.business_name || selectedOrder.seller?.full_name || 'Unknown'}\n\nProducts:\n${selectedOrder.products?.map(p => `- ${p.name} (${p.quantity || 1} × ${formatCurrency(p.price)})`).join('\n')}`,
+            orderReference: selectedOrder.id,
             category: 'product',
             issueTiming: `When I received the order on ${formatDate(selectedOrder.createdAt)}`,
             urgencyLevel: 'medium'
@@ -457,7 +572,7 @@ export const OrderHistoryPage = () => {
             setSelectedOrder(null)
           }}
           product={selectedProduct}
-          orderId={selectedOrder?.orderId || selectedOrder?._id}
+          orderId={selectedOrder?.id}
         />
       </div>
     </div>

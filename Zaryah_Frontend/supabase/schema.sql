@@ -12,7 +12,7 @@ CREATE TABLE users (
   email VARCHAR(255) UNIQUE NOT NULL,
   name VARCHAR(255),
   user_type VARCHAR(20) NOT NULL CHECK (user_type IN ('Buyer', 'Seller', 'Admin')),
-  auth0_id VARCHAR(255) UNIQUE, -- Auth0 user ID
+  supabase_auth_id VARCHAR(255) UNIQUE, -- Supabase Auth user ID
   is_verified BOOLEAN DEFAULT false,
   is_approved BOOLEAN DEFAULT false, -- For sellers
   profile_photo TEXT,
@@ -90,6 +90,7 @@ CREATE TABLE products (
   name VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
   price DECIMAL(10, 2) NOT NULL,
+  mrp DECIMAL(10, 2), -- Maximum Retail Price
   images TEXT[], -- Array of image URLs
   video_url TEXT,
   category VARCHAR(100) NOT NULL,
@@ -103,6 +104,14 @@ CREATE TABLE products (
   delivery_time_max INTEGER NOT NULL,
   delivery_time_unit VARCHAR(10) NOT NULL DEFAULT 'days' CHECK (delivery_time_unit IN ('hours', 'days')),
   instant_delivery BOOLEAN DEFAULT false,
+  material VARCHAR(255), -- Product material
+  care_instructions TEXT, -- Care and maintenance instructions
+  size_options TEXT[], -- Available size options
+  return_available BOOLEAN DEFAULT false,
+  exchange_available BOOLEAN DEFAULT false,
+  return_days INTEGER DEFAULT 0,
+  cod_available BOOLEAN DEFAULT true,
+  legal_disclaimer TEXT,
   seller_id UUID NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
   status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   approved_at TIMESTAMP WITH TIME ZONE,
@@ -270,7 +279,7 @@ CREATE TABLE otps (
 
 -- Indexes for performance
 CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_auth0_id ON users(auth0_id);
+CREATE INDEX idx_users_supabase_auth_id ON users(supabase_auth_id);
 CREATE INDEX idx_users_user_type ON users(user_type);
 CREATE INDEX idx_products_seller_id ON products(seller_id);
 CREATE INDEX idx_products_status ON products(status);

@@ -17,8 +17,6 @@ export const ProductCard = ({ product }) => {
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const { addToCart } = useCart()
   
-  // Check if this is a dummy product (not from database)
-  const isDummyProduct = !product.id || (typeof product.id === 'string' && product.id.startsWith('dummy-')) || (typeof product._id === 'string' && product._id?.startsWith('dummy-'))
   const productId = product.id || product._id
 
   const checkAuthAndRedirect = () => {
@@ -67,8 +65,7 @@ export const ProductCard = ({ product }) => {
         {/* Product Image */}
         <div className="relative overflow-hidden">
           <Link 
-            href={isDummyProduct ? '#' : `/product/${productId}`} 
-            onClick={isDummyProduct ? (e) => { e.preventDefault(); toast('This is a demo product. Real products are available in the database.', { icon: 'ℹ️' }); } : undefined}
+            href={productId ? `/product/${productId}` : '#'}
             className="block"
           >
             <img
@@ -100,7 +97,7 @@ export const ProductCard = ({ product }) => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={handleLike}
-            className={`absolute bottom-2 right-2 sm:bottom-4 sm:right-4 bg-primary-100 hover:bg-primary-200 p-2 sm:p-3 rounded-full transition-all shadow-soft border border-primary-200 ${isLiked ? 'bg-primary-600 hover:bg-primary-700' : ''}`}
+            className={`absolute top-2 right-2 sm:top-4 sm:right-4 z-20 bg-white/90 backdrop-blur-sm hover:bg-white p-2 sm:p-3 rounded-full transition-all shadow-soft border border-primary-200 ${isLiked ? 'bg-primary-600 hover:bg-primary-700 border-primary-600' : ''}`}
           >
             <Heart 
               className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
@@ -116,7 +113,7 @@ export const ProductCard = ({ product }) => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 hidden lg:flex space-x-2"
+                className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/50 to-transparent hidden lg:flex items-end justify-center pb-4 space-x-2"
               >
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -125,7 +122,7 @@ export const ProductCard = ({ product }) => {
                   className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-full text-sm font-medium transition-all shadow-soft border border-primary-700 flex items-center space-x-2"
                 >
                   <ShoppingBag className="w-4 h-4 text-white" />
-                  <span className="hidden sm:inline">Add to Cart</span>
+                  <span>Add to Cart</span>
                 </motion.button>
                 
                 <motion.button
@@ -135,7 +132,7 @@ export const ProductCard = ({ product }) => {
                   className="bg-secondary-600 hover:bg-secondary-700 text-white px-4 py-2.5 rounded-full text-sm font-medium transition-all shadow-soft border border-secondary-700 flex items-center space-x-2"
                 >
                   <Gift className="w-4 h-4 text-white" />
-                  <span className="hidden sm:inline">Gift</span>
+                  <span>Gift</span>
                 </motion.button>
               </motion.div>
             )}
@@ -145,17 +142,28 @@ export const ProductCard = ({ product }) => {
         {/* Product Info */}
         <div className="p-2 sm:p-4 flex-1 flex flex-col">
           <Link 
-            href={isDummyProduct ? '#' : `/product/${productId}`} 
-            onClick={isDummyProduct ? (e) => { e.preventDefault(); toast('This is a demo product. Real products are available in the database.', { icon: 'ℹ️' }); } : undefined}
+            href={productId ? `/product/${productId}` : '#'}
             className="flex-1"
           >
             <div className="flex items-start justify-between mb-2">
               <h3 className="font-bold text-charcoal-800 text-sm sm:text-base lg:text-lg line-clamp-2 leading-tight flex-1 mr-2 font-serif">
                 {product.name}
               </h3>
-              <span className="text-sm sm:text-lg lg:text-xl font-bold text-primary-700 whitespace-nowrap">
-                ₹{product.price.toLocaleString()}
-              </span>
+              <div className="flex flex-col items-end">
+                <span className="text-sm sm:text-lg lg:text-xl font-bold text-primary-700 whitespace-nowrap">
+                  ₹{product.price.toLocaleString()}
+                </span>
+                {product.mrp && product.mrp > product.price && (
+                  <>
+                    <span className="text-xs text-gray-500 line-through">
+                      ₹{product.mrp.toLocaleString()}
+                    </span>
+                    <span className="text-xs font-semibold text-orange-500">
+                      {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Seller Info */}

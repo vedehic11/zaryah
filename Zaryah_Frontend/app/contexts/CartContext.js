@@ -126,13 +126,13 @@ export const CartProvider = ({ children }) => {
     await addToCart(testProduct, { quantity: 2 });
   };
 
-  // Expose debug function globally for testing
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.debugCart = debugCart;
-      window.testAddToCart = testAddToCart;
-    }
-  }, [user, cart, cartLoaded]);
+  // Expose debug function globally for testing (commented out to prevent state update errors)
+  // useEffect(() => {
+  //   if (typeof window !== 'undefined') {
+  //     window.debugCart = debugCart;
+  //     window.testAddToCart = testAddToCart;
+  //   }
+  // }, [user, cart, cartLoaded]);
 
   // Helper function to transform backend cart data to frontend format
   const transformBackendCart = (backendCart) => {
@@ -288,10 +288,12 @@ export const CartProvider = ({ children }) => {
           }];
         }
         
-        toast.success(`${product.name} added to cart!`);
-        setIsCartOpen(true);
         return newCart;
       });
+      
+      // Show success message and open cart after state update
+      toast.success(`${product.name} added to cart!`);
+      setIsCartOpen(true);
     }
   };
 
@@ -380,7 +382,7 @@ export const CartProvider = ({ children }) => {
       // Guest user: clear localStorage cart
       setCart([]);
       localStorage.removeItem('cart');
-      toast.info('Cart cleared');
+      toast.success('Cart cleared');
     }
   };
 

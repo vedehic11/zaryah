@@ -7,7 +7,6 @@ import { VideoCarousel } from './VideoCarousel'
 import { ProductCard } from './ProductCard'
 import Link from 'next/link'
 import { apiService } from '../services/api'
-import { dummyProducts } from '../data/dummyProducts'
 
 export const HomePage = () => {
   const [products, setProducts] = useState([])
@@ -15,15 +14,14 @@ export const HomePage = () => {
     const fetchProducts = async () => {
       try {
         const approved = await apiService.getApprovedProducts();
-        setProducts(approved.length > 0 ? approved : dummyProducts);
+        setProducts(approved || []);
       } catch (e) {
-        // Fallback to dummy products if API fails
-        setProducts(dummyProducts);
+        setProducts([]);
       }
     };
     fetchProducts();
   }, []);
-  const featuredProducts = (products.length > 0 ? products : dummyProducts)
+  const featuredProducts = (products || [])
     .filter(p => p.status === 'approved')
     .slice(0, 4)
   const heroRef = useRef(null)

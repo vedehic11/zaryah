@@ -24,13 +24,17 @@ async function getSession(request) {
   try {
     // Try to get token from Authorization header first
     const authHeader = request.headers.get('authorization')
+    console.log('Auth header present:', !!authHeader)
     let token = null
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.replace('Bearer ', '')
+      console.log('Token found in Authorization header, length:', token.length)
     } else {
       // Try to get from cookies (Supabase Auth stores session in cookies)
       const cookieHeader = request.headers.get('cookie')
+      console.log('Cookie header present:', !!cookieHeader)
+      
       if (cookieHeader) {
         // Extract sb-<project-ref>-auth-token from cookies
         const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
@@ -44,29 +48,42 @@ async function getSession(request) {
           key.includes('sb-') && key.includes('-auth-token')
         )
         
+        console.log('Supabase token cookie found:', !!supabaseTokenCookie)
+        
         if (supabaseTokenCookie) {
           try {
             const tokenData = JSON.parse(decodeURIComponent(cookies[supabaseTokenCookie]))
             token = tokenData?.access_token || tokenData
+            console.log('Token extracted from cookie, length:', token?.length)
           } catch (e) {
             // Cookie might not be JSON, try as direct token
             token = cookies[supabaseTokenCookie]
+            console.log('Token from raw cookie, length:', token?.length)
           }
         }
       }
     }
     
     if (!token) {
+      console.log('No token found in headers or cookies')
       return null
     }
     
     // Verify the token and get user
+    console.log('Verifying token with Supabase...')
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
     
-    if (error || !user) {
+    if (error) {
+      console.error('Token verification error:', error.message)
+      return null
+    }
+    
+    if (!user) {
+      console.error('No user returned from token verification')
       return null
     }
 
+    console.log('Session verified, user ID:', user.id)
     return { user }
   } catch (error) {
     console.error('Error getting session:', error)
