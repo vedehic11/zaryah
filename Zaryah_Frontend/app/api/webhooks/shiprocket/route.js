@@ -12,9 +12,25 @@ export async function POST(request) {
     const signature = request.headers.get('x-shiprocket-signature')
     
     console.log('Signature present:', !!signature)
+    console.log('Raw body length:', rawBody.length)
+    
+    // Handle Shiprocket test/ping requests (empty body without signature)
+    if (!rawBody || rawBody.trim() === '' || rawBody === '{}') {
+      console.log('✅ Shiprocket test/ping request - responding OK')
+      return NextResponse.json({ 
+        success: true,
+        message: 'Webhook endpoint is active and ready to receive events'
+      }, { status: 200 })
+    }
+    
+    // SECURITY: Require signature for actual webhook events
+    if (!signature) {
+      console.error('Missing webhook signature for non-empty payload')
+      return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
+    }
     
     // Verify webhook signature
-    if (signature && !verifyWebhookSignature(rawBody, signature)) {
+    if (!verifyWebhookSignature(rawBody, signature)) {
       console.error('Invalid webhook signature')
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }

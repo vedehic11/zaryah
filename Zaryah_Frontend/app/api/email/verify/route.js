@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 
 export async function GET(request) {
@@ -12,8 +12,6 @@ export async function GET(request) {
         `${process.env.NEXT_PUBLIC_APP_URL}/login?error=invalid_token`
       );
     }
-
-    const supabase = createClient();
 
     // Find verification record
     const { data: verification, error: findError } = await supabase

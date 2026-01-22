@@ -31,6 +31,33 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
     }
 
+    // SECURITY: Validate amount matches order total if orderId provided
+    if (orderId) {
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select('total_amount')
+        .eq('id', orderId)
+        .single()
+
+      if (orderError || !order) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+      }
+
+      // Allow 1 rupee difference for rounding
+      const amountDifference = Math.abs(parseFloat(amount) - parseFloat(order.total_amount))
+      if (amountDifference > 1) {
+        console.error('Payment amount mismatch:', {
+          requested: amount,
+          orderTotal: order.total_amount,
+          difference: amountDifference
+        })
+        return NextResponse.json({ 
+          error: 'Payment amount mismatch',
+          message: 'Payment amount does not match order total'
+        }, { status: 400 })
+      }
+    }
+
     // Check if Razorpay is configured
     if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
       console.error('Razorpay credentials not configured')

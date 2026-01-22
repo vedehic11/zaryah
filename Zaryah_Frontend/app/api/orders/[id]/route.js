@@ -61,7 +61,25 @@ export async function PUT(request, context) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
     
-    console.log('Order found - seller_id:', order.seller_id)
+    console.log('Order found - current status:', order.status, '- requested:', status)
+
+    // VALIDATION: Check if status transition is allowed
+    const validTransitions = {
+      'pending': ['confirmed', 'cancelled'],
+      'confirmed': ['dispatched', 'cancelled'],
+      'dispatched': ['delivered', 'cancelled'],
+      'delivered': [], // No transitions allowed from delivered
+      'cancelled': [] // No transitions allowed from cancelled
+    }
+
+    const allowedNextStatuses = validTransitions[order.status] || []
+    if (!allowedNextStatuses.includes(status)) {
+      console.error(`Invalid status transition: ${order.status} -> ${status}`)
+      return NextResponse.json({ 
+        error: 'Invalid status transition',
+        message: `Cannot change status from "${order.status}" to "${status}". Allowed: ${allowedNextStatuses.join(', ') || 'none'}`
+      }, { status: 400 })
+    }
 
     // Check permissions: Seller can update orders they own, Admin can update any
     if (user.user_type === 'Seller' && order.seller_id !== user.id) {
@@ -135,22 +153,62 @@ export async function PUT(request, context) {
         const addressParts = order.address.split(',').map(s => s.trim())
         const phoneMatch = order.address.match(/Phone:\s*(\d+)/)
         
+        // Validate required delivery address fields
+        const city = updatedOrder.buyers?.city
+        const state = updatedOrder.buyers?.state
+        const pincode = updatedOrder.buyers?.pincode
+        const phone = phoneMatch ? phoneMatch[1] : updatedOrder.buyers?.phone
+        
+        if (!city || !state || !pincode || !phone) {
+          throw new Error(`Incomplete delivery address. Missing: ${[
+            !city && 'city',
+            !state && 'state',
+            !pincode && 'pincode',
+            !phone && 'phone'
+          ].filter(Boolean).join(', ')}`)
+        }
+        
+        // Validate phone number format (10 digits)
+        if (!/^\d{10}$/.test(phone)) {
+          throw new Error('Invalid phone number. Must be 10 digits.')
+        }
+        
+        // Validate pincode format (6 digits)
+        if (!/^\d{6}$/.test(pincode)) {
+          throw new Error('Invalid pincode. Must be 6 digits.')
+        }
+        
         const deliveryAddress = {
           name: addressParts[0] || 'Customer',
           address: addressParts.slice(1, -3).join(', ') || order.address,
-          city: updatedOrder.buyers?.city || 'Mumbai',
-          state: updatedOrder.buyers?.state || 'Maharashtra',
-          pincode: updatedOrder.buyers?.pincode || '400001',
-          phone: phoneMatch ? phoneMatch[1] : updatedOrder.buyers?.phone || '9999999999',
-          email: 'customer@zaryah.com'
+          city,
+          state,
+          pincode,
+          phone,
+          email: updatedOrder.buyers?.email || 'customer@zaryah.com'
         }
 
+        // Validate seller pickup location
+        const sellerCity = updatedOrder.sellers?.city
+        const sellerState = updatedOrder.sellers?.state
+        const sellerPincode = updatedOrder.sellers?.pincode
+        const sellerAddress = updatedOrder.sellers?.business_address
+        
+        if (!sellerCity || !sellerState || !sellerPincode || !sellerAddress) {
+          throw new Error(`Incomplete seller pickup address. Missing: ${[
+            !sellerCity && 'city',
+            !sellerState && 'state',
+            !sellerPincode && 'pincode',
+            !sellerAddress && 'business_address'
+          ].filter(Boolean).join(', ')}`)
+        }
+        
         const pickupLocation = {
           name: 'Primary',
-          address: updatedOrder.sellers?.business_address || 'Pickup Address',
-          city: updatedOrder.sellers?.city || 'Mumbai',
-          state: updatedOrder.sellers?.state || 'Maharashtra',
-          pincode: updatedOrder.sellers?.pincode || '400001'
+          address: sellerAddress,
+          city: sellerCity,
+          state: sellerState,
+          pincode: sellerPincode
         }
 
         const items = (updatedOrder.order_items || []).map(item => ({
@@ -173,17 +231,26 @@ export async function PUT(request, context) {
 
         console.log('Shipment created:', shipment)
 
+        // Prepare update data
+        const shipmentUpdate = {
+          shipment_id: shipment.shipment_id,
+          awb_code: shipment.awb_code,
+          courier_name: shipment.courier_name,
+          tracking_url: shipment.tracking_url,
+          shipment_status: shipment.status,
+          shipment_created_at: new Date().toISOString()
+        }
+
+        // If AWB code is assigned, update status to dispatched
+        if (shipment.awb_code) {
+          shipmentUpdate.status = 'dispatched'
+          console.log('✅ AWB assigned, updating status to dispatched')
+        }
+
         // Update order with shipment details
         await supabase
           .from('orders')
-          .update({
-            shipment_id: shipment.shipment_id,
-            awb_code: shipment.awb_code,
-            courier_name: shipment.courier_name,
-            tracking_url: shipment.tracking_url,
-            shipment_status: shipment.status,
-            shipment_created_at: new Date().toISOString()
-          })
+          .update(shipmentUpdate)
           .eq('id', id)
 
         // Add shipment info to response
@@ -192,12 +259,31 @@ export async function PUT(request, context) {
         updatedOrder.courier_name = shipment.courier_name
         updatedOrder.tracking_url = shipment.tracking_url
         updatedOrder.shipment_status = shipment.status
+        
+        // Update status in response if dispatched
+        if (shipment.awb_code) {
+          updatedOrder.status = 'dispatched'
+        }
 
         console.log('Shipment details saved to order')
       } catch (shipmentError) {
-        console.error('Shipment creation error:', shipmentError)
-        // Don't fail the order update if shipment creation fails
-        // Shipment can be created manually later
+        console.error('❌ Shipment creation failed:', shipmentError.message)
+        
+        // Set order to special status indicating shipment needs manual creation
+        await supabase
+          .from('orders')
+          .update({ 
+            status: 'confirmed',
+            // Store error message for seller to see
+            notes: `Shipment creation failed: ${shipmentError.message}. Please create shipment manually in Shiprocket dashboard.`
+          })
+          .eq('id', id)
+        
+        // Update response to reflect shipment failure
+        updatedOrder.status = 'confirmed'
+        updatedOrder.shipment_error = shipmentError.message
+        
+        console.warn('⚠️  Order confirmed but shipment creation failed. Manual intervention required.')
       }
     }
 

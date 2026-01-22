@@ -11,6 +11,15 @@ let tokenExpiry = null
  * Token is cached and reused until expiry
  */
 async function authenticate() {
+  // Check if credentials are configured
+  if (!process.env.SHIPROCKET_EMAIL || !process.env.SHIPROCKET_PASSWORD) {
+    throw new Error(
+      'Shiprocket credentials not configured. ' +
+      'Please set SHIPROCKET_EMAIL and SHIPROCKET_PASSWORD environment variables. ' +
+      'Get credentials from: https://app.shiprocket.in/seller/settings/api'
+    )
+  }
+
   // Return cached token if still valid
   if (authToken && tokenExpiry && Date.now() < tokenExpiry) {
     return authToken

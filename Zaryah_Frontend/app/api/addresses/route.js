@@ -49,9 +49,25 @@ export async function POST(request) {
     const body = await request.json()
     const { name, phone, address, city, state, pincode, country = 'India', isDefault = false } = body
 
-    // Validate required fields (phone is optional)
+    // Validate required fields
     if (!name || !address || !city || !pincode) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    // Validate phone number (10 digits, required for delivery)
+    if (phone && !/^\d{10}$/.test(phone)) {
+      return NextResponse.json({ 
+        error: 'Invalid phone number',
+        message: 'Phone number must be exactly 10 digits'
+      }, { status: 400 })
+    }
+
+    // Validate pincode (6 digits)
+    if (!/^\d{6}$/.test(pincode)) {
+      return NextResponse.json({ 
+        error: 'Invalid pincode',
+        message: 'Pincode must be exactly 6 digits'
+      }, { status: 400 })
     }
 
     // If this is set as default, unset other default addresses
