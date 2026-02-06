@@ -10,13 +10,24 @@ import { apiService } from '../services/api'
 
 export const HomePage = () => {
   const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  
   useEffect(() => {
     const fetchProducts = async () => {
       try {
+        setLoading(true)
+        setError(null)
+        console.log('Fetching approved products...')
         const approved = await apiService.getApprovedProducts();
+        console.log('Products fetched:', approved?.length || 0)
         setProducts(approved || []);
       } catch (e) {
+        console.error('Error fetching products:', e)
+        setError(e.message || 'Failed to load products')
         setProducts([]);
+      } finally {
+        setLoading(false)
       }
     };
     fetchProducts();

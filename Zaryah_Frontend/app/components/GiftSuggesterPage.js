@@ -87,16 +87,12 @@ export const GiftSuggesterPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-cream-50 to-primary-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center space-x-3 bg-white px-6 py-3 rounded-full shadow-lg mb-6">
-            <Gift className="w-8 h-8 text-primary-600" />
-            <span className="text-primary-700 font-semibold text-xl">Gift Suggester</span>
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Find the Perfect Gift</h1>
-          <p className="text-xl text-gray-600">Let us help you discover meaningful gifts that create lasting memories</p>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-charcoal-900 font-serif mb-4">Gift Suggester</h1>
+          <p className="text-xl text-charcoal-600">Find the perfect gift for your loved ones</p>
         </div>
 
         {/* Progress Bar */}

@@ -119,13 +119,9 @@ export const HamperBuilderPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-cream-50 to-primary-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center space-x-3 bg-white px-6 py-3 rounded-full shadow-soft border border-primary-100 mb-6">
-            <Package className="w-8 h-8 text-primary-600" />
-            <span className="text-primary-700 font-semibold text-xl">Hamper Builder</span>
-          </div>
-          <h1 className="text-4xl font-bold text-charcoal-900 font-serif mb-4">Create Your Perfect Gift Hamper</h1>
-          <p className="text-xl text-charcoal-600">Curate a collection of meaningful gifts that tell a story</p>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-charcoal-900 font-serif mb-4">Hamper Builder</h1>
+          <p className="text-xl text-charcoal-600">Create personalized gift hampers with handcrafted products</p>
         </div>
 
         {/* Development Notice */}

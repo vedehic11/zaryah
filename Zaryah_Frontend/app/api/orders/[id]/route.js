@@ -123,9 +123,7 @@ export async function PUT(request, context) {
           full_name,
           primary_mobile,
           business_address,
-          city,
-          state,
-          pincode
+          city
         ),
         buyers!buyer_id (
           id,
@@ -188,10 +186,17 @@ export async function PUT(request, context) {
           email: updatedOrder.buyers?.email || 'customer@zaryah.com'
         }
 
+        // Fetch seller's address from their buyer record (sellers also have buyer records)
+        const { data: sellerBuyerData, error: sellerBuyerError } = await supabase
+          .from('buyers')
+          .select('city, state, pincode')
+          .eq('userId', updatedOrder.seller_id)
+          .single()
+
         // Validate seller pickup location
-        const sellerCity = updatedOrder.sellers?.city
-        const sellerState = updatedOrder.sellers?.state
-        const sellerPincode = updatedOrder.sellers?.pincode
+        const sellerCity = updatedOrder.sellers?.city || sellerBuyerData?.city
+        const sellerState = sellerBuyerData?.state
+        const sellerPincode = sellerBuyerData?.pincode
         const sellerAddress = updatedOrder.sellers?.business_address
         
         if (!sellerCity || !sellerState || !sellerPincode || !sellerAddress) {
@@ -200,7 +205,7 @@ export async function PUT(request, context) {
             !sellerState && 'state',
             !sellerPincode && 'pincode',
             !sellerAddress && 'business_address'
-          ].filter(Boolean).join(', ')}`)
+          ].filter(Boolean).join(', ')}. Please ensure seller has completed their profile with complete address details.`)
         }
         
         const pickupLocation = {

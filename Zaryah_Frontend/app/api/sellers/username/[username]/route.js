@@ -5,34 +5,39 @@ import { supabase } from '@/lib/supabase'
 export async function GET(request, { params }) {
 	try {
 		const { username } = await params
+		console.log('=== GET /api/sellers/username/[username] START ===')
+		console.log('Requested username:', username)
+		
 		if (!username) {
 			return NextResponse.json({ error: 'Username is required' }, { status: 400 })
 		}
 
-		// Fetch seller with linked user
+		// Fetch seller - sellers.id IS the user id
 		const { data: seller, error: sellerError } = await supabase
 			.from('sellers')
-			.select(`
-				*,
-				users:id (
-					id,
-					email,
-					name,
-					user_type,
-					is_verified,
-					is_approved,
-					profile_photo
-				)
-			`)
+			.select('*')
 			.eq('username', username.toLowerCase())
 			.single()
 
+		console.log('Seller query result:', { found: !!seller, error: sellerError?.message })
+
 		if (sellerError || !seller) {
+			console.log('Seller not found in database')
 			return NextResponse.json({ error: 'Seller not found' }, { status: 404 })
 		}
 
+		// Fetch the corresponding user record to check approval status
+		const { data: user, error: userError } = await supabase
+			.from('users')
+			.select('id, email, name, user_type, is_verified, is_approved, profile_photo')
+			.eq('id', seller.id)
+			.single()
+
+		console.log('User query result:', { found: !!user, error: userError?.message, approved: user?.is_approved })
+
 		// Only expose approved sellers
-		if (!seller.users?.is_approved || seller.users?.user_type !== 'Seller') {
+		if (!user || !user.is_approved || user.user_type !== 'Seller') {
+			console.log('Seller not approved or not a seller type')
 			return NextResponse.json({ error: 'Seller not found' }, { status: 404 })
 		}
 
@@ -104,12 +109,18 @@ export async function GET(request, { params }) {
 				: 0
 		}
 
-		return NextResponse.json({
+		// Combine seller and user data for response
+		const responseData = {
 			...seller,
+			users: user, // Include user data
 			products: productsWithRatings,
 			stats
-		})
+		}
+
+		console.log('=== GET /api/sellers/username/[username] SUCCESS ===')
+		return NextResponse.json(responseData)
 	} catch (error) {
+		console.error('=== GET /api/sellers/username/[username] ERROR ===')
 		console.error('Error fetching seller by username:', error)
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
 	}

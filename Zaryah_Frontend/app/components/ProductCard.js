@@ -119,20 +119,20 @@ export const ProductCard = ({ product }) => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleQuickAdd}
-                  className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-full text-sm font-medium transition-all shadow-soft border border-primary-700 flex items-center space-x-2"
+                  className="bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-full text-sm font-medium transition-all shadow-soft border border-primary-700 flex items-center justify-center"
+                  title="Add to Cart"
                 >
-                  <ShoppingBag className="w-4 h-4 text-white" />
-                  <span>Add to Cart</span>
+                  <ShoppingBag className="w-5 h-5 text-white" />
                 </motion.button>
                 
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleGiftAdd}
-                  className="bg-secondary-600 hover:bg-secondary-700 text-white px-4 py-2.5 rounded-full text-sm font-medium transition-all shadow-soft border border-secondary-700 flex items-center space-x-2"
+                  className="bg-secondary-600 hover:bg-secondary-700 text-white p-3 rounded-full text-sm font-medium transition-all shadow-soft border border-secondary-700 flex items-center justify-center"
+                  title="Add as Gift"
                 >
-                  <Gift className="w-4 h-4 text-white" />
-                  <span>Gift</span>
+                  <Gift className="w-5 h-5 text-white" />
                 </motion.button>
               </motion.div>
             )}
@@ -198,18 +198,18 @@ export const ProductCard = ({ product }) => {
           <div className="flex space-x-2 mt-3 lg:hidden">
             <button
               onClick={handleQuickAdd}
-              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all shadow-soft border border-primary-700 flex items-center justify-center space-x-2"
+              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2.5 rounded-lg text-sm font-medium transition-all shadow-soft border border-primary-700 flex items-center justify-center"
+              title="Add to Cart"
             >
-              <ShoppingBag className="w-4 h-4 text-white" />
-              <span>Add to Cart</span>
+              <ShoppingBag className="w-5 h-5 text-white" />
             </button>
             
             <button
               onClick={handleGiftAdd}
-              className="flex-1 bg-secondary-600 hover:bg-secondary-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all shadow-soft border border-secondary-700 flex items-center justify-center space-x-2"
+              className="flex-1 bg-secondary-600 hover:bg-secondary-700 text-white py-2.5 rounded-lg text-sm font-medium transition-all shadow-soft border border-secondary-700 flex items-center justify-center"
+              title="Add as Gift"
             >
-              <Gift className="w-4 h-4 text-white" />
-              <span>Gift</span>
+              <Gift className="w-5 h-5 text-white" />
             </button>
           </div>
         </div>

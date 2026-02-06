@@ -11,14 +11,25 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    const maxSize = 5 * 1024 * 1024
+    // Dynamic max size based on file type
+    const isVideo = file.type.startsWith('video/')
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024 // 50MB for videos, 10MB for images
+    
     if (file.size > maxSize) {
-      return NextResponse.json({ error: 'File too large. Maximum size is 5MB.' }, { status: 400 })
+      return NextResponse.json({ 
+        error: `File too large. Maximum size is ${isVideo ? '50MB' : '10MB'}.` 
+      }, { status: 400 })
     }
 
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 
+      'video/mp4', 'video/webm', 'video/quicktime',
+      'application/pdf'
+    ]
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'Invalid file type. Allowed: JPEG, PNG, WebP, PDF' }, { status: 400 })
+      return NextResponse.json({ 
+        error: 'Invalid file type. Allowed: JPEG, PNG, WebP, MP4, WebM, PDF' 
+      }, { status: 400 })
     }
 
     let url

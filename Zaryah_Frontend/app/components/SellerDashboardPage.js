@@ -7,7 +7,7 @@ import {
   Package, ShoppingCart, TrendingUp, DollarSign, Eye, Edit, Trash2,
   Plus, Clock, CheckCircle, XCircle, AlertTriangle, Users, Star,
   BarChart3, Settings, Upload, Image as ImageIcon, FileText, MessageCircle,
-  Wallet, ArrowUpCircle, ArrowDownCircle, CreditCard, IndianRupee, Truck, ExternalLink
+  Wallet, ArrowUpCircle, ArrowDownCircle, CreditCard, IndianRupee, Truck, ExternalLink, User
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
@@ -40,6 +40,19 @@ export default function SellerDashboardPage() {
     bank_account_number: '',
     ifsc_code: '',
     account_holder_name: ''
+  })
+  
+  // Profile settings state
+  const [showEditProfile, setShowEditProfile] = useState(false)
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const [uploadingProfile, setUploadingProfile] = useState(false)
+  const [profileData, setProfileData] = useState({
+    cover_photo: '',
+    business_description: '',
+    instagram: '',
+    facebook: '',
+    x: '',
+    linkedin: ''
   })
 
   useEffect(() => {
@@ -142,6 +155,150 @@ export default function SellerDashboardPage() {
       toast.error('Failed to load dashboard data')
     } finally {
       setLoading(false)
+    }
+  }
+  
+  const fetchSellerProfile = async () => {
+    try {
+      const response = await apiService.request(`/sellers?id=${user.id}`)
+      if (response) {
+        setProfileData({
+          cover_photo: response.cover_photo || '',
+          business_description: response.business_description || '',
+          instagram: response.instagram || '',
+          facebook: response.facebook || '',
+          x: response.x || '',
+          linkedin: response.linkedin || ''
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching seller profile:', error)
+    }
+  }
+  
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    // Check file type - support images and videos
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'video/mp4', 'video/webm']
+    if (!validTypes.includes(file.type)) {
+      toast.error('Invalid file type. Please upload an image (JPEG, PNG, WebP) or video (MP4, WebM)')
+      return
+    }
+    
+    // Check file size (max 10MB for images, 50MB for videos)
+    const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      toast.error(`File too large. Maximum size is ${file.type.startsWith('video/') ? '50MB' : '10MB'}`)
+      return
+    }
+    
+    try {
+      setUploadingCover(true)
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'seller-covers')
+      formData.append('useSupabase', 'false') // Use Cloudinary for cover photos/videos
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
+      }
+      
+      const data = await response.json()
+      
+      // Update seller profile with new cover photo URL
+      await apiService.request(`/sellers`, {
+        method: 'PUT',
+        body: JSON.stringify({ cover_photo: data.url })
+      })
+      
+      setProfileData(prev => ({ ...prev, cover_photo: data.url }))
+      toast.success('Cover photo updated successfully!')
+      fetchDashboardData()
+    } catch (error) {
+      console.error('Error uploading cover:', error)
+      toast.error(error.message || 'Failed to upload cover photo')
+    } finally {
+      setUploadingCover(false)
+    }
+  }
+  
+  const handleProfilePhotoUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      toast.error('Invalid file type. Please upload an image (JPEG, PNG, WebP)')
+      return
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File too large. Maximum size is 5MB')
+      return
+    }
+    
+    try {
+      setUploadingProfile(true)
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'profile-photos')
+      formData.append('useSupabase', 'false')
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
+      }
+      
+      const data = await response.json()
+      
+      // Update user profile photo in users table via API
+      await apiService.request(`/sellers`, {
+        method: 'PUT',
+        body: JSON.stringify({ profile_photo: data.url })
+      })
+      
+      toast.success('Profile photo updated successfully!')
+      fetchDashboardData()
+    } catch (error) {
+      console.error('Error uploading profile photo:', error)
+      toast.error(error.message || 'Failed to upload profile photo')
+    } finally {
+      setUploadingProfile(false)
+    }
+  }
+  
+  const handleUpdateProfile = async () => {
+    try {
+      await apiService.request(`/sellers`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          business_description: profileData.business_description,
+          instagram: profileData.instagram,
+          facebook: profileData.facebook,
+          x: profileData.x,
+          linkedin: profileData.linkedin
+        })
+      })
+      
+      toast.success('Profile updated successfully!')
+      setShowEditProfile(false)
+      fetchDashboardData()
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      toast.error(error.message || 'Failed to update profile')
     }
   }
 
@@ -982,35 +1139,252 @@ export default function SellerDashboardPage() {
 
             {/* Profile Tab */}
             {activeTab === 'profile' && (
-              <div>
-                <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
-                    <p className="text-gray-900">{user?.businessName || 'Not set'}</p>
+              <div className="space-y-6">
+                {!showEditProfile ? (
+                  <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
+                      <p className="text-gray-900">{user?.businessName || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <p className="text-gray-900">{user?.email}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Profile URL</label>
+                      <p className="text-primary-600">
+                        {user?.username ? (
+                          <Link href={`/${user.username}`} target="_blank" className="hover:underline">
+                            /{user.username}
+                          </Link>
+                        ) : (
+                          'Not set'
+                        )}
+                      </p>
+                    </div>
+                    <div className="pt-4">
+                      <button 
+                        onClick={() => {
+                          setShowEditProfile(true)
+                          fetchSellerProfile()
+                        }}
+                        className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+                      >
+                        <Settings className="w-5 h-5" />
+                        <span>Edit Profile</span>
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <p className="text-gray-900">{user?.email}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Profile URL</label>
-                    <p className="text-primary-600">
-                      {user?.username ? (
-                        <Link href={`/seller/${user.username}`} className="hover:underline">
-                          /seller/{user.username}
-                        </Link>
-                      ) : (
-                        'Not set'
-                      )}
-                    </p>
-                  </div>
-                  <div className="pt-4">
-                    <button className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
-                      <Settings className="w-5 h-5" />
-                      <span>Edit Profile</span>
-                    </button>
-                  </div>
-                </div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-6"
+                  >
+                    {/* Cover Photo/Video Section */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <ImageIcon className="w-5 h-5 text-primary-600" />
+                        Cover Photo/Video
+                      </h3>
+                      
+                      <div className="space-y-4">
+                        {profileData.cover_photo && (
+                          <div className="relative w-full h-48 rounded-lg overflow-hidden bg-gray-100">
+                            {profileData.cover_photo.includes('.mp4') || profileData.cover_photo.includes('.webm') ? (
+                              <video
+                                src={profileData.cover_photo}
+                                className="w-full h-full object-cover"
+                                controls
+                              />
+                            ) : (
+                              <img
+                                src={profileData.cover_photo}
+                                alt="Cover"
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </div>
+                        )}
+                        
+                        <div>
+                          <label className="block">
+                            <span className="sr-only">Choose cover photo or video</span>
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm"
+                              onChange={handleCoverUpload}
+                              disabled={uploadingCover}
+                              className="block w-full text-sm text-gray-500
+                                file:mr-4 file:py-2 file:px-4
+                                file:rounded-lg file:border-0
+                                file:text-sm file:font-semibold
+                                file:bg-primary-50 file:text-primary-700
+                                hover:file:bg-primary-100
+                                disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+                          </label>
+                          <p className="mt-2 text-xs text-gray-500">
+                            Recommended: 1920x1080px. Supports JPEG, PNG, WebP (max 10MB) or MP4, WebM (max 50MB)
+                          </p>
+                          {uploadingCover && (
+                            <p className="mt-2 text-sm text-primary-600 flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+                              Uploading...
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Profile Photo Section */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <User className="w-5 h-5 text-primary-600" />
+                        Profile Photo
+                      </h3>
+                      
+                      <div className="space-y-4">
+                        {user?.profile_photo && (
+                          <div className="relative w-32 h-32 rounded-full overflow-hidden bg-gray-100 mx-auto">
+                            <img
+                              src={user.profile_photo}
+                              alt="Profile"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        
+                        <div>
+                          <label className="block">
+                            <span className="sr-only">Choose profile photo</span>
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/jpg,image/png,image/webp"
+                              onChange={handleProfilePhotoUpload}
+                              disabled={uploadingProfile}
+                              className="block w-full text-sm text-gray-500
+                                file:mr-4 file:py-2 file:px-4
+                                file:rounded-lg file:border-0
+                                file:text-sm file:font-semibold
+                                file:bg-primary-50 file:text-primary-700
+                                hover:file:bg-primary-100
+                                disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+                          </label>
+                          <p className="mt-2 text-xs text-gray-500">
+                            Recommended: Square image, at least 400x400px. Supports JPEG, PNG, WebP (max 5MB)
+                          </p>
+                          {uploadingProfile && (
+                            <p className="mt-2 text-sm text-primary-600 flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+                              Uploading...
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Business Info Section */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold mb-4">Business Information</h3>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Business Description
+                          </label>
+                          <textarea
+                            value={profileData.business_description}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, business_description: e.target.value }))}
+                            rows={4}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="Tell customers about your business and what makes it special..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Social Media Section */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold mb-4">Social Media Links</h3>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                            <Instagram className="w-4 h-4" />
+                            Instagram
+                          </label>
+                          <input
+                            type="text"
+                            value={profileData.instagram}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, instagram: e.target.value }))}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="https://instagram.com/yourbusiness"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                            <Facebook className="w-4 h-4" />
+                            Facebook
+                          </label>
+                          <input
+                            type="text"
+                            value={profileData.facebook}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, facebook: e.target.value }))}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="https://facebook.com/yourbusiness"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                            <Twitter className="w-4 h-4" />
+                            X (Twitter)
+                          </label>
+                          <input
+                            type="text"
+                            value={profileData.x}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, x: e.target.value }))}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="https://x.com/yourbusiness"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                            <Linkedin className="w-4 h-4" />
+                            LinkedIn
+                          </label>
+                          <input
+                            type="text"
+                            value={profileData.linkedin}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, linkedin: e.target.value }))}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="https://linkedin.com/company/yourbusiness"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleUpdateProfile}
+                        className="flex-1 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                      >
+                        Save Changes
+                      </button>
+                      <button
+                        onClick={() => setShowEditProfile(false)}
+                        className="px-6 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
               </div>
             )}
           </div>

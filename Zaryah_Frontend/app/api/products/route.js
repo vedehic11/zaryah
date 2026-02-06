@@ -6,11 +6,14 @@ import { requireAuth, checkUserRole } from '@/lib/auth'
 // GET /api/products - Get all approved products (public) or all products (admin)
 export async function GET(request) {
   try {
+    console.log('=== GET /api/products START ===')
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const status = searchParams.get('status')
     const sellerId = searchParams.get('sellerId')
     const adminView = searchParams.get('admin') === 'true'
+
+    console.log('Query params:', { category, status, sellerId, adminView })
 
     // Check if user is admin
     let isAdmin = false
@@ -18,10 +21,12 @@ export async function GET(request) {
       const session = await requireAuth(request)
       if (session?.user) {
         isAdmin = await checkUserRole(session.user.id, 'Admin')
+        console.log('User authenticated, isAdmin:', isAdmin)
       }
     } catch (authError) {
       // If auth fails, user is not admin (public access)
       // This is expected for public routes
+      console.log('No authentication (public access)')
     }
 
     let query = supabase
@@ -51,16 +56,25 @@ export async function GET(request) {
       query = query.eq('seller_id', sellerId)
     }
 
-    // Status filter: default to showing approved, but allow explicit status filter
+    // Status filter: default to showing approved for public, but allow explicit status filter
     if (status) {
       query = query.eq('status', status)
+      console.log('Filtering by status:', status)
+    } else if (!isAdmin) {
+      // Public users only see approved products
+      query = query.eq('status', 'approved')
+      console.log('Public user - filtering for approved products only')
     }
 
+    console.log('Executing Supabase query...')
     const { data: products, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
+      console.error('Supabase error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    console.log('Products fetched:', products?.length || 0)
 
     // Calculate average ratings and format product data consistently
     const productsWithRatings = (products || []).map(product => {
@@ -122,10 +136,12 @@ export async function GET(request) {
       }
     })
 
+    console.log('=== GET /api/products SUCCESS ===')
     return NextResponse.json(productsWithRatings)
   } catch (error) {
+    console.error('=== GET /api/products ERROR ===')
     console.error('Error fetching products:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 })
   }
 }
 

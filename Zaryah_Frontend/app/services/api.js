@@ -43,6 +43,7 @@ class ApiService {
     }
 
     try {
+      console.log(`API Request: ${options.method || 'GET'} ${url}`)
       const response = await fetch(url, config)
       
       // Check if response has content before parsing JSON
@@ -57,11 +58,19 @@ class ApiService {
       }
 
       if (!response.ok) {
-        throw new Error(data?.error || data?.message || `HTTP ${response.status}: ${response.statusText}`)
+        const errorMsg = data?.error || data?.message || `HTTP ${response.status}: ${response.statusText}`
+        console.error(`API Error [${url}]:`, errorMsg)
+        throw new Error(errorMsg)
       }
 
+      console.log(`API Success [${url}]:`, data?.length ? `${data.length} items` : 'OK')
       return data
     } catch (error) {
+      // Check if it's a network error
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.error('Network Error: Cannot connect to API server. Is the dev server running on port 3000?')
+        throw new Error('Cannot connect to server. Please check if the application is running.')
+      }
       console.error('API Error:', error)
       throw error
     }

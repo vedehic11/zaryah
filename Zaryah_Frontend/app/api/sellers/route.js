@@ -543,3 +543,82 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Internal server error: ' + error.message }, { status: 500 })
   }
 }
+
+// PUT /api/sellers - Update seller profile
+export async function PUT(request) {
+  try {
+    const { requireAuth: requireAuthHelper } = await import('@/lib/auth')
+    const session = await requireAuthHelper(request)
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await getUserBySupabaseAuthId(session.user.id)
+    
+    if (!user || user.user_type !== 'Seller') {
+      return NextResponse.json({ error: 'Only sellers can update their profile' }, { status: 403 })
+    }
+
+    const body = await request.json()
+    
+    // Separate fields that go to sellers table vs users table
+    const sellerFields = {}
+    const userFields = {}
+    
+    const allowedSellerFields = [
+      'cover_photo', 'business_description', 'instagram', 'facebook', 'x', 'linkedin',
+      'primary_mobile', 'business_address', 'city', 'alternate_mobile'
+    ]
+    
+    const allowedUserFields = ['profile_photo']
+    
+    // Extract seller fields
+    allowedSellerFields.forEach(field => {
+      if (body[field] !== undefined) {
+        sellerFields[field] = body[field]
+      }
+    })
+    
+    // Extract user fields
+    allowedUserFields.forEach(field => {
+      if (body[field] !== undefined) {
+        userFields[field] = body[field]
+      }
+    })
+    
+    // Update sellers table if there are changes
+    if (Object.keys(sellerFields).length > 0) {
+      const { error: sellerError } = await supabase
+        .from('sellers')
+        .update(sellerFields)
+        .eq('id', user.id)
+      
+      if (sellerError) {
+        console.error('Error updating seller:', sellerError)
+        return NextResponse.json({ error: sellerError.message }, { status: 500 })
+      }
+    }
+    
+    // Update users table if there are changes
+    if (Object.keys(userFields).length > 0) {
+      const { error: userError } = await supabase
+        .from('users')
+        .update(userFields)
+        .eq('id', user.id)
+      
+      if (userError) {
+        console.error('Error updating user:', userError)
+        return NextResponse.json({ error: userError.message }, { status: 500 })
+      }
+    }
+    
+    return NextResponse.json({ 
+      success: true,
+      message: 'Profile updated successfully'
+    })
+  } catch (error) {
+    console.error('Error updating seller profile:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
