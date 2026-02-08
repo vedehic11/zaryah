@@ -210,18 +210,23 @@ export async function PUT(request, context) {
         const sellerState = updatedOrder.sellers?.state
         const sellerPincode = updatedOrder.sellers?.pincode
         const sellerAddress = updatedOrder.sellers?.business_address
+        const sellerPhone = updatedOrder.sellers?.primary_mobile
+        const sellerName = updatedOrder.sellers?.full_name || updatedOrder.sellers?.business_name
         
-        if (!sellerCity || !sellerState || !sellerPincode || !sellerAddress) {
+        if (!sellerCity || !sellerState || !sellerPincode || !sellerAddress || !sellerPhone) {
           throw new Error(`Incomplete seller pickup address. Missing: ${[
             !sellerCity && 'city',
             !sellerState && 'state',
             !sellerPincode && 'pincode',
-            !sellerAddress && 'business_address'
+            !sellerAddress && 'business_address',
+            !sellerPhone && 'phone'
           ].filter(Boolean).join(', ')}. Please ensure seller has completed their profile with complete address details.`)
         }
         
         const pickupLocation = {
           name: 'Primary',
+          contactName: sellerName,
+          phone: sellerPhone,
           address: sellerAddress,
           city: sellerCity,
           state: sellerState,

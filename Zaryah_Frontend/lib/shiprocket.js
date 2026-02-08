@@ -47,6 +47,70 @@ async function authenticate() {
 }
 
 /**
+ * Add or update pickup location in Shiprocket
+ * This is required before creating shipments
+ */
+async function ensurePickupLocation(pickupLocation) {
+  const token = await authenticate()
+  
+  // Check if location already exists
+  try {
+    const listResponse = await fetch(`${SHIPROCKET_API_BASE}/settings/company/pickup`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (listResponse.ok) {
+      const locations = await listResponse.json()
+      const existing = locations.data?.shipping_address?.find(
+        loc => loc.pickup_location === (pickupLocation.name || 'Primary')
+      )
+      
+      if (existing) {
+        console.log('✅ Pickup location already exists:', pickupLocation.name)
+        return pickupLocation.name || 'Primary'
+      }
+    }
+  } catch (error) {
+    console.warn('Could not check existing pickup locations:', error.message)
+  }
+  
+  // Create new pickup location
+  const addResponse = await fetch(`${SHIPROCKET_API_BASE}/settings/company/addpickup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      pickup_location: pickupLocation.name || 'Primary',
+      name: pickupLocation.contactName || 'Zaryah Seller',
+      email: pickupLocation.email || 'seller@zaryah.com',
+      phone: pickupLocation.phone || '9999999999',
+      address: pickupLocation.address,
+      address_2: '',
+      city: pickupLocation.city,
+      state: pickupLocation.state,
+      country: 'India',
+      pin_code: pickupLocation.pincode
+    })
+  })
+  
+  if (!addResponse.ok) {
+    const error = await addResponse.json().catch(() => ({}))
+    console.warn('⚠️ Could not add pickup location:', error.message || addResponse.statusText)
+    // Don't throw - proceed with default location
+  } else {
+    console.log('✅ Pickup location added:', pickupLocation.name)
+  }
+  
+  return pickupLocation.name || 'Primary'
+}
+
+/**
  * Create a shipment on Shiprocket
  * @param {Object} params - Shipment parameters
  * @param {string} params.orderId - Order ID
@@ -68,6 +132,9 @@ export async function createShipment({
   paymentMethod
 }) {
   const token = await authenticate()
+
+  // Ensure pickup location exists in Shiprocket
+  await ensurePickupLocation(pickupLocation)
 
   // Calculate total weight and dimensions
   const totalWeight = items.reduce((sum, item) => sum + ((item.weight || 0.5) * item.quantity), 0)
@@ -92,16 +159,16 @@ export async function createShipment({
     billing_email: deliveryAddress.email || 'customer@zaryah.com',
     billing_phone: deliveryAddress.phone,
     shipping_is_billing: true,
-    shipping_customer_name: '',
+    shipping_customer_name: deliveryAddress.name,
     shipping_last_name: '',
-    shipping_address: '',
+    shipping_address: deliveryAddress.address,
     shipping_address_2: '',
-    shipping_city: '',
-    shipping_pincode: '',
-    shipping_country: '',
-    shipping_state: '',
-    shipping_email: '',
-    shipping_phone: '',
+    shipping_city: deliveryAddress.city,
+    shipping_pincode: deliveryAddress.pincode,
+    shipping_country: 'India',
+    shipping_state: deliveryAddress.state,
+    shipping_email: deliveryAddress.email || 'customer@zaryah.com',
+    shipping_phone: deliveryAddress.phone,
     order_items: items.map(item => ({
       name: item.name,
       sku: item.id || 'SKU001',
