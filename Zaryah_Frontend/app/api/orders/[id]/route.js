@@ -186,17 +186,10 @@ export async function PUT(request, context) {
           email: updatedOrder.buyers?.email || 'customer@zaryah.com'
         }
 
-        // Fetch seller's address from their buyer record (sellers also have buyer records)
-        const { data: sellerBuyerData, error: sellerBuyerError } = await supabase
-          .from('buyers')
-          .select('city, state, pincode')
-          .eq('userId', updatedOrder.seller_id)
-          .single()
-
-        // Validate seller pickup location
-        const sellerCity = updatedOrder.sellers?.city || sellerBuyerData?.city
-        const sellerState = sellerBuyerData?.state
-        const sellerPincode = sellerBuyerData?.pincode
+        // Get seller's address from sellers table (already has address columns from migration)
+        const sellerCity = updatedOrder.sellers?.city
+        const sellerState = updatedOrder.sellers?.state
+        const sellerPincode = updatedOrder.sellers?.pincode
         const sellerAddress = updatedOrder.sellers?.business_address
         
         if (!sellerCity || !sellerState || !sellerPincode || !sellerAddress) {
@@ -289,6 +282,45 @@ export async function PUT(request, context) {
         updatedOrder.shipment_error = shipmentError.message
         
         console.warn('⚠️  Order confirmed but shipment creation failed. Manual intervention required.')
+      }
+    }
+
+    // Handle order delivery - release seller funds and update payment status
+    if (status === 'delivered') {
+      console.log('Processing order delivery...')
+      
+      try {
+        // Release seller wallet funds from pending to available
+        if (order.payment_status === 'paid' && order.seller_id) {
+          console.log(`Releasing pending funds for seller ${order.seller_id}...`)
+          
+          const { error: walletError } = await supabase.rpc('release_seller_wallet_funds', {
+            p_order_id: id
+          })
+          
+          if (walletError) {
+            console.error('Wallet fund release failed:', walletError)
+            // Don't fail the delivery update, just log it
+          } else {
+            console.log('✅ Seller funds released to available balance')
+          }
+        }
+        
+        // Update COD payment status to paid on delivery
+        if (order.payment_method === 'cod' && order.payment_status !== 'paid') {
+          console.log('Updating COD order payment status to paid...')
+          
+          await supabase
+            .from('orders')
+            .update({ payment_status: 'paid' })
+            .eq('id', id)
+          
+          updatedOrder.payment_status = 'paid'
+          console.log('✅ COD payment marked as paid')
+        }
+      } catch (deliveryError) {
+        console.error('Error processing delivery:', deliveryError)
+        // Don't fail the status update, just log the error
       }
     }
 

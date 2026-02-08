@@ -113,6 +113,44 @@ export async function POST(request) {
     
     console.log('Order updated successfully')
     
+    // Handle delivery - release seller funds and update payment status
+    if (newStatus === 'delivered') {
+      console.log('Processing order delivery from webhook...')
+      
+      try {
+        // Release seller wallet funds from pending to available
+        if (order.payment_status === 'paid' && order.seller_id) {
+          console.log(`Releasing pending funds for seller ${order.seller_id}...`)
+          
+          const { error: walletError } = await supabase.rpc('release_seller_wallet_funds', {
+            p_order_id: order.id
+          })
+          
+          if (walletError) {
+            console.error('Wallet fund release failed:', walletError)
+            // Don't fail webhook processing, just log it
+          } else {
+            console.log('✅ Seller funds released to available balance')
+          }
+        }
+        
+        // Update COD payment status to paid on delivery
+        if (order.payment_method === 'cod' && order.payment_status !== 'paid') {
+          console.log('Updating COD order payment status to paid...')
+          
+          await supabase
+            .from('orders')
+            .update({ payment_status: 'paid' })
+            .eq('id', order.id)
+          
+          console.log('✅ COD payment marked as paid')
+        }
+      } catch (deliveryError) {
+        console.error('Error processing delivery in webhook:', deliveryError)
+        // Don't fail webhook processing, just log the error
+      }
+    }
+    
     // TODO: Send notification to buyer about delivery status update
     
     return NextResponse.json({ success: true, message: 'Webhook processed' })
