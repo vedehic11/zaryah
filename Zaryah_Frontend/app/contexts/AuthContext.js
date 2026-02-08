@@ -73,279 +73,58 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoading(true)
 
-      // Get user from our users table by Supabase auth ID
-      // Note: We query role-specific data separately to avoid relationship ambiguity
-      const { data: supabaseUserData, error } = await supabaseClient
+      // Get user from our users table by Supabase auth ID or email (single query with OR)
+      const { data: userData, error } = await supabaseClient
         .from('users')
         .select('*')
-        .eq('supabase_auth_id', authUser.id)
-        .single()
+        .or(`supabase_auth_id.eq.${authUser.id},email.eq.${authUser.email}`)
+        .maybeSingle()
 
-      // If user not found by supabase_auth_id, try by email (for migration cases)
-      let userData = supabaseUserData
-      if (error && error.code === 'PGRST116') { // PGRST116 = not found
-        // Try to find by email
-        const { data: emailUserData, error: emailError } = await supabaseClient
+      // If found by email but not linked, update the supabase_auth_id
+      if (userData && !userData.supabase_auth_id) {
+        await supabaseClient
           .from('users')
-          .select('*')
-          .eq('email', authUser.email)
-          .single()
-        
-        if (emailUserData && !emailError) {
-          // User exists but not linked - update the supabase_auth_id
-          const { data: updatedUser } = await supabaseClient
-            .from('users')
-            .update({ supabase_auth_id: authUser.id })
-            .eq('id', emailUserData.id)
-            .select('*')
-            .single()
-          
-          userData = updatedUser || emailUserData
-        }
-      } else if (error && error.code !== 'PGRST116') {
-        // Other error (not "not found") - only log if it's a real error
-        // PGRST116 is expected when user doesn't exist, so we don't log it
-        // Extract meaningful error information
-        const errorMessage = error.message || error.details || error.hint || error.code
-        // Only log if there's meaningful error information and it's not a "not found" type error
-        if (errorMessage && 
-            typeof errorMessage === 'string' && 
-            !errorMessage.includes('No rows') && 
-            !errorMessage.includes('not found') &&
-            errorMessage !== 'PGRST116') {
-          console.error('Error fetching user from Supabase:', errorMessage)
-        }
-        // If error object is empty or has no meaningful info, silently continue
+          .update({ supabase_auth_id: authUser.id })
+          .eq('id', userData.id)
+        userData.supabase_auth_id = authUser.id // Update local copy
       }
 
-      // If user doesn't exist in our users table, create them
+      // If user doesn't exist in our users table, they shouldn't be logging in
+      // (user creation happens during registration, not login)
       if (!userData) {
-        // Check if this is a pending registration
-        let pendingSellerData = null
-        let pendingBuyerData = null
-        try {
-          const storedSellerData = sessionStorage.getItem('pendingSellerData')
-          const storedBuyerData = sessionStorage.getItem('pendingBuyerData')
-          if (storedSellerData) {
-            pendingSellerData = JSON.parse(storedSellerData)
-            sessionStorage.removeItem('pendingSellerData')
-          }
-          if (storedBuyerData) {
-            pendingBuyerData = JSON.parse(storedBuyerData)
-            sessionStorage.removeItem('pendingBuyerData')
-          }
-        } catch (e) {
-          // Ignore sessionStorage errors
-        }
-
-        const isSeller = pendingSellerData || authUser.user_metadata?.role === 'seller'
-        const userType = isSeller ? 'Seller' : 'Buyer'
-        const pendingData = pendingSellerData || pendingBuyerData
-
-        // Create user in our users table
-        // NOTE: Admin users can ONLY be created via SQL script
-        const { data: newUser, error: createError } = await supabaseClient
-          .from('users')
-          .insert({
-            email: authUser.email,
-            name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-            user_type: userType,
-            supabase_auth_id: authUser.id,
-            is_verified: authUser.email_confirmed_at !== null,
-            is_approved: isSeller ? false : true // Sellers need admin approval
-          })
-          .select()
-          .single()
-
-        if (createError) {
-          // Check if this is a conflict error (user already exists)
-          const isConflictError = createError.code === '23505' || 
-                                  createError.message?.includes('duplicate') || 
-                                  createError.message?.includes('unique') ||
-                                  createError.message?.includes('already exists') ||
-                                  createError.code === '23503' // Foreign key violation
-          
-          if (isConflictError) {
-            // User might already exist - try to fetch by email
-            const { data: existingUser, error: fetchError } = await supabaseClient
-              .from('users')
-              .select('*')
-              .eq('email', authUser.email)
-              .single()
-            
-            if (existingUser && !fetchError) {
-              // Update the supabase_auth_id if it's null
-              if (!existingUser.supabase_auth_id) {
-                await supabaseClient
-                  .from('users')
-                  .update({ supabase_auth_id: authUser.id })
-                  .eq('id', existingUser.id)
-              }
-              userData = existingUser
-            }
-            // If couldn't find existing user, silently continue - user might be created elsewhere
-          } else {
-            // Real error (not a conflict) - only log if there's meaningful error information
-            const errorMessage = createError.message || createError.details || createError.hint || createError.code
-            if (errorMessage && 
-                typeof errorMessage === 'string' && 
-                errorMessage.length > 0) {
-              console.error('Error creating user in Supabase:', errorMessage)
-            }
-            setUser(null)
-            setIsLoading(false)
-            return
-          }
-        } else {
-          // User created successfully
-          if (isSeller && pendingData) {
-            // Create seller record with all business details
-            const sellerRecord = {
-              id: newUser.id,
-              full_name: pendingData.name,
-              business_name: pendingData.businessName,
-              username: pendingData.verificationData?.username || null,
-              cover_photo: pendingData.verificationData?.coverPhoto || null,
-              primary_mobile: pendingData.mobile,
-              business_address: pendingData.verificationData?.businessAddress || '',
-              business_description: pendingData.description,
-              city: pendingData.city,
-              id_type: pendingData.verificationData?.idType || 'Aadhar Card',
-              id_number: pendingData.verificationData?.idNumber || '',
-              id_document: pendingData.verificationData?.idDocument || 'pending',
-              business_document: pendingData.verificationData?.businessDocument || null,
-              account_holder_name: pendingData.verificationData?.accountHolderName || pendingData.name,
-              account_number: pendingData.verificationData?.accountNumber || '',
-              ifsc_code: pendingData.verificationData?.ifscCode || '',
-              instagram: pendingData.verificationData?.instagram,
-              facebook: pendingData.verificationData?.facebook,
-              x: pendingData.verificationData?.twitter,
-              linkedin: pendingData.verificationData?.linkedin,
-              alternate_mobile: pendingData.verificationData?.alternateMobile,
-              gst_number: pendingData.verificationData?.gstNumber,
-              pan_number: pendingData.verificationData?.panNumber
-            }
-
-            await supabaseClient
-              .from('sellers')
-              .insert(sellerRecord)
-
-            // Also create buyer record for sellers so they can purchase
-            const sellerBuyerRecord = {
-              userId: newUser.id,
-              city: pendingData?.city || authUser.user_metadata?.city || 'Mumbai',
-              address: pendingData?.address?.address || '',
-              state: pendingData?.address?.state || '',
-              pincode: pendingData?.address?.pincode || '',
-              phone: pendingData?.address?.phone || pendingData.mobile || ''
-            }
-
-            // Call API to create buyer record (bypasses RLS)
-            try {
-              const response = await fetch('/api/buyers', {
-                method: 'POST',
+        console.error('User not found in database for auth user:', authUser.email)
+        await supabaseClient.auth.signOut()
+        toast.error('Account not found. Please register first.')
+        setUser(null)
+        setIsLoading(false)
+        return
+      }
                 headers: {
                   'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(sellerBuyerRecord)
-              })
-
-              if (!response.ok) {
-                const errorData = await response.json()
-                console.error('Error creating buyer record for seller:', errorData)
-              } else {
-                console.log('Buyer record created successfully for seller')
-              }
-            } catch (buyerError) {
-              console.error('Failed to create buyer record for seller:', buyerError)
-            }
-
-            toast.success('Seller registration submitted! Waiting for admin approval.')
-          } else {
-            // Create buyer record for non-sellers
-            const buyerRecord = {
-              userId: newUser.id,
-              city: pendingData?.city || authUser.user_metadata?.city || 'Mumbai',
-              address: pendingData?.address?.address || '',
-              state: pendingData?.address?.state || '',
-              pincode: pendingData?.address?.pincode || '',
-              phone: pendingData?.address?.phone || ''
-            }
-
-            // Call API to create buyer record (bypasses RLS)
-            try {
-              console.log('Creating buyer record with data:', buyerRecord)
-              const response = await fetch('/api/buyers', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(buyerRecord)
-              })
-
-              if (!response.ok) {
-                const errorData = await response.json()
-                console.error('Error creating buyer record:', errorData)
-              } else {
-                const result = await response.json()
-                console.log('Buyer record created successfully:', result)
-              }
-            } catch (buyerError) {
-              console.error('Failed to create buyer record:', buyerError)
-            }
-          }
-
-          // Set the newly created user
-          setSupabaseUser(newUser)
-          setUser({
-            id: newUser.id,
-            email: newUser.email,
-            name: newUser.name,
-            role: newUser.user_type.toLowerCase(),
-            userType: newUser.user_type,
-            supabaseAuthId: newUser.supabase_auth_id,
-            isApproved: newUser.is_approved
-          })
-          setIsLoading(false)
-          return
-        }
+      // If user doesn't exist in our users table, they shouldn't be logging in
+      // (user creation happens during registration, not login)
+      if (!userData) {
+        console.error('User not found in database for auth user:', authUser.email)
+        await supabaseClient.auth.signOut()
+        toast.error('Account not found. Please register first.')
+        setUser(null)
+        setIsLoading(false)
+        return
       }
 
       // User exists, set their data
-      if (userData) {
-        // Fetch role-specific data separately to avoid relationship ambiguity
-        let roleData = {}
-        if (userData.user_type === 'Buyer') {
-          const { data: buyerData } = await supabaseClient
-            .from('buyers')
-            .select('*')
-            .eq('id', userData.id)
-            .single()
-          roleData = buyerData || {}
-        } else if (userData.user_type === 'Seller') {
-          const { data: sellerData } = await supabaseClient
-            .from('sellers')
-            .select('*')
-            .eq('id', userData.id)
-            .single()
-          roleData = sellerData || {}
-        } else if (userData.user_type === 'Admin') {
-          const { data: adminData } = await supabaseClient
-            .from('admins')
-            .select('*')
-            .eq('id', userData.id)
-            .single()
-          roleData = adminData || {}
-        }
-        
-        setSupabaseUser(userData)
-
-        setUser({
-          id: userData.id,
-          email: userData.email,
-          name: userData.name,
-          role: userData.user_type.toLowerCase(),
-          userType: userData.user_type,
+      setSupabaseUser(userData)
+      setUser({
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        role: userData.user_type.toLowerCase(),
+        userType: userData.user_type,
+        supabaseAuthId: userData.supabase_auth_id,
+        isApproved: userData.is_approved
+      })
+      setIsLoading(false)
           supabaseAuthId: userData.supabase_auth_id,
           isVerified: userData.is_verified,
           isApproved: userData.is_approved,
