@@ -24,8 +24,17 @@ export const AuthProvider = ({ children }) => {
 
   // Sync Supabase Auth user with our users table
   useEffect(() => {
+    // Add timeout fallback to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      console.warn('Auth loading timeout - resetting to logged out state')
+      setIsLoading(false)
+      setUser(null)
+      setSupabaseUser(null)
+    }, 5000) // 5 second timeout
+
     // Get initial session
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(loadingTimeout)
       if (session) {
         syncUser(session.user)
       } else {
@@ -33,6 +42,12 @@ export const AuthProvider = ({ children }) => {
         setSupabaseUser(null)
         setIsLoading(false)
       }
+    }).catch((error) => {
+      clearTimeout(loadingTimeout)
+      console.error('Auth session error:', error)
+      setIsLoading(false)
+      setUser(null)
+      setSupabaseUser(null)
     })
 
     // Listen for auth changes
@@ -49,6 +64,7 @@ export const AuthProvider = ({ children }) => {
     })
 
     return () => {
+      clearTimeout(loadingTimeout)
       subscription.unsubscribe()
     }
   }, [])
