@@ -67,7 +67,7 @@ export default function SellerDashboardPage() {
       return
     }
 
-    if (user && user.role === 'seller' && !loading) {
+    if (user && user.role === 'seller') {
       fetchDashboardData()
     }
   }, [user?.id, user?.role, authLoading]) // Only depend on user ID and role, not full user object
