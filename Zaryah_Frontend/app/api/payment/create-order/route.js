@@ -97,7 +97,9 @@ export async function POST(request) {
       }
     }
 
+    console.log('Razorpay order options:', JSON.stringify(options, null, 2))
     const razorpayOrder = await razorpay.orders.create(options)
+    console.log('Razorpay response:', JSON.stringify(razorpayOrder, null, 2))
 
     console.log('Razorpay order created successfully:', razorpayOrder.id)
 
