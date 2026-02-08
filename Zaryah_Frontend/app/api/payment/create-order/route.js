@@ -43,12 +43,17 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Order not found' }, { status: 404 })
       }
 
+      // Convert paise to rupees for comparison (frontend sends amount * 100)
+      const amountInRupees = parseFloat(amount) / 100
+      const orderTotal = parseFloat(order.total_amount)
+      
       // Allow 1 rupee difference for rounding
-      const amountDifference = Math.abs(parseFloat(amount) - parseFloat(order.total_amount))
+      const amountDifference = Math.abs(amountInRupees - orderTotal)
       if (amountDifference > 1) {
         console.error('Payment amount mismatch:', {
-          requested: amount,
-          orderTotal: order.total_amount,
+          requestedPaise: amount,
+          requestedRupees: amountInRupees,
+          orderTotal: orderTotal,
           difference: amountDifference
         })
         return NextResponse.json({ 
@@ -69,16 +74,17 @@ export async function POST(request) {
       }, { status: 500 })
     }
 
-    console.log('Creating Razorpay order with amount:', amount, 'for order:', orderId)
+    console.log('Creating Razorpay order with amount (paise):', amount, 'for order:', orderId)
 
-    // Calculate commission (platform takes 5%)
-    const orderAmount = parseFloat(amount)
-    const commissionAmount = Math.round((orderAmount * COMMISSION_RATE) / 100 * 100) / 100
-    const sellerAmount = Math.round((orderAmount - commissionAmount) * 100) / 100
+    // Amount is already in paise from frontend (total * 100)
+    // Calculate commission (platform takes 5%) in rupees
+    const orderAmountInRupees = parseFloat(amount) / 100
+    const commissionAmount = Math.round((orderAmountInRupees * COMMISSION_RATE) / 100 * 100) / 100
+    const sellerAmount = Math.round((orderAmountInRupees - commissionAmount) * 100) / 100
 
-    // Create Razorpay order
+    // Create Razorpay order (amount already in paise)
     const options = {
-      amount: Math.round(amount * 100), // Convert to paise
+      amount: Math.round(amount), // Already in paise, just ensure it's integer
       currency,
       receipt: `order_${user.id}_${Date.now()}`,
       notes: {
