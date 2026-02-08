@@ -118,10 +118,10 @@ export default function CheckoutPage() {
           return
         }
         
-        // Initialize Razorpay payment
+        // Initialize Razorpay payment (send amount in paise)
         const paymentData = await apiService.request('/payment/create-order', {
           method: 'POST',
-          body: JSON.stringify({ orderId: order.id, amount: total })
+          body: JSON.stringify({ orderId: order.id, amount: total * 100 }) // Send in paise
         })
 
         console.log('Step 5: Payment order created:', paymentData)
@@ -129,7 +129,7 @@ export default function CheckoutPage() {
 
         const options = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: total * 100,
+          amount: total * 100, // Amount in paise for Razorpay
           currency: 'INR',
           name: 'Zaryah',
           description: 'Order Payment',
