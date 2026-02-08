@@ -103,7 +103,7 @@ export async function POST(request) {
     const buyerId = user.id
     const body = await request.json()
     console.log('Request body:', JSON.stringify(body, null, 2))
-    const { items, address, paymentMethod, paymentId } = body
+    const { items, address, paymentMethod, paymentId, totalAmount: frontendTotal } = body
 
     if (!items || items.length === 0) {
       console.error('Cart is empty')
@@ -112,8 +112,8 @@ export async function POST(request) {
 
     console.log(`Processing ${items.length} items...`)
 
-    // Calculate total amount
-    let totalAmount = 0
+    // Calculate subtotal from products
+    let subtotal = 0
     const orderItems = []
 
     for (const item of items) {
@@ -142,7 +142,7 @@ export async function POST(request) {
       }
 
       const itemTotal = parseFloat(product.price) * item.quantity
-      totalAmount += itemTotal
+      subtotal += itemTotal
 
       orderItems.push({
         product_id: item.productId,
@@ -154,7 +154,12 @@ export async function POST(request) {
       })
     }
 
-    console.log(`Total order amount: ${totalAmount}`)
+    // Use frontend total if provided (includes delivery, gift packaging, COD fees)
+    // Otherwise calculate from subtotal
+    const totalAmount = frontendTotal || subtotal
+    
+    console.log(`Product subtotal: ${subtotal}`)
+    console.log(`Total order amount (with fees): ${totalAmount}`)
     console.log(`Order items count: ${orderItems.length}`)
 
     // Get seller ID (assuming all items are from same seller, or handle multiple sellers)
