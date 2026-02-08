@@ -140,7 +140,7 @@ export default function CheckoutPage() {
             try {
               // Verify payment on backend
               await apiService.request('/payment/verify', {
-                method: 'PATCH',
+                method: 'POST',
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
