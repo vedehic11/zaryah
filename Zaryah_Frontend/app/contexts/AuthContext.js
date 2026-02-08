@@ -115,19 +115,13 @@ export const AuthProvider = ({ children }) => {
         isApproved: userData.is_approved
       })
       setIsLoading(false)
-          supabaseAuthId: userData.supabase_auth_id,
-          isVerified: userData.is_verified,
-          isApproved: userData.is_approved,
-          ...roleData
-        })
-      }
     } catch (error) {
       console.error('Error syncing user:', error)
       setUser(null)
-    } finally {
       setIsLoading(false)
     }
   }
+
 
   // Login function - uses Supabase Auth
   const login = async (email, password, userType = 'Buyer') => {
