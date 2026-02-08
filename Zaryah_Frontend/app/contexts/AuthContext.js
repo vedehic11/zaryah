@@ -92,9 +92,6 @@ export const AuthProvider = ({ children }) => {
       // If user doesn't exist in our users table, they shouldn't be logging in
       // (user creation happens during registration, not login)
       if (!userData) {
-      // If user doesn't exist in our users table, they shouldn't be logging in
-      // (user creation happens during registration, not login)
-      if (!userData) {
         console.error('User not found in database for auth user:', authUser.email)
         await supabaseClient.auth.signOut()
         toast.error('Account not found. Please register first.')
