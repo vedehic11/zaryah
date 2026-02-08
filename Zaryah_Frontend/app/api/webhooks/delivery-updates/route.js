@@ -10,11 +10,28 @@ export async function POST(request) {
     // Get raw body for signature verification
     const rawBody = await request.text()
     const signature = request.headers.get('x-shiprocket-signature')
+    const apiKey = request.headers.get('x-api-key')
     
     console.log('Signature present:', !!signature)
+    console.log('API Key present:', !!apiKey)
     console.log('Raw body length:', rawBody.length)
     
-    // Handle Shiprocket test/ping requests (empty body without signature)
+    // Handle Shiprocket test/ping requests (uses x-api-key header with token)
+    if (apiKey) {
+      const expectedToken = process.env.SHIPROCKET_WEBHOOK_SECRET
+      if (apiKey === expectedToken) {
+        console.log('✅ Shiprocket test request authenticated via x-api-key')
+        return NextResponse.json({ 
+          success: true,
+          message: 'Webhook endpoint is active and ready to receive events'
+        }, { status: 200 })
+      } else {
+        console.error('Invalid x-api-key token')
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+      }
+    }
+    
+    // Handle empty body test requests (legacy format)
     if (!rawBody || rawBody.trim() === '' || rawBody === '{}') {
       console.log('✅ Shiprocket test/ping request - responding OK')
       return NextResponse.json({ 
