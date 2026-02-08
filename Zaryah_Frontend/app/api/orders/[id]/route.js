@@ -148,14 +148,29 @@ export async function PUT(request, context) {
         const { createShipment } = await import('@/lib/shiprocket')
         
         // Parse delivery address from order.address string
+        // Format: "Name, address lines, City, State - Pincode. Phone: 1234567890"
         const addressParts = order.address.split(',').map(s => s.trim())
         const phoneMatch = order.address.match(/Phone:\s*(\d+)/)
-        
-        // Validate required delivery address fields
-        const city = updatedOrder.buyers?.city
-        const state = updatedOrder.buyers?.state
-        const pincode = updatedOrder.buyers?.pincode
         const phone = phoneMatch ? phoneMatch[1] : updatedOrder.buyers?.phone
+        
+        // Extract state and pincode from "State - Pincode" format (last part before phone)
+        const stateAndPincodeMatch = order.address.match(/([A-Za-z\s]+)\s*-\s*(\d{6})/)
+        const state = stateAndPincodeMatch ? stateAndPincodeMatch[1].trim() : null
+        const pincode = stateAndPincodeMatch ? stateAndPincodeMatch[2] : null
+        
+        // City is typically the second-to-last part (before state)
+        const city = addressParts[addressParts.length - 3]?.replace(/\s*-.*$/, '').trim() || 
+                     addressParts[addressParts.length - 2]?.replace(/\s*-.*$/, '').trim()
+        
+        // Get name from first part
+        const name = addressParts[0] || 'Customer'
+        
+        // Get street address (everything between name and city)
+        const addressIndex = order.address.indexOf(',')
+        const cityIndex = order.address.lastIndexOf(city)
+        const streetAddress = addressIndex >= 0 && cityIndex > addressIndex 
+          ? order.address.substring(addressIndex + 1, cityIndex).trim().replace(/,$/, '')
+          : addressParts.slice(1, -2).join(', ')
         
         if (!city || !state || !pincode || !phone) {
           throw new Error(`Incomplete delivery address. Missing: ${[
@@ -163,7 +178,7 @@ export async function PUT(request, context) {
             !state && 'state',
             !pincode && 'pincode',
             !phone && 'phone'
-          ].filter(Boolean).join(', ')}`)
+          ].filter(Boolean).join(', ')}. Address: ${order.address}`)
         }
         
         // Validate phone number format (10 digits)
@@ -177,14 +192,16 @@ export async function PUT(request, context) {
         }
         
         const deliveryAddress = {
-          name: addressParts[0] || 'Customer',
-          address: addressParts.slice(1, -3).join(', ') || order.address,
-          city,
-          state,
-          pincode,
-          phone,
+          name: name,
+          address: streetAddress,
+          city: city,
+          state: state,
+          pincode: pincode,
+          phone: phone,
           email: updatedOrder.buyers?.email || 'customer@zaryah.com'
         }
+
+        console.log('Parsed delivery address:', deliveryAddress)
 
         // Get seller's address from sellers table (already has address columns from migration)
         const sellerCity = updatedOrder.sellers?.city
