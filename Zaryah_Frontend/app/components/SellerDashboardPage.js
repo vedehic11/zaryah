@@ -67,89 +67,62 @@ export default function SellerDashboardPage() {
       return
     }
 
-    if (user && user.role === 'seller') {
+    if (user && user.role === 'seller' && !loading) {
       fetchDashboardData()
     }
-  }, [user, authLoading, router])
+  }, [user?.id, user?.role, authLoading]) // Only depend on user ID and role, not full user object
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
 
-      // Fetch seller's products
-      const productsData = await apiService.getProducts({ sellerId: user.id })
-      setProducts(productsData || [])
+      // Fetch all data in parallel for better performance
+      const [productsData, ordersData, walletData] = await Promise.allSettled([
+        apiService.getProducts({ sellerId: user.id }),
+        apiService.getOrders('seller').catch(() => []),
+        apiService.getWallet().catch(() => ({ wallet: null, transactions: [], withdrawals: [] }))
+      ])
 
-      // Fetch seller's orders
-      try {
-        const ordersData = await apiService.getOrders('seller')
-        setOrders(ordersData || [])
+      // Process products
+      const products = productsData.status === 'fulfilled' ? productsData.value || [] : []
+      setProducts(products)
+
+      // Process orders
+      const orders = ordersData.status === 'fulfilled' ? ordersData.value || [] : []
+      setOrders(orders)
         
-        // Calculate stats using the fetched ordersData
-        const pendingCount = (ordersData || []).filter(o => 
-          o.status === 'pending' || o.status === 'confirmed' || o.status === 'dispatched'
-        ).length
-        const completedCount = (ordersData || []).filter(o => o.status === 'delivered').length
-        
-        // Calculate revenue from delivered orders only (95% after 5% commission)
-        const totalRevenue = (ordersData || [])
-          .filter(o => o.status === 'delivered')
-          .reduce((sum, order) => {
-            const orderTotal = parseFloat(order.total_amount) || 0
-            const sellerShare = orderTotal * 0.95 // 95% to seller, 5% platform fee
-            return sum + sellerShare
-          }, 0)
+      // Calculate stats using the fetched orders
+      const pendingCount = orders.filter(o => 
+        o.status === 'pending' || o.status === 'confirmed' || o.status === 'dispatched'
+      ).length
+      const completedCount = orders.filter(o => o.status === 'delivered').length
+      
+      // Calculate revenue from delivered orders only (95% after 5% commission)
+      const totalRevenue = orders
+        .filter(o => o.status === 'delivered')
+        .reduce((sum, order) => {
+          const orderTotal = parseFloat(order.total_amount) || 0
+          const sellerShare = orderTotal * 0.95 // 95% to seller, 5% platform fee
+          return sum + sellerShare
+        }, 0)
 
-        setStats({
-          totalProducts: productsData.length,
-          totalOrders: (ordersData || []).length,
-          pendingOrders: pendingCount,
-          completedOrders: completedCount,
-          totalRevenue: totalRevenue
-        })
-      } catch (err) {
-        console.log('Orders API error:', err)
-        setOrders([])
-        setStats({
-          totalProducts: productsData.length,
-          totalOrders: 0,
-          pendingOrders: 0,
-          completedOrders: 0,
-          totalRevenue: 0
-        })
-      }
+      setStats({
+        totalProducts: products.length,
+        totalOrders: orders.length,
+        pendingOrders: pendingCount,
+        completedOrders: completedCount,
+        totalRevenue: totalRevenue
+      })
 
-      // Fetch customer support tickets
-      try {
-        const response = await fetch('/api/support/tickets', {
-          credentials: 'include'
-        })
-        if (response.ok) {
-          const ticketsData = await response.json()
-          // Filter for seller's tickets or tickets related to seller's orders/products
-          const sellerTickets = ticketsData.filter(ticket => 
-            ticket.seller_id === user.id || 
-            ticket.related_seller_id === user.id
-          )
-          setTickets(sellerTickets)
-        } else {
-          setTickets([])
-        }
-      } catch (err) {
-        console.log('Support tickets API not available yet')
-        setTickets([])
-      }
+      // Process wallet data
+      const wallet = walletData.status === 'fulfilled' ? walletData.value : { wallet: null, transactions: [], withdrawals: [] }
+      setWallet(wallet.wallet || null)
+      setTransactions(wallet.transactions || [])
+      setWithdrawals(wallet.withdrawals || [])
 
-      // Fetch wallet data
-      try {
-        const walletData = await apiService.getWallet()
-        setWallet(walletData.wallet || null)
-        setTransactions(walletData.transactions || [])
-        setWithdrawals(walletData.withdrawals || [])
-      } catch (err) {
-        console.log('Wallet API error:', err)
-        setWallet(null)
-      }
+      // Skip support tickets for now (causing errors)
+      setTickets([])
+
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
       toast.error('Failed to load dashboard data')
