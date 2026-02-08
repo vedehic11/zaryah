@@ -83,10 +83,12 @@ export async function POST(request) {
     const sellerAmount = Math.round((orderAmountInRupees - commissionAmount) * 100) / 100
 
     // Create Razorpay order (amount already in paise)
+    // Receipt must be max 40 chars - use short format
+    const receipt = `ord_${Date.now()}_${user.id.substring(0, 8)}`
     const options = {
       amount: Math.round(amount), // Already in paise, just ensure it's integer
       currency,
-      receipt: `order_${user.id}_${Date.now()}`,
+      receipt: receipt,
       notes: {
         user_id: user.id,
         user_email: user.email,
