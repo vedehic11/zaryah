@@ -123,7 +123,9 @@ export async function PUT(request, context) {
           full_name,
           primary_mobile,
           business_address,
-          city
+          city,
+          state,
+          pincode
         ),
         buyers!buyer_id (
           id,
