@@ -228,9 +228,9 @@ export const ShopPage = () => {
             <p className="text-charcoal-600">Try adjusting your search or filter criteria</p>
           </div>
         ) : (
-          <div className={`grid gap-6 ${
+          <div className={`grid gap-4 ${
             viewMode === 'grid' 
-              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+              ? 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
               : 'grid-cols-1'
           }`}>
             {filteredProducts.map((product) => (
