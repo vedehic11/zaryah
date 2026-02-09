@@ -396,22 +396,22 @@ export default function SellerDashboardPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mb-8">
           {statsCards.map((stat, index) => (
             <motion.div
               key={stat.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-xl shadow-sm p-6 border border-gray-100"
+              className="bg-white rounded-xl shadow-sm p-3 sm:p-6 border border-gray-100"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
+                  <p className="text-gray-600 text-xs sm:text-sm font-medium">{stat.title}</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1 sm:mt-2">{stat.value}</p>
                 </div>
-                <div className={`${stat.bgColor} rounded-full p-3`}>
-                  <stat.icon className={`w-6 h-6 ${stat.textColor}`} />
+                <div className={`${stat.bgColor} rounded-full p-2 sm:p-3`}>
+                  <stat.icon className={`w-4 h-4 sm:w-6 sm:h-6 ${stat.textColor}`} />
                 </div>
               </div>
             </motion.div>
@@ -420,13 +420,13 @@ export default function SellerDashboardPage() {
 
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6" aria-label="Tabs">
+          <div className="border-b border-gray-200 overflow-x-auto">
+            <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-6 min-w-max" aria-label="Tabs">
               {['products', 'orders', 'wallet', 'support', 'profile'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm capitalize transition-colors ${
+                  className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm capitalize transition-colors whitespace-nowrap ${
                     activeTab === tab
                       ? 'border-primary-600 text-primary-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -438,7 +438,7 @@ export default function SellerDashboardPage() {
             </nav>
           </div>
 
-          <div className="p-6">
+          <div className="p-3 sm:p-6">
             {/* Products Tab */}
             {activeTab === 'products' && (
               <div>
@@ -547,11 +547,11 @@ export default function SellerDashboardPage() {
                       const orderItemsArray = order.order_items || []
                       
                       return (
-                        <div key={order.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
+                        <div key={order.id} className="bg-white border border-gray-200 rounded-lg p-3 sm:p-6 hover:shadow-lg transition-shadow">
                           <div className="flex items-start justify-between mb-4">
                             <div>
-                              <h4 className="font-semibold text-gray-900">Order #{order.id.slice(0, 8)}</h4>
-                              <p className="text-sm text-gray-600">{new Date(order.created_at).toLocaleString()}</p>
+                              <h4 className="font-semibold text-sm sm:text-base text-gray-900">Order #{order.id.slice(0, 8)}</h4>
+                              <p className="text-xs sm:text-sm text-gray-600">{new Date(order.created_at).toLocaleString()}</p>
                             </div>
                             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                               order.status === 'delivered' ? 'bg-green-100 text-green-700' :
@@ -565,9 +565,9 @@ export default function SellerDashboardPage() {
                           </div>
                           
                           {/* Buyer Information */}
-                          <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                            <h5 className="font-semibold text-gray-900 mb-2">Buyer Information</h5>
-                            <div className="space-y-1 text-sm">
+                          <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                            <h5 className="font-semibold text-sm sm:text-base text-gray-900 mb-2">Buyer Information</h5>
+                            <div className="space-y-1 text-xs sm:text-sm">
                               <p className="text-gray-700">
                                 <span className="font-medium">Address:</span> {order.address || 'N/A'}
                               </p>
@@ -582,18 +582,18 @@ export default function SellerDashboardPage() {
                           </div>
                           
                           {/* Order Items */}
-                          <div className="mb-4">
-                            <h5 className="font-semibold text-gray-900 mb-2">Items</h5>
-                            <div className="space-y-3">
+                          <div className="mb-3 sm:mb-4">
+                            <h5 className="font-semibold text-sm sm:text-base text-gray-900 mb-2">Items</h5>
+                            <div className="space-y-2 sm:space-y-3">
                               {orderItemsArray.map((item, idx) => (
-                                <div key={idx} className="bg-gray-50 p-3 rounded-lg">
+                                <div key={idx} className="bg-gray-50 p-2 sm:p-3 rounded-lg">
                                   <div className="flex justify-between items-start">
                                     <div className="flex-1">
                                       <div className="flex items-center justify-between">
-                                        <span className="text-gray-700 font-medium">
+                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">
                                           {item.products?.name || 'Product'} x {item.quantity}
                                         </span>
-                                        <span className="font-medium text-gray-900">₹{(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
+                                        <span className="font-medium text-sm sm:text-base text-gray-900">₹{(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
                                       </div>
                                       
                                       {/* Gift Packaging */}

@@ -230,14 +230,14 @@ export default function CheckoutPage() {
           <h1 className="text-3xl font-bold text-charcoal-900">Checkout</h1>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-4 lg:gap-8">
           {/* Left Column - Address & Payment */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 lg:space-y-6">
             {/* Delivery Address */}
             <div className="bg-white rounded-xl shadow-soft p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-charcoal-900 flex items-center">
-                  <Home className="w-6 h-6 mr-2 text-primary-600" />
+                <h2 className="text-lg lg:text-xl font-bold text-charcoal-900 flex items-center">
+                  <Home className="w-5 h-5 lg:w-6 lg:h-6 mr-2 text-primary-600" />
                   Delivery Address
                 </h2>
                 <button
@@ -281,7 +281,7 @@ export default function CheckoutPage() {
                       rows={2}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <input
                         type="text"
                         placeholder="City"
