@@ -173,10 +173,6 @@ export const ProductCard = ({ product }) => {
               </span>
             </div>
 
-            <p className="text-charcoal-600 text-xs sm:text-sm mb-3 line-clamp-2 leading-snug">
-              {product.description}
-            </p>
-
             {/* Rating */}
             <div className="flex items-center space-x-1 mt-auto">
               <div className="flex items-center space-x-0.5">
