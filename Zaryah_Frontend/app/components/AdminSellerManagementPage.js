@@ -14,6 +14,7 @@ import {
   Clock,
   AlertCircle,
   Star,
+  Sparkles,
   MapPin,
   Phone,
   Mail,
@@ -28,6 +29,7 @@ import { UserAvatar } from './UserAvatar'
 import { DocumentViewerModal } from './DocumentViewerModal'
 import { apiService } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
+import { supabaseClient } from '@/lib/supabase-client'
 import toast from 'react-hot-toast'
 
 export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
@@ -149,6 +151,55 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
     } catch (err) {
       console.error('Error rejecting seller:', err)
       toast.error('Failed to reject seller')
+    }
+  }
+
+  const handleToggleFeaturedStory = async (sellerId, currentValue) => {
+    try {
+      // Get auth token
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      const token = session?.access_token
+      
+      if (!token) {
+        toast.error('Not authenticated')
+        return
+      }
+      
+      const response = await fetch('/api/admin/sellers', {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          sellerId,
+          featured_story: !currentValue
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Featured story update failed:', errorData)
+        throw new Error(errorData.error || 'Failed to update featured story')
+      }
+      
+      toast.success(!currentValue ? 'Story featured on homepage!' : 'Story removed from homepage')
+      
+      // Update local state
+      setSellers(prev => prev.map(seller => 
+        seller.id === sellerId 
+          ? { ...seller, featured_story: !currentValue }
+          : seller
+      ))
+      
+      setFilteredSellers(prev => prev.map(seller => 
+        seller.id === sellerId 
+          ? { ...seller, featured_story: !currentValue }
+          : seller
+      ))
+    } catch (err) {
+      console.error('Error toggling featured story:', err)
+      toast.error(err.message || 'Failed to update featured story')
     }
   }
 
@@ -366,9 +417,26 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
                             </>
                           )}
                           {seller.isApproved && (
-                            <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
-                              ✓ Approved
-                            </span>
+                            <>
+                              <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
+                                ✓ Approved
+                              </span>
+                              {seller.story && (
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => handleToggleFeaturedStory(seller.id, seller.featured_story)}
+                                  className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                    seller.featured_story 
+                                      ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
+                                      : 'bg-gray-100 text-gray-500 hover:bg-yellow-50'
+                                  }`}
+                                  title={seller.featured_story ? 'Remove from homepage' : 'Feature on homepage'}
+                                >
+                                  <Sparkles className={`w-4 h-4 ${seller.featured_story ? 'fill-yellow-400' : ''}`} />
+                                </motion.button>
+                              )}
+                            </>
                           )}
                           <motion.button
                             whileHover={{ scale: 1.05 }}

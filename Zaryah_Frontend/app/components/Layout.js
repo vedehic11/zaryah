@@ -16,11 +16,13 @@ import {
   History,
   ShoppingBag,
   Bell,
-  MessageSquare
+  MessageSquare,
+  Search
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
 import { CartIcon } from './CartIcon'
+import { WishlistIcon } from './WishlistIcon'
 import { CartSidebar } from './CartSidebar'
 import { NotificationCenter } from './NotificationCenter'
 import ChatSupportButton from './ChatSupportButton'
@@ -61,7 +63,26 @@ export const Layout = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchSuggestions, setSearchSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [products, setProducts] = useState([])
+  const [productsLoaded, setProductsLoaded] = useState(false)
   // const { syncGuestCartToBackend } = useCart() // Removed automatic syncing
+
+  // Load products for search suggestions only when needed
+  const loadProducts = async () => {
+    if (productsLoaded) return products
+    try {
+      const data = await apiService.getApprovedProducts()
+      setProducts(data || [])
+      setProductsLoaded(true)
+      return data || []
+    } catch (error) {
+      console.error('Error loading products:', error)
+      return []
+    }
+  }
 
   // Load unread notification count
   useEffect(() => {
@@ -95,6 +116,58 @@ export const Layout = ({ children }) => {
     logout()
     router.push('/')
   }, [logout, router])
+
+  // Handle search input change with debouncing - generate text suggestions from product names
+  const handleSearchChange = async (e) => {
+    const value = e.target.value
+    setSearchQuery(value)
+    
+    if (value.trim().length > 1) {
+      // Load products only when user starts typing
+      const productData = await loadProducts()
+      
+      // Extract unique search terms from product names and categories
+      const searchTerms = new Set()
+      
+      productData.forEach(product => {
+        // Add product name words
+        const words = product.name.toLowerCase().split(' ')
+        words.forEach(word => {
+          if (word.length > 2 && word.includes(value.toLowerCase())) {
+            searchTerms.add(product.name)
+          }
+        })
+        
+        // Add category if it matches
+        if (product.category?.toLowerCase().includes(value.toLowerCase())) {
+          searchTerms.add(product.category)
+        }
+      })
+      
+      const suggestions = Array.from(searchTerms).slice(0, 6)
+      setSearchSuggestions(suggestions)
+      setShowSuggestions(suggestions.length > 0)
+    } else {
+      setSearchSuggestions([])
+      setShowSuggestions(false)
+    }
+  }
+
+  // Handle search submit
+  const handleSearchSubmit = (e) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      setShowSuggestions(false)
+      router.push(`/shop?search=${encodeURIComponent(searchQuery)}`)
+    }
+  }
+
+  // Handle suggestion click - just populate and search
+  const handleSuggestionClick = (suggestion) => {
+    setSearchQuery(suggestion)
+    setShowSuggestions(false)
+    router.push(`/shop?search=${encodeURIComponent(suggestion)}`)
+  }
 
   const getBuyerNavigation = useCallback(() => [
     { name: 'Home', href: '/', icon: Heart },
@@ -182,7 +255,12 @@ export const Layout = ({ children }) => {
                 )}
               </button>
             )}
-            {(!user || user.role === 'buyer') && <CartIcon />}
+            {(!user || user.role === 'buyer') && (
+              <>
+                <WishlistIcon />
+                <CartIcon />
+              </>
+            )}
             {!user && (
               <>
                 <Link
@@ -242,7 +320,12 @@ export const Layout = ({ children }) => {
                 )}
               </button>
             )}
-            {(!user || user.role === 'buyer') && <CartIcon />}
+            {(!user || user.role === 'buyer') && (
+              <>
+                <WishlistIcon />
+                <CartIcon />
+              </>
+            )}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="p-2 text-neutral-900 hover:text-neutral-100 hover:bg-neutral-100 rounded-xl transition-all"
@@ -252,13 +335,41 @@ export const Layout = ({ children }) => {
           </div>
         </div>
         
-        {/* Mobile search bar row - only show on shop page */}
-        <div className="md:hidden w-full px-4 pb-3">
-          <div className="flex items-center bg-white rounded-2xl px-4 py-3 border border-neutral-200 shadow focus-within:ring-2 focus-within:ring-primary-300 transition-all">
-            <svg className="w-5 h-5 text-neutral-400 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
-            <input type="text" placeholder="Search our marketplace" className="bg-transparent outline-none flex-1 text-base text-neutral-700 placeholder-neutral-400" />
+        {/* Mobile search bar row - hide on shop and orders pages */}
+        {pathname !== '/shop' && pathname !== '/orders' && (
+          <div className="md:hidden w-full px-4 pb-3 relative">
+            <form onSubmit={handleSearchSubmit}>
+              <div className="flex items-center bg-white rounded-2xl px-4 py-3 border border-neutral-200 shadow focus-within:ring-2 focus-within:ring-primary-300 transition-all">
+                <svg className="w-5 h-5 text-neutral-400 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
+                <input 
+                  type="text" 
+                  placeholder="Search our marketplace" 
+                  className="bg-transparent outline-none flex-1 text-base text-neutral-700 placeholder-neutral-400"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={() => searchQuery && setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                />
+              </div>
+            </form>
+            
+            {/* Search Suggestions Dropdown */}
+            {showSuggestions && searchSuggestions.length > 0 && (
+              <div className="absolute left-4 right-4 top-full mt-1 bg-white rounded-lg shadow-lg border border-neutral-200 overflow-hidden z-50">
+                {searchSuggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="w-full px-4 py-2.5 text-left hover:bg-gray-50 transition-colors text-sm text-charcoal-700 border-b border-neutral-100 last:border-0 flex items-center gap-2"
+                  >
+                    <Search className="w-4 h-4 text-charcoal-400" />
+                    <span>{suggestion}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        )}
         
         {/* Mobile/Tablet nav dropdown */}
         {isMenuOpen && (
@@ -335,9 +446,9 @@ export const Layout = ({ children }) => {
       {/* Footer */}
       <footer className="bg-neutral-50 border-t border-primary-100 mt-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {/* Brand */}
-            <div className="md:col-span-2 lg:col-span-2">
+            <div className="col-span-2 md:col-span-2 lg:col-span-2">
               <div className="flex items-center space-x-3 mb-8">
                 <div className="bg-primary-600 p-2 rounded-xl">
                   <Sparkles className="w-6 h-6 text-white" />

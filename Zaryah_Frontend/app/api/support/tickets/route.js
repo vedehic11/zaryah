@@ -17,12 +17,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // For now, return empty array until support tickets table is created
-    // TODO: Create support_tickets table in database
-    return NextResponse.json([])
-
-    // Future implementation:
-    /*
+    // Fetch support tickets based on user role
     let query = supabase
       .from('support_tickets')
       .select(`
@@ -35,15 +30,44 @@ export async function GET(request) {
         sellers:seller_id (
           id,
           business_name
+        ),
+        orders:order_reference_id (
+          id,
+          status,
+          total_amount
+        ),
+        products:product_reference_id (
+          id,
+          name,
+          images
         )
       `)
       .order('created_at', { ascending: false })
 
-    // If seller, only show their tickets
-    if (user.user_type === 'Seller') {
-      query = query.eq('seller_id', user.id)
+    // Regular users see only their own tickets
+    // Check if user is a buyer or seller
+    const { data: buyerCheck } = await supabase
+      .from('buyers')
+      .select('id')
+      .eq('id', user.id)
+      .single()
+
+    const { data: sellerCheck } = await supabase
+      .from('sellers')
+      .select('id')
+      .eq('id', user.id)
+      .single()
+
+    // Admin sees all tickets
+    if (user.userType === 'Admin') {
+      // No filter - admin sees everything
+    } else if (buyerCheck) {
+      // Buyer sees their own tickets
+      query = query.eq('user_id', user.id)
+    } else if (sellerCheck) {
+      // Seller sees tickets related to their products/orders
+      query = query.or(`seller_id.eq.${user.id},user_id.eq.${user.id}`)
     }
-    // Admin can see all tickets
 
     const { data: tickets, error } = await query
 
@@ -53,7 +77,6 @@ export async function GET(request) {
     }
 
     return NextResponse.json(tickets || [])
-    */
   } catch (error) {
     console.error('Error in support tickets API:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -76,40 +99,62 @@ export async function POST(request) {
     }
 
     const body = await request.json()
-    const { subject, message, priority, related_order_id, related_product_id } = body
+    const { subject, message, priority, category, related_order_id, related_product_id } = body
 
     if (!subject || !message) {
       return NextResponse.json({ error: 'Subject and message are required' }, { status: 400 })
     }
 
-    // For now, return success without creating ticket
-    // TODO: Create support_tickets table and implement ticket creation
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Support tickets feature coming soon' 
-    }, { status: 201 })
+    // Generate unique ticket_id
+    const ticketId = `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
-    // Future implementation:
-    /*
+    // Prepare ticket data (matching existing schema)
     const ticketData = {
+      ticket_id: ticketId,
       user_id: user.id,
       subject,
-      message,
+      description: message, // existing schema uses 'description' not 'message'
       priority: priority || 'medium',
+      category: category || 'other',
       status: 'open',
-      related_order_id,
-      related_product_id
+      order_reference_id: related_order_id || null, // existing schema uses 'order_reference_id'
+      product_reference_id: related_product_id || null // existing schema uses 'product_reference_id'
     }
 
-    // If related to seller's product/order, link seller
-    if (related_product_id || related_order_id) {
-      // Query to get seller_id from product or order
+    // If related to order or product, try to get seller_id
+    if (related_order_id) {
+      const { data: order } = await supabase
+        .from('orders')
+        .select('seller_id')
+        .eq('id', related_order_id)
+        .single()
+      
+      if (order) {
+        ticketData.seller_id = order.seller_id
+      }
+    } else if (related_product_id) {
+      const { data: product } = await supabase
+        .from('products')
+        .select('seller_id')
+        .eq('id', related_product_id)
+        .single()
+      
+      if (product) {
+        ticketData.seller_id = product.seller_id
+      }
     }
 
     const { data: ticket, error } = await supabase
       .from('support_tickets')
       .insert(ticketData)
-      .select()
+      .select(`
+        *,
+        users:user_id (
+          id,
+          name,
+          email
+        )
+      `)
       .single()
 
     if (error) {
@@ -118,7 +163,6 @@ export async function POST(request) {
     }
 
     return NextResponse.json(ticket, { status: 201 })
-    */
   } catch (error) {
     console.error('Error in support tickets API:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

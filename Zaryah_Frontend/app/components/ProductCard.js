@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, Play, Star, ShoppingBag, Gift, Package, Scale, Sparkles } from 'lucide-react'
 import { InstantDeliveryBadge } from './InstantDeliveryBadge'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
+import { useWishlist } from '../contexts/WishlistContext'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
@@ -13,11 +14,12 @@ import toast from 'react-hot-toast'
 export const ProductCard = ({ product }) => {
   const { user } = useAuth();
   const router = useRouter();
-  const [isLiked, setIsLiked] = useState(false)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const { addToCart } = useCart()
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   
   const productId = product.id || product._id
+  const isLiked = isInWishlist(productId)
 
   const checkAuthAndRedirect = () => {
     if (!user) {
@@ -41,11 +43,15 @@ export const ProductCard = ({ product }) => {
     toast.success('Added as gift to cart!')
   }
 
-  const handleLike = (e) => {
+  const handleLike = async (e) => {
     e.preventDefault() // Prevent navigation
     if (!checkAuthAndRedirect()) return;
-    setIsLiked(!isLiked)
-    toast.success(isLiked ? 'Removed from favorites' : 'Added to favorites')
+    
+    if (isLiked) {
+      await removeFromWishlist(productId)
+    } else {
+      await addToWishlist(productId)
+    }
   }
 
   // Calculate average rating from the ratings array
@@ -97,11 +103,15 @@ export const ProductCard = ({ product }) => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={handleLike}
-            className={`absolute top-2 right-2 sm:top-4 sm:right-4 z-20 bg-white/90 backdrop-blur-sm hover:bg-white p-2 sm:p-3 rounded-full transition-all shadow-soft border border-primary-200 ${isLiked ? 'bg-primary-600 hover:bg-primary-700 border-primary-600' : ''}`}
+            className={`absolute top-2 right-2 sm:top-4 sm:right-4 z-20 backdrop-blur-sm p-2 sm:p-3 rounded-full transition-all shadow-soft ${
+              isLiked 
+                ? 'bg-amber-700 hover:bg-amber-800 border-amber-700' 
+                : 'bg-white/90 hover:bg-white border-primary-200'
+            } border`}
           >
             <Heart 
-              className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
-                isLiked ? 'text-white fill-current' : 'text-primary-600'
+              className={`w-4 h-4 sm:w-5 sm:h-5 transition-all ${
+                isLiked ? 'text-white fill-white' : 'text-amber-700'
               }`} 
             />
           </motion.button>
@@ -149,19 +159,19 @@ export const ProductCard = ({ product }) => {
               <h3 className="font-bold text-charcoal-800 text-sm sm:text-base lg:text-lg line-clamp-2 leading-tight flex-1 mr-2 font-serif">
                 {product.name}
               </h3>
-              <div className="flex flex-col items-end">
-                <span className="text-sm sm:text-lg lg:text-xl font-bold text-primary-700 whitespace-nowrap">
+              <div className="flex flex-col items-end gap-0">
+                <span className="text-sm sm:text-lg lg:text-xl font-bold text-primary-700 whitespace-nowrap leading-tight">
                   ₹{product.price.toLocaleString()}
                 </span>
                 {product.mrp && product.mrp > product.price && (
-                  <>
-                    <span className="text-xs text-gray-500 line-through">
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] sm:text-xs text-gray-500 line-through leading-none">
                       ₹{product.mrp.toLocaleString()}
                     </span>
-                    <span className="text-xs font-semibold text-orange-500">
+                    <span className="text-[10px] sm:text-xs font-semibold text-orange-500 leading-none">
                       {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
                     </span>
-                  </>
+                  </div>
                 )}
               </div>
             </div>

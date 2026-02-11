@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Package, Gift, Plus, Minus, Trash2, ShoppingBag, Construction, Info } from 'lucide-react'
+import { Package, Gift, Plus, Minus, Trash2, ShoppingBag, Construction, Info, ChevronLeft } from 'lucide-react'
 import { ProductCard } from './ProductCard'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -118,6 +118,15 @@ export const HamperBuilderPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream-50 to-primary-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm hover:shadow-md transition-shadow mb-6"
+          aria-label="Go back"
+        >
+          <ChevronLeft className="w-6 h-6 text-charcoal-800" />
+        </button>
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-charcoal-900 font-serif mb-4">Hamper Builder</h1>

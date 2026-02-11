@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { AppProvider } from './contexts/AppContext'
 import { AddressProvider } from './contexts/AddressContext'
 import { CartProvider } from './contexts/CartContext'
+import { WishlistProvider } from './contexts/WishlistContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { Toaster } from 'react-hot-toast'
 import { RealtimeProvider } from './contexts/RealtimeContext'
@@ -42,8 +43,9 @@ export default function RootLayout({ children }) {
             <AddressProvider>
               <AppProvider>
                 <CartProvider>
-                  <NotificationProvider>
-                    {children}
+                  <WishlistProvider>
+                    <NotificationProvider>
+                      {children}
                   <Toaster
                     position="top-right"
                     toastOptions={{
@@ -69,7 +71,8 @@ export default function RootLayout({ children }) {
                       },
                     }}
                   />
-                  </NotificationProvider>
+                    </NotificationProvider>
+                  </WishlistProvider>
                 </CartProvider>
               </AppProvider>
             </AddressProvider>

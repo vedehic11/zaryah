@@ -3,16 +3,35 @@
 import { useState, useEffect } from 'react'
 import { Star, User, Calendar, ThumbsUp, MessageSquare } from 'lucide-react'
 import { apiService } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 
 export const Reviews = ({ productId, showWriteReview = false, onWriteReview }) => {
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [canReview, setCanReview] = useState(false)
+  const [reviewEligibility, setReviewEligibility] = useState(null)
+  const { user } = useAuth()
 
   useEffect(() => {
     if (!productId) return
     fetchReviews()
-  }, [productId])
+    if (user && showWriteReview) {
+      checkReviewEligibility()
+    }
+  }, [productId, user, showWriteReview])
+
+  const checkReviewEligibility = async () => {
+    try {
+      const response = await fetch(`/api/reviews/can-review?productId=${productId}`)
+      const data = await response.json()
+      setCanReview(data.canReview)
+      setReviewEligibility(data)
+    } catch (error) {
+      console.error('Error checking review eligibility:', error)
+      setCanReview(false)
+    }
+  }
 
   const fetchReviews = async () => {
     setLoading(true)
@@ -113,14 +132,24 @@ export const Reviews = ({ productId, showWriteReview = false, onWriteReview }) =
             </div>
           </div>
           
-          {showWriteReview && onWriteReview && (
+          {showWriteReview && user && canReview && onWriteReview && (
             <button
               onClick={onWriteReview}
               className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
-              <Star className="w-4 h-4" />
+              <MessageSquare className="w-4 h-4" />
               <span>Write Review</span>
             </button>
+          )}
+          
+          {showWriteReview && user && !canReview && reviewEligibility && (
+            <div className="text-sm text-charcoal-600 bg-cream-100 px-4 py-2 rounded-lg">
+              {reviewEligibility.reason === 'Already reviewed' 
+                ? 'You have already reviewed this product'
+                : reviewEligibility.reason === 'Must purchase and receive product first'
+                ? 'Purchase and receive to review'
+                : 'Unable to review'}
+            </div>
           )}
         </div>
 

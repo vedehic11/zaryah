@@ -111,13 +111,24 @@ export async function requireAuth(request) {
  * @returns {Promise<Object|null>} User object or null
  */
 export async function getUserBySupabaseAuthId(supabaseAuthId) {
+  console.log('Looking up user by supabase_auth_id:', supabaseAuthId)
   const { data, error } = await supabase
     .from('users')
     .select('*')
     .eq('supabase_auth_id', supabaseAuthId)
     .single()
 
-  if (error || !data) return null
+  if (error) {
+    console.error('Error fetching user by supabase_auth_id:', error)
+    return null
+  }
+  
+  if (!data) {
+    console.error('No user found with supabase_auth_id:', supabaseAuthId)
+    return null
+  }
+  
+  console.log('Found user:', { id: data.id, email: data.email, user_type: data.user_type })
   return data
 }
 

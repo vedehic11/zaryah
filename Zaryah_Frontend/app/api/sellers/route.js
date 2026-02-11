@@ -7,7 +7,9 @@ import { supabase } from '@/lib/supabase'
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
-    const sellerId = searchParams.get('id')
+    const sellerId = searchParams.get('seller_id') || searchParams.get('id')
+    const featuredStory = searchParams.get('featured_story')
+    const limit = searchParams.get('limit')
     
     // Try to get user, but don't require auth for public seller list
     let user = null
@@ -28,7 +30,7 @@ export async function GET(request) {
         .from('sellers')
         .select(`
           *,
-          users:id (
+          users!sellers_id_fkey (
             id,
             email,
             name,
@@ -81,6 +83,8 @@ export async function GET(request) {
           username,
           cover_photo,
           business_description,
+          story,
+          featured_story,
           city,
           primary_mobile,
           instagram,
@@ -88,7 +92,7 @@ export async function GET(request) {
           x,
           linkedin,
           registration_date,
-          users:id (
+          users!sellers_id_fkey (
             id,
             name,
             profile_photo,
@@ -99,6 +103,16 @@ export async function GET(request) {
       // Filter by approved user IDs if not admin
       if (approvedUserIds) {
         query = query.in('id', approvedUserIds)
+      }
+
+      // Filter by featured_story if requested
+      if (featuredStory === 'true') {
+        query = query.eq('featured_story', true).not('story', 'is', null)
+      }
+
+      // Apply limit if specified
+      if (limit) {
+        query = query.limit(parseInt(limit))
       }
 
       const { data: sellers, error } = await query
@@ -567,7 +581,7 @@ export async function PUT(request) {
     const userFields = {}
     
     const allowedSellerFields = [
-      'cover_photo', 'business_description', 'instagram', 'facebook', 'x', 'linkedin',
+      'cover_photo', 'business_description', 'story', 'featured_story', 'instagram', 'facebook', 'x', 'linkedin',
       'primary_mobile', 'business_address', 'city', 'alternate_mobile'
     ]
     

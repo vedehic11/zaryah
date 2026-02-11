@@ -7,7 +7,8 @@ import {
   Package, ShoppingCart, TrendingUp, DollarSign, Eye, Edit, Trash2,
   Plus, Clock, CheckCircle, XCircle, AlertTriangle, Users, Star,
   BarChart3, Settings, Upload, Image as ImageIcon, FileText, MessageCircle,
-  Wallet, ArrowUpCircle, ArrowDownCircle, CreditCard, IndianRupee, Truck, ExternalLink, User
+  Wallet, ArrowUpCircle, ArrowDownCircle, CreditCard, IndianRupee, Truck, ExternalLink, User,
+  Instagram, Facebook, Twitter, Linkedin, MapPin, Building, Sparkles
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
@@ -47,12 +48,27 @@ export default function SellerDashboardPage() {
   const [uploadingCover, setUploadingCover] = useState(false)
   const [uploadingProfile, setUploadingProfile] = useState(false)
   const [profileData, setProfileData] = useState({
+    business_name: '',
+    username: '',
+    full_name: '',
+    business_address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    primary_mobile: '',
     cover_photo: '',
+    profile_photo: '',
     business_description: '',
+    story: '',
     instagram: '',
     facebook: '',
     x: '',
-    linkedin: ''
+    linkedin: '',
+    account_holder_name: '',
+    account_number: '',
+    ifsc_code: '',
+    id_type: '',
+    id_number: ''
   })
 
   useEffect(() => {
@@ -82,6 +98,9 @@ export default function SellerDashboardPage() {
         apiService.getOrders('seller').catch(() => []),
         apiService.getWallet().catch(() => ({ wallet: null, transactions: [], withdrawals: [] }))
       ])
+
+      // Fetch seller profile for profile tab
+      fetchSellerProfile()
 
       // Process products
       const products = productsData.status === 'fulfilled' ? productsData.value || [] : []
@@ -133,16 +152,33 @@ export default function SellerDashboardPage() {
   
   const fetchSellerProfile = async () => {
     try {
-      const response = await apiService.request(`/sellers?id=${user.id}`)
+      const response = await apiService.request(`/sellers?seller_id=${user.id}`)
+      console.log('Seller profile response:', response)
       if (response) {
         setProfileData({
+          business_name: response.business_name || '',
+          username: response.username || '',
+          full_name: response.full_name || '',
+          business_address: response.business_address || '',
+          city: response.city || '',
+          state: response.state || '',
+          pincode: response.pincode || '',
+          primary_mobile: response.primary_mobile || '',
           cover_photo: response.cover_photo || '',
+          profile_photo: response.users?.profile_photo || user?.profilePhoto || '',
           business_description: response.business_description || '',
+          story: response.story || '',
           instagram: response.instagram || '',
           facebook: response.facebook || '',
           x: response.x || '',
-          linkedin: response.linkedin || ''
+          linkedin: response.linkedin || '',
+          account_holder_name: response.account_holder_name || '',
+          account_number: response.account_number || '',
+          ifsc_code: response.ifsc_code || '',
+          id_type: response.id_type || '',
+          id_number: response.id_number || ''
         })
+        console.log('Profile data set:', profileData)
       }
     } catch (error) {
       console.error('Error fetching seller profile:', error)
@@ -259,6 +295,7 @@ export default function SellerDashboardPage() {
         method: 'PUT',
         body: JSON.stringify({
           business_description: profileData.business_description,
+          story: profileData.story,
           instagram: profileData.instagram,
           facebook: profileData.facebook,
           x: profileData.x,
@@ -1114,34 +1151,241 @@ export default function SellerDashboardPage() {
             {activeTab === 'profile' && (
               <div className="space-y-6">
                 {!showEditProfile ? (
-                  <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
-                      <p className="text-gray-900">{user?.businessName || 'Not set'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <p className="text-gray-900">{user?.email}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Profile URL</label>
-                      <p className="text-primary-600">
-                        {user?.username ? (
-                          <Link href={`/${user.username}`} target="_blank" className="hover:underline">
-                            /{user.username}
-                          </Link>
+                  <div className="space-y-6">
+                    {/* Profile & Cover Photos */}
+                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                      {/* Cover Photo */}
+                      <div className="relative h-48 bg-gradient-to-br from-primary-500 to-secondary-500">
+                        {profileData?.cover_photo ? (
+                          profileData.cover_photo.includes('.mp4') || profileData.cover_photo.includes('.webm') ? (
+                            <video
+                              src={profileData.cover_photo}
+                              className="w-full h-full object-cover"
+                              autoPlay
+                              loop
+                              muted
+                            />
+                          ) : (
+                            <img
+                              src={profileData.cover_photo}
+                              alt="Cover"
+                              className="w-full h-full object-cover"
+                            />
+                          )
                         ) : (
-                          'Not set'
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="w-16 h-16 text-white/50" />
+                          </div>
                         )}
-                      </p>
+                      </div>
+                      {/* Profile Photo */}
+                      <div className="relative px-6 pb-6">
+                        <div className="flex items-end justify-between -mt-16">
+                          <div className="relative">
+                            {profileData?.profile_photo ? (
+                              <img
+                                src={profileData.profile_photo}
+                                alt={profileData?.business_name || 'Profile'}
+                                className="w-32 h-32 rounded-full border-4 border-white shadow-xl object-cover"
+                              />
+                            ) : (
+                              <div className="w-32 h-32 rounded-full border-4 border-white shadow-xl bg-gray-200 flex items-center justify-center">
+                                <User className="w-16 h-16 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-4">
+                          <h2 className="text-2xl font-bold text-gray-900">{profileData?.business_name || 'Business Name'}</h2>
+                          <p className="text-gray-600">@{profileData?.username || 'username'}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="pt-4">
+
+                    {/* Business Information */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <Building className="w-5 h-5 text-primary-600" />
+                        Business Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
+                          <p className="text-gray-900">{profileData?.business_name || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                          <p className="text-primary-600">
+                            {profileData?.username ? (
+                              <Link href={`/${profileData.username}`} target="_blank" className="hover:underline">
+                                /{profileData.username}
+                              </Link>
+                            ) : (
+                              'Not set'
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                          <p className="text-gray-900">{profileData?.full_name || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                          <p className="text-gray-900">{user?.email}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Mobile</label>
+                          <p className="text-gray-900">{profileData?.primary_mobile || 'Not set'}</p>
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Business Description</label>
+                          <p className="text-gray-900">{profileData?.business_description || 'Not set'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Address Information */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-primary-600" />
+                        Business Address
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                          <p className="text-gray-900">{profileData?.business_address || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                          <p className="text-gray-900">{profileData?.city || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                          <p className="text-gray-900">{profileData?.state || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Pincode</label>
+                          <p className="text-gray-900">{profileData?.pincode || 'Not set'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Banking Information */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <CreditCard className="w-5 h-5 text-primary-600" />
+                        Banking Details
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Account Holder Name</label>
+                          <p className="text-gray-900">{profileData?.account_holder_name || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                          <p className="text-gray-900">{profileData?.account_number && profileData.account_number !== 'pending' ? '****' + profileData.account_number.slice(-4) : 'Not set'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">IFSC Code</label>
+                          <p className="text-gray-900">{profileData?.ifsc_code && profileData.ifsc_code !== 'pending' ? profileData.ifsc_code : 'Not set'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Verification Details */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-primary-600" />
+                        Verification Details
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">ID Type</label>
+                          <p className="text-gray-900">{profileData?.id_type || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">ID Number</label>
+                          <p className="text-gray-900">{profileData?.id_number && profileData.id_number !== 'pending' ? '****' + profileData.id_number.slice(-4) : 'Not set'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Seller Story */}
+                    {profileData?.story && (
+                      <div className="bg-white rounded-xl border border-gray-200 p-6">
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                          <Star className="w-5 h-5 text-primary-600" />
+                          Your Story
+                        </h3>
+                        <p className="text-gray-700 whitespace-pre-wrap">{profileData.story}</p>
+                      </div>
+                    )}
+
+                    {/* Social Media Links */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-primary-600" />
+                        Social Media
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {profileData?.instagram && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                              <Instagram className="w-4 h-4 text-pink-500" />
+                              Instagram
+                            </label>
+                            <a href={profileData.instagram.startsWith('http') ? profileData.instagram : `https://instagram.com/${profileData.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
+                              {profileData.instagram}
+                            </a>
+                          </div>
+                        )}
+                        {profileData?.facebook && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                              <Facebook className="w-4 h-4 text-blue-600" />
+                              Facebook
+                            </label>
+                            <a href={profileData.facebook.startsWith('http') ? profileData.facebook : `https://facebook.com/${profileData.facebook}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
+                              {profileData.facebook}
+                            </a>
+                          </div>
+                        )}
+                        {profileData?.x && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                              <Twitter className="w-4 h-4 text-gray-900" />
+                              X (Twitter)
+                            </label>
+                            <a href={profileData.x.startsWith('http') ? profileData.x : `https://x.com/${profileData.x.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
+                              {profileData.x}
+                            </a>
+                          </div>
+                        )}
+                        {profileData?.linkedin && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                              <Linkedin className="w-4 h-4 text-blue-700" />
+                              LinkedIn
+                            </label>
+                            <a href={profileData.linkedin.startsWith('http') ? profileData.linkedin : `https://linkedin.com/in/${profileData.linkedin}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
+                              {profileData.linkedin}
+                            </a>
+                          </div>
+                        )}
+                        {!profileData?.instagram && !profileData?.facebook && !profileData?.x && !profileData?.linkedin && (
+                          <p className="text-gray-500 col-span-2">No social media links added</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Edit Button */}
+                    <div className="flex justify-center">
                       <button 
                         onClick={() => {
                           setShowEditProfile(true)
                           fetchSellerProfile()
                         }}
-                        className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+                        className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-xl font-semibold transition-colors shadow-lg hover:shadow-xl"
                       >
                         <Settings className="w-5 h-5" />
                         <span>Edit Profile</span>
@@ -1201,10 +1445,10 @@ export default function SellerDashboardPage() {
                             Recommended: 1920x1080px. Supports JPEG, PNG, WebP (max 10MB) or MP4, WebM (max 50MB)
                           </p>
                           {uploadingCover && (
-                            <p className="mt-2 text-sm text-primary-600 flex items-center gap-2">
+                            <div className="mt-2 text-sm text-primary-600 flex items-center gap-2">
                               <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
                               Uploading...
-                            </p>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1274,6 +1518,22 @@ export default function SellerDashboardPage() {
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             placeholder="Tell customers about your business and what makes it special..."
                           />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Your Story (Featured on Homepage)
+                          </label>
+                          <textarea
+                            value={profileData.story}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, story: e.target.value }))}
+                            rows={4}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="Share your journey as an artisan. This story will inspire customers on the homepage..."
+                          />
+                          <p className="text-sm text-gray-500 mt-1">
+                            Tell your story: What inspired you to become an artisan? What makes your craft special?
+                          </p>
                         </div>
                       </div>
                     </div>

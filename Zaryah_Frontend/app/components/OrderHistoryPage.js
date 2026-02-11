@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
 import { motion } from 'framer-motion'
@@ -21,16 +22,18 @@ import {
   Phone,
   Mail,
   Image,
-  ThumbsUp
+  ThumbsUp,
+  ChevronLeft
 } from 'lucide-react'
 import { CreateSupportTicket } from './CreateSupportTicket'
 import { ReviewModal } from './ReviewModal'
 import toast from 'react-hot-toast'
 
 export const OrderHistoryPage = () => {
+  const router = useRouter()
   const { user } = useAuth()
   const [orders, setOrders] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showOrderDetails, setShowOrderDetails] = useState(false)
   const [showSupportModal, setShowSupportModal] = useState(false)
@@ -40,27 +43,48 @@ export const OrderHistoryPage = () => {
 
   useEffect(() => {
     if (!user) return
+    
+    let isMounted = true
     setLoading(true)
-    apiService.getOrdersForBuyer(user.id)
-      .then(data => {
-        // Transform order_items to products array for easier access
-        const transformedOrders = data.map(order => ({
-          ...order,
-          products: order.order_items?.map(item => ({
-            ...item.products,
-            quantity: item.quantity,
-            price: item.price,
-            gift_packaging: item.gift_packaging,
-            customizations: item.customizations,
-            order_item_id: item.id
-          })) || [],
-          seller: order.sellers || {},
-          buyer: order.buyers || {}
-        }))
-        setOrders(transformedOrders)
-      })
-      .catch(() => setOrders([]))
-      .finally(() => setLoading(false))
+    
+    const fetchOrders = async () => {
+      try {
+        const data = await apiService.getOrdersForBuyer(user.id)
+        
+        if (isMounted && data) {
+          // Transform order_items to products array for easier access
+          const transformedOrders = data.map(order => ({
+            ...order,
+            products: order.order_items?.map(item => ({
+              ...item.products,
+              quantity: item.quantity,
+              price: item.price,
+              gift_packaging: item.gift_packaging,
+              customizations: item.customizations,
+              order_item_id: item.id
+            })) || [],
+            seller: order.sellers || {},
+            buyer: order.buyers || {}
+          }))
+          setOrders(transformedOrders)
+        }
+      } catch (error) {
+        console.error('Error fetching orders:', error)
+        if (isMounted) {
+          setOrders([])
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+    
+    fetchOrders()
+    
+    return () => {
+      isMounted = false
+    }
   }, [user])
 
   const getStatusColor = (status) => {
@@ -201,37 +225,33 @@ export const OrderHistoryPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream-50 to-primary-50 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-charcoal-900 font-serif mb-2">Order History</h1>
-          <p className="text-charcoal-600">Track your orders and manage any issues</p>
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="bg-white rounded-xl shadow-soft border border-primary-100 p-4 mb-6">
-          <div className="flex flex-wrap gap-2">
-            {[
-              { key: 'all', label: 'All Orders', count: orders.length },
-              { key: 'pending', label: 'Pending', count: orders.filter(o => getDisplayStatus(o) === 'pending').length },
-              { key: 'payment_failed', label: 'Payment Failed', count: orders.filter(o => getDisplayStatus(o) === 'payment_failed').length },
-              { key: 'confirmed', label: 'Confirmed', count: orders.filter(o => o.status === 'confirmed').length },
-              { key: 'dispatched', label: 'Dispatched', count: orders.filter(o => o.status === 'dispatched').length },
-              { key: 'delivered', label: 'Delivered', count: orders.filter(o => o.status === 'delivered').length },
-              { key: 'cancelled', label: 'Cancelled', count: orders.filter(o => o.status === 'cancelled').length }
-            ].map(({ key, label, count }) => (
-              <button
-                key={key}
-                onClick={() => setFilter(key)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  filter === key
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-charcoal-600 hover:bg-gray-200'
-                }`}
-              >
-                {label} ({count})
-              </button>
-            ))}
+        {/* Header with Back Button */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={() => router.back()}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm hover:shadow-md transition-shadow flex-shrink-0"
+              aria-label="Go back"
+            >
+              <ChevronLeft className="w-6 h-6 text-charcoal-800" />
+            </button>
+            <h1 className="text-3xl font-bold text-charcoal-900 font-serif">Order History</h1>
           </div>
+          
+          {/* Filter Dropdown */}
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="w-full sm:w-auto px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-charcoal-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent shadow-sm"
+          >
+            <option value="all">All Orders ({orders.length})</option>
+            <option value="pending">Pending ({orders.filter(o => getDisplayStatus(o) === 'pending').length})</option>
+            <option value="payment_failed">Payment Failed ({orders.filter(o => getDisplayStatus(o) === 'payment_failed').length})</option>
+            <option value="confirmed">Confirmed ({orders.filter(o => o.status === 'confirmed').length})</option>
+            <option value="dispatched">Dispatched ({orders.filter(o => o.status === 'dispatched').length})</option>
+            <option value="delivered">Delivered ({orders.filter(o => o.status === 'delivered').length})</option>
+            <option value="cancelled">Cancelled ({orders.filter(o => o.status === 'cancelled').length})</option>
+          </select>
         </div>
 
         {/* Orders List */}
@@ -416,6 +436,20 @@ export const OrderHistoryPage = () => {
                                       {product.description}
                                     </p>
                                   )}
+                                  
+                                  {/* Review Button for Delivered Orders */}
+                                  {order.status === 'delivered' && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleWriteReview(product, order)
+                                      }}
+                                      className="mt-2 flex items-center space-x-1 text-xs px-3 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                                    >
+                                      <Star className="w-3 h-3" />
+                                      <span>Write Review</span>
+                                    </button>
+                                  )}
                                 </div>
                                 
                                 {/* Price */}
@@ -522,16 +556,6 @@ export const OrderHistoryPage = () => {
                           <span>Raise Issue</span>
                         </button>
                         
-                        {order.status === 'delivered' && (
-                          <button 
-                            onClick={() => handleWriteReview(order.products[0], order)}
-                            className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                          >
-                            <Star className="w-4 h-4" />
-                            <span>Write Review</span>
-                          </button>
-                        )}
-                        
                         <button className="flex items-center space-x-2 px-4 py-2 border border-primary-300 text-primary-700 rounded-lg hover:bg-primary-50 transition-colors">
                           <Phone className="w-4 h-4" />
                           <span>Contact Seller</span>
@@ -572,7 +596,6 @@ export const OrderHistoryPage = () => {
             setSelectedOrder(null)
           }}
           product={selectedProduct}
-          orderId={selectedOrder?.id}
         />
       </div>
     </div>

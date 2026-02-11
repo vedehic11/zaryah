@@ -20,7 +20,8 @@ import {
   Clock,
   CheckCircle,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  ChevronLeft
 } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { InstantDeliveryBadge, DeliveryTimeEstimate } from './InstantDeliveryBadge'
@@ -210,6 +211,15 @@ export const ProductDetailPage = ({ productId }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream-50 to-primary-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm hover:shadow-md transition-shadow mb-6"
+          aria-label="Go back"
+        >
+          <ChevronLeft className="w-6 h-6 text-charcoal-800" />
+        </button>
+
         {product && (
           <div className="bg-white rounded-2xl shadow-soft border border-primary-100 overflow-hidden">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">

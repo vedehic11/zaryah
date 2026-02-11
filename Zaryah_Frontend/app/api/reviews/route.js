@@ -63,6 +63,31 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Rating must be between 1 and 5' }, { status: 400 })
     }
 
+    // Check if user has purchased and received this product
+    const { data: deliveredOrders, error: orderError } = await supabase
+      .from('orders')
+      .select(`
+        id,
+        status,
+        order_items!inner (
+          product_id
+        )
+      `)
+      .eq('buyer_id', user.id)
+      .eq('status', 'delivered')
+      .eq('order_items.product_id', product_id)
+
+    if (orderError) {
+      console.error('Error checking order:', orderError)
+      return NextResponse.json({ error: 'Failed to verify purchase' }, { status: 500 })
+    }
+
+    if (!deliveredOrders || deliveredOrders.length === 0) {
+      return NextResponse.json({ 
+        error: 'You can only review products you have purchased and received' 
+      }, { status: 403 })
+    }
+
     // Check if user already reviewed this product
     const { data: existingReview } = await supabase
       .from('product_ratings')
@@ -80,6 +105,7 @@ export async function POST(request) {
       user_id: user.id,
       rating,
       review: review || null,
+      title: title || null,
       date: new Date().toISOString()
     }
 

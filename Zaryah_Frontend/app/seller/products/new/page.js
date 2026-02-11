@@ -52,8 +52,31 @@ export default function AddProductPage() {
   const [errors, setErrors] = useState({})
 
   const categories = [
-    'Sweets', 'Snacks', 'Beverages', 'Gift Hampers', 
-    'Decorations', 'Organic', 'Health & Wellness', 'Other'
+    'Resin Art',
+    'Crochet',
+    'Knitting',
+    'Pottery',
+    'Jewelry',
+    'Candles',
+    'Home Decor',
+    'Textiles',
+    'Leather Work',
+    'Woodwork',
+    'Paper Crafts',
+    'Embroidery',
+    'Painting',
+    'Soap Making',
+    'Macrame',
+    'For Him',
+    'For Her', 
+    'For Kids',
+    'Wellness',
+    'Personalized Gifts',
+    'Sweets',
+    'Snacks',
+    'Beverages',
+    'Gift Hampers',
+    'Other'
   ]
 
   const sections = [

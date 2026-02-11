@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Star, X, Upload, Image, Trash2 } from 'lucide-react'
 import { apiService } from '../services/api'
 import toast from 'react-hot-toast'
 
-export const ReviewModal = ({ isOpen, onClose, product, orderId }) => {
+export const ReviewModal = ({ isOpen, onClose, product }) => {
   const [formData, setFormData] = useState({
     rating: 5,
     comment: '',
@@ -13,7 +13,35 @@ export const ReviewModal = ({ isOpen, onClose, product, orderId }) => {
   })
   const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(false)
+  const [orderId, setOrderId] = useState(null)
+  const [canSubmit, setCanSubmit] = useState(false)
   const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    if (isOpen && product) {
+      checkEligibility()
+    }
+  }, [isOpen, product])
+
+  const checkEligibility = async () => {
+    try {
+      const response = await fetch(`/api/reviews/can-review?productId=${product.id || product._id}`)
+      const data = await response.json()
+      
+      if (data.canReview) {
+        setOrderId(data.orderId)
+        setCanSubmit(true)
+      } else {
+        toast.error(data.reason || 'You cannot review this product')
+        setCanSubmit(false)
+        setTimeout(() => onClose(), 2000)
+      }
+    } catch (error) {
+      console.error('Error checking eligibility:', error)
+      toast.error('Failed to verify review eligibility')
+      setCanSubmit(false)
+    }
+  }
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files)
@@ -40,21 +68,37 @@ export const ReviewModal = ({ isOpen, onClose, product, orderId }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    if (!canSubmit) {
+      toast.error('You cannot review this product')
+      return
+    }
+    
     setLoading(true)
     
     try {
       const reviewData = {
+        product_id: product.id || product._id,
         rating: formData.rating,
-        comment: formData.comment,
-        title: formData.title,
-        productId: product._id,
-        orderId: orderId,
-        images: files.map(f => f.name) // For now, just store file names
+        review: formData.comment,
+        title: formData.title
       }
 
       console.log('Submitting review:', reviewData)
       
-      const review = await apiService.addReview(product._id, reviewData)
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reviewData)
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit review')
+      }
       
       toast.success('Review submitted successfully!')
       setFormData({
@@ -64,6 +108,9 @@ export const ReviewModal = ({ isOpen, onClose, product, orderId }) => {
       })
       setFiles([])
       onClose()
+      
+      // Refresh the page to show the new review
+      window.location.reload()
     } catch (error) {
       console.error('Error submitting review:', error)
       toast.error(error.message || 'Failed to submit review')

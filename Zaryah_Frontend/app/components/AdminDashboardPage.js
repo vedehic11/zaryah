@@ -13,7 +13,8 @@ import {
   IndianRupee,
   XCircle,
   AlertCircle,
-  Star
+  Star,
+  MessageSquare
 } from 'lucide-react'
 import { apiService } from '../services/api'
 import { useRouter } from 'next/navigation'
@@ -21,6 +22,7 @@ import { useAuth } from '../contexts/AuthContext'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { AdminSellerManagementPage } from './AdminSellerManagementPage'
+import { AdminSupportPage } from './AdminSupportPage'
 
 export const AdminDashboardPage = () => {
   const { user, isLoading } = useAuth()
@@ -36,7 +38,7 @@ export const AdminDashboardPage = () => {
   })
   const [loading, setLoading] = useState(true)
   const [sellerView, setSellerView] = useState('pending') // 'pending' or 'all'
-  const [activeTab, setActiveTab] = useState('sellers') // sellers, withdrawals, earnings
+  const [activeTab, setActiveTab] = useState('sellers') // sellers, withdrawals, earnings, support
   const [withdrawals, setWithdrawals] = useState([])
   const [earnings, setEarnings] = useState(null)
   const router = useRouter()
@@ -204,7 +206,8 @@ export const AdminDashboardPage = () => {
               {[
                 { id: 'sellers', label: 'Seller Management', icon: Users },
                 { id: 'withdrawals', label: 'Withdrawals', icon: Wallet },
-                { id: 'earnings', label: 'Commission Earnings', icon: DollarSign }
+                { id: 'earnings', label: 'Commission Earnings', icon: DollarSign },
+                { id: 'support', label: 'Support Tickets', icon: MessageSquare }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -429,6 +432,13 @@ export const AdminDashboardPage = () => {
                   <p>No earnings data available</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Support Tickets Tab */}
+          {activeTab === 'support' && (
+            <div className="p-6">
+              <AdminSupportPage />
             </div>
           )}
         </div>

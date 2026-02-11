@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireRole } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
+import { supabase as supabaseAdmin } from '@/lib/supabase'
 
 // GET /api/admin/sellers - Get all sellers (admin only)
 export async function GET(request) {
@@ -10,7 +10,7 @@ export async function GET(request) {
     console.log('Admin sellers request - User:', user?.id, 'Type:', user?.user_type)
 
     // Fetch all sellers
-    const { data: sellers, error: sellersError } = await supabase
+    const { data: sellers, error: sellersError } = await supabaseAdmin
       .from('sellers')
       .select('*')
       .order('created_at', { ascending: false })
@@ -34,7 +34,7 @@ export async function GET(request) {
 
     // Fetch users data separately for each seller
     const sellerIds = sellers.map(s => s.id)
-    const { data: usersData = [], error: usersError } = await supabase
+    const { data: usersData = [], error: usersError } = await supabaseAdmin
       .from('users')
       .select('id, email, name, user_type, is_verified, is_approved, created_at, profile_photo')
       .in('id', sellerIds)
@@ -49,7 +49,7 @@ export async function GET(request) {
     console.log('Users map:', Object.keys(usersMap).length, 'users')
 
     // Fetch product counts per seller
-    const { data: productRows = [], error: productError } = await supabase
+    const { data: productRows = [], error: productError } = await supabaseAdmin
       .from('products')
       .select('seller_id, status')
 
@@ -76,6 +76,8 @@ export async function GET(request) {
         isVerified: !!userData.is_verified,
         registrationDate: s.created_at,
         businessDescription: s.business_description,
+        story: s.story,
+        featured_story: s.featured_story,
         city: s.city,
         primaryMobile: s.primary_mobile,
         idDocument: s.id_document,
@@ -97,6 +99,76 @@ export async function GET(request) {
 
   } catch (error) {
     console.error('Error in GET /api/admin/sellers:', error)
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    )
+  }
+}
+
+// PATCH /api/admin/sellers - Update seller properties (admin only)
+export async function PATCH(request) {
+  try {
+    console.log('PATCH /api/admin/sellers - Starting')
+    
+    let session, user
+    try {
+      const result = await requireRole(request, 'Admin')
+      session = result.session
+      user = result.user
+      console.log('Admin verified:', user?.id, user?.user_type)
+    } catch (authError) {
+      console.error('Auth error:', authError.message)
+      return NextResponse.json(
+        { error: authError.message || 'Unauthorized' }, 
+        { status: authError.message === 'Forbidden: Insufficient permissions' ? 403 : 401 }
+      )
+    }
+    
+    const body = await request.json()
+    console.log('Request body:', body)
+    const { sellerId, ...updates } = body
+    
+    if (!sellerId) {
+      console.error('No sellerId provided')
+      return NextResponse.json({ error: 'Seller ID is required' }, { status: 400 })
+    }
+    
+    // Only allow specific fields to be updated
+    const allowedFields = ['featured_story', 'story']
+    const filteredUpdates = {}
+    
+    for (const field of allowedFields) {
+      if (updates[field] !== undefined) {
+        filteredUpdates[field] = updates[field]
+      }
+    }
+    
+    console.log('Filtered updates:', filteredUpdates)
+    
+    if (Object.keys(filteredUpdates).length === 0) {
+      console.error('No valid fields to update')
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    }
+    
+    // Update seller in database
+    console.log('Updating seller:', sellerId, 'with:', filteredUpdates)
+    const { data, error } = await supabaseAdmin
+      .from('sellers')
+      .update(filteredUpdates)
+      .eq('id', sellerId)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Supabase error updating seller:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    
+    console.log('Successfully updated seller:', data)
+    return NextResponse.json({ success: true, seller: data })
+  } catch (error) {
+    console.error('Unexpected error in PATCH /api/admin/sellers:', error)
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

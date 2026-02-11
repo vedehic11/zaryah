@@ -43,8 +43,10 @@ export const RegisterPage = () => {
     accountHolderName: '',
     bankAccountNumber: '',
     ifscCode: '',
-    socialMediaHandle: '', // Single social media handle
-    socialMediaPlatform: 'instagram', // Platform selection
+    instagram: '',
+    facebook: '',
+    x: '',
+    linkedin: '',
     acceptTerms: false,
     acceptPrivacyPolicy: false,
     acceptSellerAgreement: false
@@ -239,7 +241,10 @@ export const RegisterPage = () => {
       if (!formData.accountHolderName.trim()) newErrors.accountHolderName = 'Account holder name is required'
       if (!formData.bankAccountNumber.trim()) newErrors.bankAccountNumber = 'Bank account number is required'
       if (!formData.ifscCode.trim()) newErrors.ifscCode = 'IFSC code is required'
-      if (!formData.socialMediaHandle.trim()) newErrors.socialMediaHandle = 'Social media handle is required'
+      
+      // Check if at least one social media field is filled
+      const hasSocialMedia = formData.instagram?.trim() || formData.facebook?.trim() || formData.x?.trim() || formData.linkedin?.trim()
+      if (!hasSocialMedia) newErrors.socialMedia = 'At least one social media link is required'
     }
     
     setErrors(newErrors)
@@ -315,7 +320,12 @@ export const RegisterPage = () => {
   // --- Submit Handler ---
   const handleSubmit = async e => {
     if (e) e.preventDefault()
-    if (!validateCurrentStep()) return
+    
+    // Validate the current step before submitting
+    if (!validateCurrentStep()) {
+      toast.error('Please fill all required fields correctly')
+      return
+    }
     
     setIsUploading(true)
     
@@ -372,7 +382,10 @@ export const RegisterPage = () => {
         {
           idType: formData.idType,
           idNumber: formData.idNumber,
-          [formData.socialMediaPlatform]: formData.socialMediaHandle,
+          instagram: formData.instagram || null,
+          facebook: formData.facebook || null,
+          x: formData.x || null,
+          linkedin: formData.linkedin || null,
           businessAddress: formData.businessAddress,
           accountHolderName: formData.accountHolderName,
           accountNumber: formData.bankAccountNumber,
@@ -393,40 +406,8 @@ export const RegisterPage = () => {
         // Wait a bit for user to be synced in auth context
         await new Promise(resolve => setTimeout(resolve, 500))
         
-        // For sellers, register the seller profile on the /api/sellers endpoint
-        if (formData.role === 'seller') {
-          console.log('Registering seller profile after auth...')
-          try {
-            // Prepare seller data for registration - use snake_case field names to match API endpoint
-            const sellerData = {
-              full_name: formData.name,
-              email: formData.email,
-              business_name: formData.businessName,
-              primary_mobile: formData.address.phone,
-              business_address: formData.businessAddress || '',
-              business_description: formData.description,
-              city: formData.city,
-              id_type: formData.idType,
-              id_number: formData.idNumber,
-              account_holder_name: formData.accountHolderName,
-              account_number: formData.bankAccountNumber,
-              ifsc_code: formData.ifscCode,
-              [formData.socialMediaPlatform]: formData.socialMediaHandle,
-              username: formData.username,
-              idDocument: uploadedDocUrls.idDocument,
-              businessDocument: uploadedDocUrls.businessDocuments,
-              coverPhoto: uploadedDocUrls.coverPhoto
-            }
-            
-            console.log('Calling registerSeller with data:', sellerData)
-            await apiService.registerSeller(sellerData)
-            console.log('Seller profile registered successfully')
-          } catch (sellerError) {
-            console.error('Seller registration error:', sellerError)
-            toast.error(`Seller registration failed: ${sellerError.message}`)
-            // Don't prevent navigation - user account exists even if seller profile creation failed
-          }
-        }
+        // Seller profile is already created by /api/auth/register
+        // No need for separate /api/sellers call anymore
         
         // Get user from auth context to send verification email
         if (user?.id) {
@@ -1014,54 +995,72 @@ export const RegisterPage = () => {
           </div>
         </div>
       </div>
-      {/* Social Media Handle */}
+      {/* Social Media Links */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">Social Media Handle *</label>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <label className="block text-sm font-medium text-gray-700 mb-3">Social Media (At least one required) *</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="socialMediaPlatform" className="block text-sm font-medium text-gray-600 mb-2">Platform</label>
-            <select
-              id="socialMediaPlatform"
-              name="socialMediaPlatform"
-              value={formData.socialMediaPlatform}
+            <label htmlFor="instagram" className="block text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
+              <Instagram className="h-4 w-4 text-pink-500" />
+              Instagram
+            </label>
+            <input
+              id="instagram"
+              name="instagram"
+              type="text"
+              value={formData.instagram}
               onChange={handleInputChange}
               className="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
-            >
-              <option value="instagram">Instagram</option>
-              <option value="facebook">Facebook</option>
-              <option value="x">X (Twitter)</option>
-              <option value="linkedin">LinkedIn</option>
-            </select>
+              placeholder="@your_handle or full URL"
+            />
           </div>
-          <div className="md:col-span-2">
-            <label htmlFor="socialMediaHandle" className="block text-sm font-medium text-gray-600 mb-2">Handle/URL</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                {formData.socialMediaPlatform === 'instagram' && <Instagram className="h-5 w-5 text-pink-500" />}
-                {formData.socialMediaPlatform === 'facebook' && <Facebook className="h-5 w-5 text-blue-600" />}
-                {formData.socialMediaPlatform === 'x' && <Twitter className="h-5 w-5 text-gray-900" />}
-                {formData.socialMediaPlatform === 'linkedin' && <Linkedin className="h-5 w-5 text-blue-700" />}
-              </div>
-              <input
-                id="socialMediaHandle"
-                name="socialMediaHandle"
-                type="text"
-                value={formData.socialMediaHandle}
-                onChange={handleInputChange}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
-                  errors.socialMediaHandle ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder={
-                  formData.socialMediaPlatform === 'instagram' ? '@your_handle' :
-                  formData.socialMediaPlatform === 'facebook' ? 'facebook.com/yourpage' :
-                  formData.socialMediaPlatform === 'x' ? '@your_handle' :
-                  'linkedin.com/in/yourprofile'
-                }
-              />
-            </div>
-            {errors.socialMediaHandle && (<p className="mt-1 text-sm text-red-600">{errors.socialMediaHandle}</p>)}
+          <div>
+            <label htmlFor="facebook" className="block text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
+              <Facebook className="h-4 w-4 text-blue-600" />
+              Facebook
+            </label>
+            <input
+              id="facebook"
+              name="facebook"
+              type="text"
+              value={formData.facebook}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+              placeholder="facebook.com/yourpage"
+            />
+          </div>
+          <div>
+            <label htmlFor="x" className="block text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
+              <Twitter className="h-4 w-4 text-gray-900" />
+              X (Twitter)
+            </label>
+            <input
+              id="x"
+              name="x"
+              type="text"
+              value={formData.x}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+              placeholder="@your_handle or full URL"
+            />
+          </div>
+          <div>
+            <label htmlFor="linkedin" className="block text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
+              <Linkedin className="h-4 w-4 text-blue-700" />
+              LinkedIn
+            </label>
+            <input
+              id="linkedin"
+              name="linkedin"
+              type="text"
+              value={formData.linkedin}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+              placeholder="linkedin.com/in/yourprofile"
+            />
           </div>
         </div>
+        {errors.socialMedia && (<p className="mt-1 text-sm text-red-600">{errors.socialMedia}</p>)}
       </div>
     </div>
   )

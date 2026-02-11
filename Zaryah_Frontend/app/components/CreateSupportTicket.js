@@ -3,19 +3,58 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X, Send } from 'lucide-react'
+import toast from 'react-hot-toast'
 
-export function CreateSupportTicket({ isOpen, onClose, orderId, onSubmit }) {
+export function CreateSupportTicket({ isOpen, onClose, orders, prefillData }) {
   const [formData, setFormData] = useState({
-    subject: '',
-    description: '',
-    priority: 'medium'
+    subject: prefillData?.subject || '',
+    description: prefillData?.description || '',
+    priority: prefillData?.urgencyLevel || 'medium',
+    category: prefillData?.category || 'other',
+    related_order_id: prefillData?.orderReference || ''
   })
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    onSubmit({ ...formData, orderId })
-    setFormData({ subject: '', description: '', priority: 'medium' })
-    onClose()
+    setLoading(true)
+
+    try {
+      const response = await fetch('/api/support/tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          subject: formData.subject,
+          message: formData.description,
+          priority: formData.priority,
+          category: formData.category,
+          related_order_id: formData.related_order_id || null
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create ticket')
+      }
+
+      toast.success('Support ticket created successfully!')
+      setFormData({ 
+        subject: '', 
+        description: '', 
+        priority: 'medium',
+        category: 'other',
+        related_order_id: ''
+      })
+      onClose()
+    } catch (error) {
+      console.error('Error creating ticket:', error)
+      toast.error(error.message || 'Failed to create ticket')
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!isOpen) return null
@@ -37,7 +76,7 @@ export function CreateSupportTicket({ isOpen, onClose, orderId, onSubmit }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Subject
+              Subject *
             </label>
             <input
               type="text"
@@ -49,9 +88,45 @@ export function CreateSupportTicket({ isOpen, onClose, orderId, onSubmit }) {
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category
+              </label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+              >
+                <option value="other">Other</option>
+                <option value="payment">Payment Issue</option>
+                <option value="delivery">Delivery Issue</option>
+                <option value="product">Product Issue</option>
+                <option value="account">Account Issue</option>
+                <option value="technical">Technical Issue</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Priority
+              </label>
+              <select
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
+              Description *
             </label>
             <textarea
               required
@@ -63,35 +138,22 @@ export function CreateSupportTicket({ isOpen, onClose, orderId, onSubmit }) {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Priority
-            </label>
-            <select
-              value={formData.priority}
-              onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
-
           <div className="flex space-x-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              disabled={loading}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center space-x-2"
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send className="w-4 h-4" />
-              <span>Submit</span>
+              <span>{loading ? 'Submitting...' : 'Submit'}</span>
             </button>
           </div>
         </form>
