@@ -68,7 +68,7 @@ export const VideoCarousel = () => {
     if (videos.length > 0) {
       const interval = setInterval(() => {
         setCurrentSlide((prev) => (prev + 1) % videos.length)
-      }, 6000)
+      }, 10000)
 
       return () => clearInterval(interval)
     }
