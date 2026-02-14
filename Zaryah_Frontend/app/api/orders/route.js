@@ -251,6 +251,50 @@ export async function POST(request) {
       console.log('Cart cleared')
     }
 
+    // Update seller wallet - add to pending balance (95% after 5% commission)
+    console.log('Updating seller wallet...')
+    const sellerEarnings = totalAmount * 0.95 // 95% to seller
+    
+    // First ensure wallet exists
+    const { data: existingWallet } = await supabase
+      .from('wallets')
+      .select('*')
+      .eq('seller_id', sellerId)
+      .single()
+
+    if (!existingWallet) {
+      // Create wallet if doesn't exist
+      await supabase
+        .from('wallets')
+        .insert({
+          seller_id: sellerId,
+          pending_balance: sellerEarnings,
+          available_balance: 0,
+          total_earned: 0
+        })
+    } else {
+      // Update existing wallet - add to pending balance
+      await supabase
+        .from('wallets')
+        .update({
+          pending_balance: (parseFloat(existingWallet.pending_balance) || 0) + sellerEarnings
+        })
+        .eq('seller_id', sellerId)
+    }
+    console.log(`Wallet updated: +₹${sellerEarnings} to pending balance`)
+
+    // Create transaction record
+    await supabase
+      .from('transactions')
+      .insert({
+        seller_id: sellerId,
+        order_id: order.id,
+        type: 'order',
+        amount: sellerEarnings,
+        status: 'pending',
+        description: `Order #${order.id} - Pending delivery`
+      })
+
     // Fetch complete order with relations
     console.log('Fetching complete order details...')
     const { data: completeOrder } = await supabase

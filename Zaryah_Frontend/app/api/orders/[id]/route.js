@@ -315,17 +315,40 @@ export async function PUT(request, context) {
       
       try {
         // Release seller wallet funds from pending to available
-        if (order.payment_status === 'paid' && order.seller_id) {
+        if (order.seller_id) {
           console.log(`Releasing pending funds for seller ${order.seller_id}...`)
           
-          const { error: walletError } = await supabase.rpc('release_seller_wallet_funds', {
-            p_order_id: id
-          })
+          // Calculate seller earnings (95% of order total)
+          const sellerEarnings = parseFloat(order.total_amount) * 0.95
           
-          if (walletError) {
-            console.error('Wallet fund release failed:', walletError)
-            // Don't fail the delivery update, just log it
-          } else {
+          // Get current wallet
+          const { data: wallet } = await supabase
+            .from('wallets')
+            .select('*')
+            .eq('seller_id', order.seller_id)
+            .single()
+          
+          if (wallet) {
+            // Move funds from pending to available
+            await supabase
+              .from('wallets')
+              .update({
+                pending_balance: (parseFloat(wallet.pending_balance) || 0) - sellerEarnings,
+                available_balance: (parseFloat(wallet.available_balance) || 0) + sellerEarnings,
+                total_earned: (parseFloat(wallet.total_earned) || 0) + sellerEarnings
+              })
+              .eq('seller_id', order.seller_id)
+            
+            // Update transaction status
+            await supabase
+              .from('transactions')
+              .update({
+                status: 'completed',
+                description: `Order #${id} - Delivered`
+              })
+              .eq('order_id', id)
+              .eq('seller_id', order.seller_id)
+            
             console.log('✅ Seller funds released to available balance')
           }
         }

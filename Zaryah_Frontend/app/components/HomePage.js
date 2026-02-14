@@ -75,6 +75,29 @@ export const HomePage = () => {
   const fadeOut = useTransform(scrollY, [0, heroHeight * 0.7, heroHeight], [1, 0.7, 0])
   const scaleOut = useTransform(scrollY, [0, heroHeight * 0.7, heroHeight], [1, 0.98, 0.95])
 
+  const categories = [
+    { title: 'Resin Art', img: '/assets/resin-art.jpg', link: '/shop?category=Resin Art' },
+    { title: 'Crochet', img: '/assets/crochet.jpg', link: '/shop?category=Crochet' },
+    { title: 'Knitting', img: '/assets/knitting.jpg', link: '/shop?category=Knitting' },
+    { title: 'Pottery', img: '/assets/pottery.jpg', link: '/shop?category=Pottery' },
+    { title: 'Jewelry', img: '/assets/jewelry.jpg', link: '/shop?category=Jewelry' },
+    { title: 'Candles', img: '/assets/candles.jpg', link: '/shop?category=Candles' },
+    { title: 'Home Decor', img: '/assets/home-decor.jpg', link: '/shop?category=Home Decor' },
+    { title: 'Textiles', img: '/assets/textiles.jpg', link: '/shop?category=Textiles' },
+    { title: 'Leather Work', img: '/assets/leather-work.jpg', link: '/shop?category=Leather Work' },
+    { title: 'Woodwork', img: '/assets/woodwork.jpg', link: '/shop?category=Woodwork' },
+    { title: 'Paper Crafts', img: '/assets/paper-crafts.jpg', link: '/shop?category=Paper Crafts' },
+    { title: 'Embroidery', img: '/assets/embroidery.jpg', link: '/shop?category=Embroidery' },
+    { title: 'Painting', img: '/assets/painting.jpg', link: '/shop?category=Painting' },
+    { title: 'Soap Making', img: '/assets/soap-making.jpg', link: '/shop?category=Soap Making' },
+    { title: 'Macrame', img: '/assets/macrame.jpg', link: '/shop?category=Macrame' },
+    { title: 'For Him', img: '/assets/for-him.jpg', link: '/shop?category=For Him' },
+    { title: 'For Her', img: '/assets/for-her.jpg', link: '/shop?category=For Her' },
+    { title: 'For Kids', img: '/assets/for-kids.jpg', link: '/shop?category=For Kids' },
+    { title: 'Wellness', img: '/assets/wellness.jpg', link: '/shop?category=Wellness' },
+    { title: 'Personalized Gifts', img: '/assets/personalized.jpg', link: '/shop?category=Personalized Gifts' },
+  ]
+
   return (
     <div className="min-h-screen bg-gradient-elegant pt-0 md:pt-0">
       <div ref={heroRef} className="relative w-full overflow-visible mt-0">
@@ -86,71 +109,33 @@ export const HomePage = () => {
         </motion.div>
       </div>
 
-      <section className="py-6 sm:pt-8 sm:pb-4 bg-cream-50 w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-charcoal-800 mb-6 sm:mb-10 text-center font-serif">Shop by Category</h2>
-          <div className="hidden sm:grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {[
-              { title: 'Resin Art', img: '/assets/resin-art.jpg', link: '/shop?category=Resin Art' },
-              { title: 'Crochet', img: '/assets/crochet.jpg', link: '/shop?category=Crochet' },
-              { title: 'Knitting', img: '/assets/knitting.jpg', link: '/shop?category=Knitting' },
-              { title: 'Pottery', img: '/assets/pottery.jpg', link: '/shop?category=Pottery' },
-              { title: 'Jewelry', img: '/assets/jewelry.jpg', link: '/shop?category=Jewelry' },
-              { title: 'Candles', img: '/assets/candles.jpg', link: '/shop?category=Candles' },
-              { title: 'Home Decor', img: '/assets/home-decor.jpg', link: '/shop?category=Home Decor' },
-              { title: 'Textiles', img: '/assets/textiles.jpg', link: '/shop?category=Textiles' },
-              { title: 'Leather Work', img: '/assets/leather-work.jpg', link: '/shop?category=Leather Work' },
-              { title: 'Woodwork', img: '/assets/woodwork.jpg', link: '/shop?category=Woodwork' },
-              { title: 'Paper Crafts', img: '/assets/paper-crafts.jpg', link: '/shop?category=Paper Crafts' },
-              { title: 'Embroidery', img: '/assets/embroidery.jpg', link: '/shop?category=Embroidery' },
-              { title: 'Painting', img: '/assets/painting.jpg', link: '/shop?category=Painting' },
-              { title: 'Soap Making', img: '/assets/soap-making.jpg', link: '/shop?category=Soap Making' },
-              { title: 'Macrame', img: '/assets/macrame.jpg', link: '/shop?category=Macrame' },
-              { title: 'For Him', img: '/assets/for-him.jpg', link: '/shop?category=For Him' },
-              { title: 'For Her', img: '/assets/for-her.jpg', link: '/shop?category=For Her' },
-              { title: 'For Kids', img: '/assets/for-kids.jpg', link: '/shop?category=For Kids' },
-              { title: 'Wellness', img: '/assets/wellness.jpg', link: '/shop?category=Wellness' },
-              { title: 'Personalized Gifts', img: '/assets/personalized.jpg', link: '/shop?category=Personalized Gifts' },
-            ].map(cat => (
-              <Link href={cat.link} key={cat.title} className="group block rounded-2xl overflow-hidden bg-white border border-cream-200 shadow-subtle hover:shadow-lg transition-all">
-                <div className="w-full h-32 bg-gradient-to-br from-primary-100 to-cream-100 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
-                  <span className="text-2xl font-bold text-primary-600">{cat.title.charAt(0)}</span>
+      {/* Shop by Category - Horizontal Scroll on All Screens */}
+      <section className="py-10 sm:py-12 bg-cream-50 w-full">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-charcoal-800 mb-8 text-center font-serif px-4">Shop by Category</h2>
+          <div className="flex space-x-4 overflow-x-auto px-4 pb-4 scrollbar-hide">
+            {categories.map(cat => (
+              <Link 
+                href={cat.link} 
+                key={cat.title} 
+                className="min-w-[160px] sm:min-w-[180px] lg:min-w-[200px] flex-shrink-0 group block rounded-2xl overflow-hidden bg-white border border-cream-200 shadow-subtle hover:shadow-lg transition-all"
+              >
+                <div className="relative w-full h-32 overflow-hidden">
+                  <img 
+                    src={cat.img} 
+                    alt={cat.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    onError={(e) => {
+                      e.target.style.display = 'none'
+                      e.target.nextElementSibling.style.display = 'flex'
+                    }}
+                  />
+                  <div className="hidden absolute inset-0 bg-gradient-to-br from-primary-100 to-cream-100 items-center justify-center">
+                    <span className="text-2xl font-bold text-primary-600">{cat.title.charAt(0)}</span>
+                  </div>
                 </div>
                 <div className="p-4 text-center">
-                  <span className="text-lg font-semibold text-charcoal-800 group-hover:text-primary-700 transition-colors">{cat.title}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-          <div className="sm:hidden flex space-x-4 overflow-x-auto pb-2">
-            {[
-              { title: 'Resin Art', img: '/assets/resin-art.jpg', link: '/shop?category=Resin Art' },
-              { title: 'Crochet', img: '/assets/crochet.jpg', link: '/shop?category=Crochet' },
-              { title: 'Knitting', img: '/assets/knitting.jpg', link: '/shop?category=Knitting' },
-              { title: 'Pottery', img: '/assets/pottery.jpg', link: '/shop?category=Pottery' },
-              { title: 'Jewelry', img: '/assets/jewelry.jpg', link: '/shop?category=Jewelry' },
-              { title: 'Candles', img: '/assets/candles.jpg', link: '/shop?category=Candles' },
-              { title: 'Home Decor', img: '/assets/home-decor.jpg', link: '/shop?category=Home Decor' },
-              { title: 'Textiles', img: '/assets/textiles.jpg', link: '/shop?category=Textiles' },
-              { title: 'Leather Work', img: '/assets/leather-work.jpg', link: '/shop?category=Leather Work' },
-              { title: 'Woodwork', img: '/assets/woodwork.jpg', link: '/shop?category=Woodwork' },
-              { title: 'Paper Crafts', img: '/assets/paper-crafts.jpg', link: '/shop?category=Paper Crafts' },
-              { title: 'Embroidery', img: '/assets/embroidery.jpg', link: '/shop?category=Embroidery' },
-              { title: 'Painting', img: '/assets/painting.jpg', link: '/shop?category=Painting' },
-              { title: 'Soap Making', img: '/assets/soap-making.jpg', link: '/shop?category=Soap Making' },
-              { title: 'Macrame', img: '/assets/macrame.jpg', link: '/shop?category=Macrame' },
-              { title: 'For Him', img: '/assets/for-him.jpg', link: '/shop?category=For Him' },
-              { title: 'For Her', img: '/assets/for-her.jpg', link: '/shop?category=For Her' },
-              { title: 'For Kids', img: '/assets/for-kids.jpg', link: '/shop?category=For Kids' },
-              { title: 'Wellness', img: '/assets/wellness.jpg', link: '/shop?category=Wellness' },
-              { title: 'Personalized Gifts', img: '/assets/personalized.jpg', link: '/shop?category=Personalized Gifts' },
-            ].map(cat => (
-              <Link href={cat.link} key={cat.title} className="min-w-[60vw] max-w-[70vw] group block rounded-2xl overflow-hidden bg-white border border-cream-200 shadow-subtle hover:shadow-lg transition-all">
-                <div className="w-full h-32 bg-gradient-to-br from-primary-100 to-cream-100 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
-                  <span className="text-2xl font-bold text-primary-600">{cat.title.charAt(0)}</span>
-                </div>
-                <div className="p-4 text-center">
-                  <span className="text-lg font-semibold text-charcoal-800 group-hover:text-primary-700 transition-colors">{cat.title}</span>
+                  <span className="text-base font-semibold text-charcoal-800 group-hover:text-primary-700 transition-colors">{cat.title}</span>
                 </div>
               </Link>
             ))}
@@ -158,19 +143,22 @@ export const HomePage = () => {
         </div>
       </section>
 
-      <section id="products-section" className="py-6 sm:pt-8 sm:pb-4 bg-cream-100 w-full">
+      {/* Featured Products */}
+      <section id="products-section" className="py-10 sm:py-12 bg-cream-100 w-full">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-3 sm:mb-6"
+          className="text-center mb-8"
         >
-          <div className="inline-flex items-center space-x-3 sm:space-x-4 bg-primary-100 px-8 sm:px-14 py-4 sm:py-6 rounded-full mb-3 sm:mb-10 shadow-subtle">
+          <div className="inline-flex items-center space-x-3 sm:space-x-4 bg-primary-100 px-8 sm:px-14 py-4 sm:py-6 rounded-full shadow-subtle">
             <Gift className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600" />
             <span className="text-primary-700 font-semibold text-lg sm:text-xl">Curated Collections</span>
           </div>
         </motion.div>
-        <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6 w-full px-4 lg:px-8 xl:px-12 mb-8 lg:mb-12">
+        
+        {/* Desktop grid */}
+        <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6 w-full px-4 lg:px-8 xl:px-12 mb-10">
           {featuredProducts.map((product, index) => (
             <motion.div
               key={product.id || product._id}
@@ -184,18 +172,21 @@ export const HomePage = () => {
             </motion.div>
           ))}
         </div>
-        <div className="sm:hidden flex space-x-4 overflow-x-auto px-4 mb-4 pb-2">
+        
+        {/* Mobile horizontal scroll */}
+        <div className="sm:hidden flex space-x-4 overflow-x-auto px-4 pb-4 mb-8 scrollbar-hide">
           {featuredProducts.map((product, index) => (
             <div key={product.id || product._id} className="min-w-[280px] max-w-[300px] flex-shrink-0">
               <ProductCard product={product} />
             </div>
           ))}
         </div>
+        
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-4 sm:mb-0"
+          className="text-center"
         >
           <Link
             href="/shop"
@@ -207,12 +198,13 @@ export const HomePage = () => {
         </motion.div>
       </section>
 
+      {/* Seller Stories */}
       {sellers.length > 0 && (
-        <section className="py-6 sm:pt-8 sm:pb-4 bg-white w-full">
+        <section className="py-10 sm:py-12 bg-white w-full">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-neutral-800 mb-6 sm:mb-10 text-center font-serif">Stories That Inspire</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-neutral-800 mb-8 sm:mb-10 text-center font-serif">Stories That Inspire</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {sellers.map((seller) => {
                 const user = seller.users || {}
                 const coverPhoto = seller.cover_photo || ''
@@ -220,7 +212,7 @@ export const HomePage = () => {
                 
                 return (
                   <Link 
-                    href={'/@' + user.username} 
+                    href={'/' + (seller.username || user.username)} 
                     key={seller.id}
                     className="group bg-neutral-50 rounded-2xl shadow-subtle border border-primary-100 overflow-hidden hover:shadow-lg transition-all cursor-pointer"
                   >
@@ -262,11 +254,13 @@ export const HomePage = () => {
                     </div>
                     
                     <div className="p-6 pt-10">
-                      <div className="flex items-start justify-between mb-2">
+                      <div className="mb-2">
                         <h3 className="text-xl font-bold text-primary-700 group-hover:text-primary-800 transition-colors">
                           {seller.business_name}
                         </h3>
-                        <span className="text-sm text-neutral-500">@{user.username}</span>
+                        {(seller.username || user.username) && (
+                          <span className="text-sm text-neutral-500">@{seller.username || user.username}</span>
+                        )}
                       </div>
                       <p className="text-neutral-600 line-clamp-3">
                         {seller.story || seller.business_description || 'A passionate artisan creating handmade treasures with love and care.'}
@@ -284,7 +278,8 @@ export const HomePage = () => {
         </section>
       )}
 
-      <section className="py-12 md:py-16 lg:py-24 bg-primary-600">
+      {/* Call to Action */}
+      <section className="py-12 md:py-16 lg:py-20 bg-primary-600">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

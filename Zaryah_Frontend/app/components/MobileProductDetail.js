@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronLeft, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles } from 'lucide-react'
+import { ChevronLeft, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles, Star } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '../contexts/CartContext'
 import { toast } from 'react-hot-toast'
+import { Reviews } from './Reviews'
 
 export default function MobileProductDetail({ product, similarProducts = [] }) {
   const router = useRouter()
@@ -148,9 +149,11 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
         {/* Rating Badge - Bottom Right */}
         {product.averageRating > 0 && (
           <div className="absolute bottom-4 right-4 bg-white rounded-lg px-3 py-2 shadow-md flex items-center space-x-1.5">
-            <span className="text-base font-bold text-gray-900">{product.averageRating}</span>
-            <span className="text-green-600 text-base">★</span>
-            <span className="text-sm text-gray-600">{product.ratingCount}</span>
+            <span className="text-base font-bold text-gray-900">
+              {parseFloat(product.averageRating).toFixed(1)}
+            </span>
+            <Star className="w-4 h-4 text-yellow-400 fill-current" />
+            <span className="text-sm text-gray-600">({product.ratingCount})</span>
           </div>
         )}
 
@@ -259,14 +262,14 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
 
       {/* Customization Info */}
       {product.customisable && product.customQuestions && product.customQuestions.length > 0 && (
-        <div className="bg-gradient-to-br from-blush-50 via-pink-50 to-blush-100 px-5 py-5 mb-2 border border-blush-200 rounded-2xl shadow-soft">
+        <div className="bg-gradient-to-br from-cream-50 to-primary-50 px-5 py-5 mb-2 border border-primary-200 rounded-2xl shadow-soft">
           <div className="flex items-start space-x-3 mb-4">
-            <div className="w-8 h-8 bg-blush-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
               <Sparkles className="w-4 h-4 text-white" strokeWidth={2.5} />
             </div>
             <div className="flex-1">
-              <h3 className="text-base font-bold text-blush-700 mb-1">Customization Available</h3>
-              <p className="text-xs text-blush-600 leading-relaxed">
+              <h3 className="text-base font-bold text-primary-700 mb-1">Customization Available</h3>
+              <p className="text-xs text-charcoal-600 leading-relaxed">
                 Please answer the following questions to personalize your product:
               </p>
             </div>
@@ -290,7 +293,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                 <div key={index} className="space-y-2">
                   <label className="block text-sm font-semibold text-charcoal-800">
                     {item.question}
-                    {item.required !== false && <span className="text-blush-600 ml-1">*</span>}
+                    {item.required !== false && <span className="text-primary-600 ml-1">*</span>}
                   </label>
                   {(!item.type || item.type === 'text') ? (
                     <input
@@ -299,13 +302,13 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                       onChange={(e) => handleInputChange(e.target.value)}
                       onFocus={() => console.log('Input focused:', index)}
                       placeholder="Type your answer here..."
-                      className="w-full px-4 py-3 text-sm border border-cream-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blush-400 focus:border-blush-400 bg-white text-charcoal-900 placeholder-charcoal-400 shadow-sm transition-all"
+                      className="w-full px-4 py-3 text-sm border border-primary-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-500 bg-white text-charcoal-900 placeholder-charcoal-400 shadow-sm transition-all"
                     />
                   ) : item.type === 'select' && item.options ? (
                     <select
                       value={customizationAnswers[index] || ''}
                       onChange={(e) => handleInputChange(e.target.value)}
-                      className="w-full px-4 py-3 text-sm border border-cream-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blush-400 focus:border-blush-400 bg-white text-charcoal-900 shadow-sm transition-all"
+                      className="w-full px-4 py-3 text-sm border border-primary-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-500 bg-white text-charcoal-900 shadow-sm transition-all"
                     >
                       <option value="">-- Select an option --</option>
                       {item.options.map((opt, optIndex) => (
@@ -319,7 +322,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                       onFocus={() => console.log('Textarea focused:', index)}
                       placeholder="Type your answer here..."
                       rows="4"
-                      className="w-full px-4 py-3 text-sm border border-cream-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blush-400 focus:border-blush-400 resize-none bg-white text-charcoal-900 placeholder-charcoal-400 shadow-sm transition-all"
+                      className="w-full px-4 py-3 text-sm border border-primary-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-500 resize-none bg-white text-charcoal-900 placeholder-charcoal-400 shadow-sm transition-all"
                     />
                   ) : null}
                 </div>
@@ -327,8 +330,8 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
             })}
           </div>
           
-          <div className="mt-4 pt-4 border-t border-blush-200">
-            <p className="text-xs text-blush-700 flex items-start">
+          <div className="mt-4 pt-4 border-t border-primary-200">
+            <p className="text-xs text-charcoal-700 flex items-start">
               <span className="mr-2">💡</span>
               <span>Your customization details will be sent to the seller after placing the order.</span>
             </p>
@@ -361,21 +364,21 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       </div>
 
       {/* Return & Exchange Policy */}
-      <div className="bg-gradient-to-br from-mint-50 to-green-50 px-4 py-4 mb-2 border border-mint-200 rounded-xl shadow-sm">
+      <div className="bg-gradient-to-br from-primary-50 to-cream-50 px-4 py-4 mb-2 border border-primary-200 rounded-xl shadow-sm">
         <div className="flex items-start space-x-3 mb-3">
-          <div className="w-8 h-8 bg-mint-600 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
             <RotateCcw className="w-4 h-4 text-white" strokeWidth={2.5} />
           </div>
           <div className="flex-1">
-            <h3 className="text-base font-bold text-mint-800 mb-1">Return & Exchange Policy</h3>
+            <h3 className="text-base font-bold text-primary-700 mb-1">Return & Exchange Policy</h3>
           </div>
         </div>
         
         {product.returnAvailable || product.exchangeAvailable ? (
           <div className="space-y-3">
-            <div className="bg-white rounded-lg p-3 border border-mint-200">
+            <div className="bg-white rounded-lg p-3 border border-primary-200">
               <div className="flex items-center space-x-2 mb-2">
-                <CheckCircle className="w-4 h-4 text-mint-600" strokeWidth={2} />
+                <CheckCircle className="w-4 h-4 text-primary-600" strokeWidth={2} />
                 <span className="text-sm font-semibold text-charcoal-900">
                   {product.returnAvailable && product.exchangeAvailable
                     ? 'Return & Exchange Available'
@@ -393,7 +396,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
               </p>
             </div>
             
-            <div className="text-xs text-mint-700 space-y-1">
+            <div className="text-xs text-primary-700 space-y-1">
               <p>• Product must be unused and in original packaging</p>
               <p>• Tags and labels must be intact</p>
               <p>• Proof of purchase required</p>
@@ -418,18 +421,27 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
           {[
             { key: 'details', label: 'Product Details' },
             { key: 'seller', label: 'Seller Info' },
-            { key: 'reviews', label: 'Reviews' }
-          ].map(({ key, label }) => (
+            { key: 'reviews', label: 'Reviews', badge: product?.ratingCount || 0 }
+          ].map(({ key, label, badge }) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex-1 px-4 py-3 text-sm font-semibold transition-all whitespace-nowrap ${
+              className={`flex-1 px-4 py-3 text-sm font-semibold transition-all whitespace-nowrap flex items-center justify-center space-x-1.5 ${
                 activeTab === key
                   ? 'border-b-2 border-primary-600 text-primary-700 bg-cream-50'
                   : 'text-charcoal-600'
               }`}
             >
-              {label}
+              <span>{label}</span>
+              {badge !== undefined && (
+                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                  activeTab === key
+                    ? 'bg-primary-100 text-primary-700'
+                    : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -441,6 +453,59 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
               <p className="text-sm text-charcoal-700 leading-relaxed">
                 {product.description}
               </p>
+              
+              {/* Product Specifications */}
+              <div className="pt-4 border-t border-cream-200">
+                <h4 className="text-sm font-bold text-charcoal-900 mb-3">Product Specifications</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {product.weight && (
+                    <div className="bg-gradient-to-br from-cream-50 to-primary-50 border border-primary-200 rounded-lg p-3">
+                      <p className="text-xs text-charcoal-600 mb-1">Weight</p>
+                      <p className="text-sm font-semibold text-charcoal-900">{product.weight} kg</p>
+                    </div>
+                  )}
+                  {product.stock !== undefined && product.stock !== null && (
+                    <div className="bg-gradient-to-br from-primary-50 to-cream-50 border border-primary-200 rounded-lg p-3">
+                      <p className="text-xs text-charcoal-600 mb-1">Stock</p>
+                      <p className="text-sm font-semibold text-charcoal-900">
+                        {product.stock > 0 ? `${product.stock} units` : 'Out of Stock'}
+                      </p>
+                    </div>
+                  )}
+                  {product.category && (
+                    <div className="bg-gradient-to-br from-primary-50 to-cream-50 border border-primary-200 rounded-lg p-3">
+                      <p className="text-xs text-charcoal-600 mb-1">Category</p>
+                      <p className="text-sm font-semibold text-charcoal-900 capitalize">{product.category}</p>
+                    </div>
+                  )}
+                  {product.section && (
+                    <div className="bg-gradient-to-br from-secondary-50 to-cream-50 border border-secondary-200 rounded-lg p-3">
+                      <p className="text-xs text-charcoal-600 mb-1">Section</p>
+                      <p className="text-sm font-semibold text-charcoal-900 capitalize">{product.section}</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Quality Badges */}
+                <div className="grid grid-cols-1 gap-3 mt-3">
+                  {product.isGenuine && (
+                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg p-3">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-emerald-600" />
+                        <span className="text-sm font-semibold text-charcoal-900">100% Genuine Product</span>
+                      </div>
+                    </div>
+                  )}
+                  {product.isQualityChecked && (
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-center space-x-2">
+                        <Shield className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-semibold text-charcoal-900">Quality Checked</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
               
               {/* Material & Care */}
               {(product.material || product.careInstructions) && (
@@ -457,9 +522,9 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                     </div>
                   )}
                   {product.careInstructions && (
-                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-4">
+                    <div className="bg-gradient-to-br from-primary-50 to-cream-50 border border-primary-200 rounded-lg p-4">
                       <div className="flex items-start space-x-2 mb-2">
-                        <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className="w-7 h-7 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
                           <Shield className="w-4 h-4 text-white" strokeWidth={2} />
                         </div>
                         <h4 className="text-sm font-bold text-charcoal-900 pt-1">Care Instructions</h4>
@@ -535,20 +600,11 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
           )}
 
           {activeTab === 'reviews' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-charcoal-900">Customer Reviews</h3>
-                <div className="flex items-center space-x-1">
-                  <span className="text-lg font-bold text-charcoal-900">{product.rating || '4.5'}</span>
-                  <span className="text-secondary-500 text-lg">★</span>
-                </div>
-              </div>
-              
-              <p className="text-sm text-charcoal-600">Reviews feature coming soon. Check back later!</p>
-              
-              <button className="w-full border-2 border-primary-600 text-primary-700 py-2.5 rounded-lg font-semibold text-sm active:scale-95 transition-all">
-                Write a Review
-              </button>
+            <div className="-mx-4 -my-4">
+              <Reviews 
+                productId={product.id} 
+                showWriteReview={true}
+              />
             </div>
           )}
         </div>

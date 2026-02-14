@@ -272,8 +272,12 @@ export const ProductDetailPage = ({ productId }) => {
                       <div className="flex items-center space-x-4 mb-3 flex-wrap gap-2">
                         <div className="flex items-center space-x-1">
                           <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                          <span className="font-semibold text-charcoal-900">{product.averageRating || '4.8'}</span>
-                          <span className="text-charcoal-600\">({product.ratingCount || 127} reviews)</span>
+                          <span className="font-semibold text-charcoal-900">
+                            {product.averageRating ? parseFloat(product.averageRating).toFixed(1) : 'New'}
+                          </span>
+                          {product.ratingCount > 0 && (
+                            <span className="text-charcoal-600">({product.ratingCount} {product.ratingCount === 1 ? 'review' : 'reviews'})</span>
+                          )}
                         </div>
                         {product.instantDelivery && (
                           <InstantDeliveryBadge product={product} />
@@ -361,14 +365,14 @@ export const ProductDetailPage = ({ productId }) => {
 
                 {/* Customization Options */}
                 {product.customisable && product.customQuestions && product.customQuestions.length > 0 && (
-                  <div className="bg-gradient-to-br from-blush-50 via-pink-50 to-blush-100 border border-blush-200 rounded-xl p-6 space-y-5 mb-4">
+                  <div className="bg-gradient-to-br from-cream-50 to-primary-50 border border-primary-200 rounded-xl p-6 space-y-5 mb-4">
                     <div className="flex items-start space-x-3">
-                      <div className="w-10 h-10 bg-blush-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
                         <Sparkles className="w-5 h-5 text-white" strokeWidth={2.5} />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-lg font-bold text-blush-700 mb-1">Customization Available</h3>
-                        <p className="text-sm text-blush-600 leading-relaxed">
+                        <h3 className="text-lg font-bold text-primary-700 mb-1">Customization Available</h3>
+                        <p className="text-sm text-charcoal-600 leading-relaxed">
                           Please answer the following questions to personalize your product:
                         </p>
                       </div>
@@ -379,13 +383,13 @@ export const ProductDetailPage = ({ productId }) => {
                         <div key={index} className="space-y-2">
                           <label className="block text-sm font-semibold text-charcoal-800">
                               {question.question}
-                            {question.required !== false && <span className="text-blush-600 ml-1">*</span>}
+                            {question.required !== false && <span className="text-primary-600 ml-1">*</span>}
                           </label>
                           {question.type === 'select' && question.options && question.options.length > 0 ? (
                             <select
                               value={customizationSelections[index]?.answer || ''}
                               onChange={(e) => handleCustomizationChange(index, e.target.value)}
-                              className="w-full px-4 py-3 text-sm border border-cream-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blush-400 focus:border-blush-400 bg-white text-charcoal-900 shadow-sm transition-all"
+                              className="w-full px-4 py-3 text-sm border border-primary-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-500 bg-white text-charcoal-900 shadow-sm transition-all"
                             >
                               <option value="">-- Select an option --</option>
                               {question.options.map((opt, optIndex) => (
@@ -398,7 +402,7 @@ export const ProductDetailPage = ({ productId }) => {
                               onChange={(e) => handleCustomizationChange(index, e.target.value)}
                               placeholder="Type your answer here..."
                               rows="4"
-                              className="w-full px-4 py-3 text-sm border border-cream-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blush-400 focus:border-blush-400 resize-none bg-white text-charcoal-900 placeholder-charcoal-400 shadow-sm transition-all"
+                              className="w-full px-4 py-3 text-sm border border-primary-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-500 resize-none bg-white text-charcoal-900 placeholder-charcoal-400 shadow-sm transition-all"
                             />
                           ) : (
                             <input
@@ -406,14 +410,14 @@ export const ProductDetailPage = ({ productId }) => {
                               value={customizationSelections[index]?.answer || ''}
                               onChange={(e) => handleCustomizationChange(index, e.target.value)}
                               placeholder="Type your answer here..."
-                              className="w-full px-4 py-3 text-sm border border-cream-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blush-400 focus:border-blush-400 bg-white text-charcoal-900 placeholder-charcoal-400 shadow-sm transition-all"
+                              className="w-full px-4 py-3 text-sm border border-primary-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-500 bg-white text-charcoal-900 placeholder-charcoal-400 shadow-sm transition-all"
                             />
                           )}
                         </div>
                       ))}
                     </div>
                     
-                    <div className="pt-4 border-t border-blush-200">
+                    <div className="pt-4 border-t border-primary-200">
                       <p className="text-xs text-blush-700 flex items-start">
                         <span className="mr-2">💡</span>
                         <span>Your customization details will be sent to the seller after placing the order.</span>
@@ -448,9 +452,9 @@ export const ProductDetailPage = ({ productId }) => {
                     
                     {/* Return/Exchange Info */}
                     {(product.returnAvailable || product.exchangeAvailable) && (
-                      <div className="bg-gradient-to-br from-mint-50 to-white border border-mint-200 rounded-lg p-4">
+                      <div className="bg-gradient-to-br from-primary-50 to-cream-50 border border-primary-200 rounded-lg p-4">
                         <div className="flex items-center space-x-2 mb-2">
-                          <RotateCcw className="w-5 h-5 text-mint-600" />
+                          <RotateCcw className="w-5 h-5 text-primary-600" />
                           <h3 className="text-sm font-bold text-charcoal-900">
                             {product.returnAvailable && product.exchangeAvailable ? 'Return & Exchange' : product.exchangeAvailable ? 'Exchange Available' : 'Return Available'}
                           </h3>
@@ -560,20 +564,34 @@ export const ProductDetailPage = ({ productId }) => {
               <div className="flex border-b border-gray-200 overflow-x-auto">
                 {[
                   { key: 'description', label: 'Description' },
+                  { key: 'details', label: 'Product Details' },
                   { key: 'material', label: 'Material & Care' },
-                  { key: 'reviews', label: 'Reviews' },
+                  { 
+                    key: 'reviews', 
+                    label: 'Reviews',
+                    badge: product?.ratingCount || 0
+                  },
                   { key: 'seller', label: 'Seller Info' }
-                ].map(({ key, label }) => (
+                ].map(({ key, label, badge }) => (
                   <button
                     key={key}
                     onClick={() => setActiveTab(key)}
-                    className={`px-6 py-4 font-medium transition-colors ${
+                    className={`px-6 py-4 font-medium transition-colors whitespace-nowrap flex items-center space-x-2 ${
                       activeTab === key
                         ? 'border-b-2 border-primary-600 text-primary-600'
                         : 'text-charcoal-600 hover:text-charcoal-900'
                     }`}
                   >
-                    {label}
+                    <span>{label}</span>
+                    {badge !== undefined && (
+                      <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                        activeTab === key
+                          ? 'bg-primary-100 text-primary-700'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {badge}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -609,6 +627,149 @@ export const ProductDetailPage = ({ productId }) => {
                   </div>
                 )}
 
+                {activeTab === 'details' && (
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-semibold text-charcoal-900 mb-6">Product Specifications</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Weight */}
+                      {product.weight && (
+                        <div className="bg-gradient-to-br from-cream-50 to-primary-50 border border-primary-200 rounded-lg p-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Scale className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-charcoal-600 font-medium">Weight</p>
+                              <p className="text-lg font-semibold text-charcoal-900">{product.weight} kg</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Stock */}
+                      {product.stock !== undefined && product.stock !== null && (
+                        <div className="bg-gradient-to-br from-primary-50 to-cream-50 border border-primary-200 rounded-lg p-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Package className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-charcoal-600 font-medium">Stock Available</p>
+                              <p className="text-lg font-semibold text-charcoal-900">
+                                {product.stock > 0 ? `${product.stock} units` : 'Out of Stock'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Category */}
+                      {product.category && (
+                        <div className="bg-gradient-to-br from-primary-50 to-cream-50 border border-primary-200 rounded-lg p-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Package className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-charcoal-600 font-medium">Category</p>
+                              <p className="text-lg font-semibold text-charcoal-900 capitalize">{product.category}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Section */}
+                      {product.section && (
+                        <div className="bg-gradient-to-br from-secondary-50 to-cream-50 border border-secondary-200 rounded-lg p-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-secondary-600 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Package className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-charcoal-600 font-medium">Section</p>
+                              <p className="text-lg font-semibold text-charcoal-900 capitalize">{product.section}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quality Badges */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                      {product.isGenuine && (
+                        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg p-4">
+                          <div className="flex items-center space-x-2">
+                            <CheckCircle className="w-5 h-5 text-emerald-600" />
+                            <span className="font-semibold text-charcoal-900">100% Genuine Product</span>
+                          </div>
+                          <p className="text-sm text-charcoal-600 mt-1">Verified authenticity guaranteed</p>
+                        </div>
+                      )}
+
+                      {product.isQualityChecked && (
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                          <div className="flex items-center space-x-2">
+                            <Shield className="w-5 h-5 text-blue-600" />
+                            <span className="font-semibold text-charcoal-900">Quality Checked</span>
+                          </div>
+                          <p className="text-sm text-charcoal-600 mt-1">Inspected for quality assurance</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Delivery Information */}
+                    <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6 mt-6">
+                      <h4 className="font-semibold text-charcoal-900 mb-4 flex items-center space-x-2">
+                        <Truck className="w-5 h-5 text-orange-600" />
+                        <span>Delivery Information</span>
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-charcoal-600 mb-1">Estimated Delivery Time</p>
+                          <p className="font-semibold text-charcoal-900">
+                            {product.delivery_time_min && product.delivery_time_max 
+                              ? `${product.delivery_time_min}-${product.delivery_time_max} ${product.delivery_time_unit || 'days'}`
+                              : '2-5 days'}
+                          </p>
+                        </div>
+                        {product.instantDelivery && (
+                          <div>
+                            <p className="text-sm text-charcoal-600 mb-1">Instant Delivery</p>
+                            <p className="font-semibold text-green-600 flex items-center space-x-1">
+                              <CheckCircle className="w-4 h-4" />
+                              <span>Available for your location</span>
+                            </p>
+                          </div>
+                        )}
+                        {product.codAvailable && (
+                          <div>
+                            <p className="text-sm text-charcoal-600 mb-1">Cash on Delivery</p>
+                            <p className="font-semibold text-charcoal-900">Available (₹10 extra)</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Size Options */}
+                    {product.sizeOptions && product.sizeOptions.length > 0 && (
+                      <div className="bg-white border border-gray-200 rounded-lg p-6">
+                        <h4 className="font-semibold text-charcoal-900 mb-3">Available Sizes</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {product.sizeOptions.map((size, index) => (
+                            <div 
+                              key={index} 
+                              className="px-4 py-2 bg-gray-100 text-charcoal-900 rounded-lg font-medium"
+                            >
+                              {size}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {activeTab === 'material' && (
                   <div className="space-y-6">
                     <h3 className="text-xl font-semibold text-charcoal-900 mb-6">Material & Care Instructions</h3>
@@ -628,9 +789,9 @@ export const ProductDetailPage = ({ productId }) => {
                     )}
                     
                     {product.careInstructions && (
-                      <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-6">
+                      <div className="bg-gradient-to-br from-primary-50 to-cream-50 border border-primary-200 rounded-xl p-6">
                         <div className="flex items-start space-x-3 mb-3">
-                          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                          <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
                             <Shield className="w-5 h-5 text-white" strokeWidth={2} />
                           </div>
                           <div className="flex-1">

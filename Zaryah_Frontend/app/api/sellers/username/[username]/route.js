@@ -16,7 +16,7 @@ export async function GET(request, { params }) {
 		const { data: seller, error: sellerError } = await supabase
 			.from('sellers')
 			.select('*')
-			.eq('username', username.toLowerCase())
+			.ilike('username', username)
 			.single()
 
 		console.log('Seller query result:', { found: !!seller, error: sellerError?.message })

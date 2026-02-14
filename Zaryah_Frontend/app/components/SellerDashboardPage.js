@@ -921,36 +921,36 @@ export default function SellerDashboardPage() {
                 {/* Wallet Balance Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Available Balance */}
-                  <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+                  <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl p-6 text-white shadow-lg border border-primary-300">
                     <div className="flex items-center justify-between mb-4">
                       <Wallet className="w-8 h-8" />
                       <CheckCircle className="w-6 h-6" />
                     </div>
-                    <p className="text-green-100 text-sm font-medium mb-1">Available Balance</p>
+                    <p className="text-primary-100 text-sm font-medium mb-1">Available Balance</p>
                     <p className="text-3xl font-bold">₹{wallet?.available_balance?.toLocaleString() || '0.00'}</p>
-                    <p className="text-green-100 text-xs mt-2">Ready to withdraw</p>
+                    <p className="text-primary-100 text-xs mt-2">Ready to withdraw</p>
                   </div>
 
                   {/* Pending Balance */}
-                  <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+                  <div className="bg-gradient-to-br from-secondary-400 to-secondary-500 rounded-xl p-6 text-white shadow-lg border border-secondary-300">
                     <div className="flex items-center justify-between mb-4">
                       <Clock className="w-8 h-8" />
                       <AlertTriangle className="w-6 h-6" />
                     </div>
-                    <p className="text-orange-100 text-sm font-medium mb-1">Pending Balance</p>
+                    <p className="text-secondary-50 text-sm font-medium mb-1">Pending Balance</p>
                     <p className="text-3xl font-bold">₹{wallet?.pending_balance?.toLocaleString() || '0.00'}</p>
-                    <p className="text-orange-100 text-xs mt-2">Awaiting order delivery</p>
+                    <p className="text-secondary-50 text-xs mt-2">Awaiting order delivery</p>
                   </div>
 
                   {/* Total Earned */}
-                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+                  <div className="bg-gradient-to-br from-charcoal-700 to-charcoal-800 rounded-xl p-6 text-white shadow-lg border border-charcoal-600">
                     <div className="flex items-center justify-between mb-4">
                       <TrendingUp className="w-8 h-8" />
                       <Star className="w-6 h-6" />
                     </div>
-                    <p className="text-purple-100 text-sm font-medium mb-1">Total Earned</p>
+                    <p className="text-charcoal-200 text-sm font-medium mb-1">Total Earned</p>
                     <p className="text-3xl font-bold">₹{wallet?.total_earned?.toLocaleString() || '0.00'}</p>
-                    <p className="text-purple-100 text-xs mt-2">Lifetime earnings (95% after commission)</p>
+                    <p className="text-charcoal-200 text-xs mt-2">Lifetime earnings (95% after commission)</p>
                   </div>
                 </div>
 
