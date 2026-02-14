@@ -70,23 +70,17 @@ export const ShopPage = () => {
     'all',
     'Resin Art',
     'Crochet',
-    'Knitting',
     'Pottery',
     'Jewelry',
     'Candles',
     'Home Decor',
-    'Textiles',
-    'Leather Work',
-    'Woodwork',
     'Paper Crafts',
     'Embroidery',
     'Painting',
     'Soap Making',
-    'Macrame',
     'For Him',
     'For Her', 
     'For Kids',
-    'Wellness',
     'Personalized Gifts'
   ]
 

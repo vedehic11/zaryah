@@ -31,7 +31,7 @@ export const VideoCarousel = () => {
       description: 'Handcrafted ceramic pieces that tell stories of tradition and passion',
       maker_name: 'Priya Sharma',
       location: 'Mumbai, India',
-      video_url: 'https://images.pexels.com/photos/5553045/pexels-photo-5553045.jpeg?auto=compress&cs=tinysrgb&w=1200',
+      video_url: '/assets/pottery-video.mp4',
       is_active: true,
       order_index: 1
     },
@@ -41,7 +41,7 @@ export const VideoCarousel = () => {
       description: 'Eco-friendly candles made with love and natural ingredients',
       maker_name: 'Ravi Kumar',
       location: 'Bangalore, India',
-      video_url: 'https://images.pexels.com/photos/5624983/pexels-photo-5624983.jpeg?auto=compress&cs=tinysrgb&w=1200',
+      video_url: '/assets/candle-video.mp4',
       is_active: true,
       order_index: 2
     }
@@ -126,12 +126,16 @@ export const VideoCarousel = () => {
           transition={{ duration: 0.8, ease: 'easeInOut' }}
           className="absolute inset-0"
         >
-          {/* Background Image with Parallax and Zoom */}
+          {/* Background Video with Parallax and Zoom */}
           <motion.div className="absolute inset-0" style={{ y: bgY, scale: bgScale }}>
-            <img
+            <video
               src={videos[currentSlide].video_url}
               alt={videos[currentSlide].title}
               className="w-full h-full object-cover"
+              autoPlay
+              loop
+              muted
+              playsInline
             />
             <motion.div className="absolute inset-0 bg-black/70" style={{ opacity: overlayOpacity }} />
           </motion.div>
@@ -141,22 +145,22 @@ export const VideoCarousel = () => {
             className="absolute inset-0 z-20 flex items-center justify-center"
             style={{ y: contentY, opacity: contentOpacity }}
           >
-            <div className="text-center text-white max-w-2xl mx-auto px-4">
-              <h1 className="text-3xl md:text-6xl lg:text-7xl font-bold mb-4 leading-tight drop-shadow-lg whitespace-nowrap">
-                Every Gift Has a <span className="text-primary-400">Story</span>
+            <div className="text-center text-white max-w-3xl mx-auto px-4">
+              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight drop-shadow-lg whitespace-nowrap">
+                Every Creation Has a <span className="text-primary-400">Story</span>
               </h1>
               <h2 className="text-base md:text-2xl lg:text-3xl mb-4 font-light">
                 Meet the Makers
               </h2>
               <div className="mb-4">
                 <p className="text-base md:text-lg mb-1">{videos[currentSlide].description}</p>
-                <p className="text-amber-200 text-sm md:text-base">
+                <p className="text-primary-200 text-sm md:text-base">
                   by {videos[currentSlide].maker_name} • {videos[currentSlide].location}
                 </p>
               </div>
               <button
                 onClick={scrollToProducts}
-                className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-full text-base md:text-lg font-semibold transition-all duration-300 inline-flex items-center space-x-2 shadow-lg"
+                className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-full text-base md:text-lg font-semibold transition-all duration-300 inline-flex items-center space-x-2 shadow-lg mx-auto"
               >
                 <span>Explore Their Creations</span>
                 <Play className="w-5 h-5" />

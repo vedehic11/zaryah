@@ -76,26 +76,20 @@ export const HomePage = () => {
   const scaleOut = useTransform(scrollY, [0, heroHeight * 0.7, heroHeight], [1, 0.98, 0.95])
 
   const categories = [
-    { title: 'Resin Art', img: '/assets/resin-art.jpg', link: '/shop?category=Resin Art' },
-    { title: 'Crochet', img: '/assets/crochet.jpg', link: '/shop?category=Crochet' },
-    { title: 'Knitting', img: '/assets/knitting.jpg', link: '/shop?category=Knitting' },
-    { title: 'Pottery', img: '/assets/pottery.jpg', link: '/shop?category=Pottery' },
-    { title: 'Jewelry', img: '/assets/jewelry.jpg', link: '/shop?category=Jewelry' },
-    { title: 'Candles', img: '/assets/candles.jpg', link: '/shop?category=Candles' },
-    { title: 'Home Decor', img: '/assets/home-decor.jpg', link: '/shop?category=Home Decor' },
-    { title: 'Textiles', img: '/assets/textiles.jpg', link: '/shop?category=Textiles' },
-    { title: 'Leather Work', img: '/assets/leather-work.jpg', link: '/shop?category=Leather Work' },
-    { title: 'Woodwork', img: '/assets/woodwork.jpg', link: '/shop?category=Woodwork' },
-    { title: 'Paper Crafts', img: '/assets/paper-crafts.jpg', link: '/shop?category=Paper Crafts' },
-    { title: 'Embroidery', img: '/assets/embroidery.jpg', link: '/shop?category=Embroidery' },
-    { title: 'Painting', img: '/assets/painting.jpg', link: '/shop?category=Painting' },
-    { title: 'Soap Making', img: '/assets/soap-making.jpg', link: '/shop?category=Soap Making' },
-    { title: 'Macrame', img: '/assets/macrame.jpg', link: '/shop?category=Macrame' },
+    { title: 'Resin Art', img: '/assets/resin.png', link: '/shop?category=Resin Art' },
+    { title: 'Crochet', img: '/assets/crochet.png', link: '/shop?category=Crochet' },
+    { title: 'Pottery', img: '/assets/pottery.png', link: '/shop?category=Pottery' },
+    { title: 'Jewelry', img: '/assets/jewellery.png', link: '/shop?category=Jewelry' },
+    { title: 'Candles', img: '/assets/candle.png', link: '/shop?category=Candles' },
+    { title: 'Home Decor', img: '/assets/home.jpg', link: '/shop?category=Home Decor' },
+    { title: 'Paper Crafts', img: '/assets/paper-craft.png', link: '/shop?category=Paper Crafts' },
+    { title: 'Embroidery', img: '/assets/embroidery.png', link: '/shop?category=Embroidery' },
+    { title: 'Painting', img: '/assets/paint.png', link: '/shop?category=Painting' },
+    { title: 'Soap Making', img: '/assets/soap.png', link: '/shop?category=Soap Making' },
     { title: 'For Him', img: '/assets/for-him.jpg', link: '/shop?category=For Him' },
     { title: 'For Her', img: '/assets/for-her.jpg', link: '/shop?category=For Her' },
     { title: 'For Kids', img: '/assets/for-kids.jpg', link: '/shop?category=For Kids' },
-    { title: 'Wellness', img: '/assets/wellness.jpg', link: '/shop?category=Wellness' },
-    { title: 'Personalized Gifts', img: '/assets/personalized.jpg', link: '/shop?category=Personalized Gifts' },
+    { title: 'Personalized Gifts', img: '/assets/personalised.jpg', link: '/shop?category=Personalized Gifts' },
   ]
 
   return (
@@ -120,19 +114,17 @@ export const HomePage = () => {
                 key={cat.title} 
                 className="min-w-[160px] sm:min-w-[180px] lg:min-w-[200px] flex-shrink-0 group block rounded-2xl overflow-hidden bg-white border border-cream-200 shadow-subtle hover:shadow-lg transition-all"
               >
-                <div className="relative w-full h-32 overflow-hidden">
+                <div className="relative w-full h-32 overflow-hidden bg-gradient-to-br from-primary-100 to-cream-100">
                   <img 
                     src={cat.img} 
                     alt={cat.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     onError={(e) => {
                       e.target.style.display = 'none'
-                      e.target.nextElementSibling.style.display = 'flex'
+                      e.target.parentElement.classList.add('flex', 'items-center', 'justify-center')
                     }}
                   />
-                  <div className="hidden absolute inset-0 bg-gradient-to-br from-primary-100 to-cream-100 items-center justify-center">
-                    <span className="text-2xl font-bold text-primary-600">{cat.title.charAt(0)}</span>
-                  </div>
+                  <span className="text-2xl font-bold text-primary-600 absolute inset-0 hidden items-center justify-center">{cat.title.charAt(0)}</span>
                 </div>
                 <div className="p-4 text-center">
                   <span className="text-base font-semibold text-charcoal-800 group-hover:text-primary-700 transition-colors">{cat.title}</span>
