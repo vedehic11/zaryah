@@ -243,15 +243,35 @@ export default function AddProductPage() {
         throw new Error('You must be logged in to create products')
       }
 
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formDataToSend
-      })
+      // Add timeout and better progress indication
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 180000) // 3 minute timeout
+      
+      let response
+      try {
+        toast.loading(`Uploading images (${images.length} files)...`, { id: toastId })
+        
+        response = await fetch('/api/products', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formDataToSend,
+          signal: controller.signal
+        })
+        
+        clearTimeout(timeoutId)
+      } catch (fetchError) {
+        clearTimeout(timeoutId)
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Upload took too long (timeout after 3 minutes). Please try with fewer/smaller images.')
+        }
+        throw fetchError
+      }
 
+      toast.loading('Processing product...', { id: toastId })
+      
       const data = await response.json()
 
       if (!response.ok) {

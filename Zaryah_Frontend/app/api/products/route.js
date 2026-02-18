@@ -149,6 +149,12 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     console.log('=== CREATE PRODUCT START ===')
+    console.log('Environment check:', {
+      hasCloudinaryName: !!process.env.CLOUDINARY_CLOUD_NAME,
+      hasCloudinaryKey: !!process.env.CLOUDINARY_API_KEY,
+      hasCloudinarySecret: !!process.env.CLOUDINARY_API_SECRET,
+      nodeEnv: process.env.NODE_ENV
+    })
     
     const { requireAuth, getUserBySupabaseAuthId } = await import('@/lib/auth')
     const session = await requireAuth(request)
@@ -244,7 +250,8 @@ export async function POST(request) {
         
         // Configure Cloudinary
         if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-          console.warn('Cloudinary credentials not configured, skipping image upload')
+          console.error('❌ Cloudinary credentials not configured!')
+          console.log('Skipping image upload - product will be created without images')
         } else {
           cloudinary.config({
             cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -252,51 +259,84 @@ export async function POST(request) {
             api_secret: process.env.CLOUDINARY_API_SECRET
           })
           
-          for (const imageFile of imageFiles) {
-            if (imageFile instanceof File && imageFile.size > 0) {
-              try {
-                console.log(`Uploading image: ${imageFile.name}, size: ${imageFile.size}`)
-                
-                const arrayBuffer = await imageFile.arrayBuffer()
-                const buffer = Buffer.from(arrayBuffer)
-                
-                // Upload to Cloudinary using promise
-                const result = await new Promise((resolve, reject) => {
-                  const uploadStream = cloudinary.uploader.upload_stream(
-                    {
-                      folder: 'products',
-                      resource_type: 'auto'
-                    },
-                    (error, result) => {
-                      if (error) {
-                        console.error('Cloudinary upload error:', error)
-                        reject(error)
-                      } else {
-                        resolve(result)
-                      }
-                    }
-                  )
-                  uploadStream.end(buffer)
-                })
-                
-                images.push(result.secure_url)
-                console.log(`Image uploaded successfully: ${result.secure_url}`)
-              } catch (uploadError) {
-                console.error('Error uploading image:', imageFile.name, uploadError)
-                // Continue with other images even if one fails
-              }
+          // Upload with timeout protection
+          const uploadPromises = imageFiles.map(async (imageFile, index) => {
+            if (!(imageFile instanceof File) || imageFile.size === 0) {
+              console.log(`Skipping invalid file at index ${index}`)
+              return null
             }
+            
+            try {
+              console.log(`📤 Uploading image ${index + 1}/${imageFiles.length}: ${imageFile.name} (${(imageFile.size / 1024).toFixed(2)} KB)`)
+              
+              const arrayBuffer = await imageFile.arrayBuffer()
+              const buffer = Buffer.from(arrayBuffer)
+              
+              // Upload with 30 second timeout
+              const uploadWithTimeout = () => new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                  reject(new Error('Upload timeout (30s)'))
+                }, 30000)
+                
+                const uploadStream = cloudinary.uploader.upload_stream(
+                  {
+                    folder: 'products',
+                    resource_type: 'auto',
+                    timeout: 60000
+                  },
+                  (error, result) => {
+                    clearTimeout(timeout)
+                    if (error) {
+                      console.error(`❌ Cloudinary error for ${imageFile.name}:`, error)
+                      reject(error)
+                    } else {
+                      resolve(result)
+                    }
+                  }
+                )
+                uploadStream.end(buffer)
+              })
+              
+              const result = await uploadWithTimeout()
+              console.log(`✅ Image ${index + 1} uploaded: ${result.secure_url}`)
+              return result.secure_url
+            } catch (uploadError) {
+              console.error(`❌ Failed to upload image ${index + 1} (${imageFile.name}):`, uploadError.message)
+              return null
+            }
+          })
+          
+          // Wait for all uploads with overall timeout
+          const uploadResults = await Promise.race([
+            Promise.allSettled(uploadPromises),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Overall upload timeout (2 minutes)')), 120000))
+          ]).catch(error => {
+            console.error('⏱️ Overall upload timeout:', error.message)
+            return []
+          })
+          
+          // Collect successful uploads
+          if (Array.isArray(uploadResults)) {
+            uploadResults.forEach((result, index) => {
+              if (result.status === 'fulfilled' && result.value) {
+                images.push(result.value)
+              }
+            })
           }
         }
       } catch (cloudinaryError) {
-        console.error('Cloudinary initialization error:', cloudinaryError)
-        console.log('Continuing without images...')
+        console.error('❌ Cloudinary initialization error:', cloudinaryError)
+        console.log('⚠️ Continuing without images...')
       }
       
-      console.log(`Successfully uploaded ${images.length} images`)
+      console.log(`✅ Successfully uploaded ${images.length}/${imageFiles.length} images`)
     }
     
     productData.images = images
+    
+    if (imageFiles && imageFiles.length > 0 && images.length === 0) {
+      console.warn('⚠️ WARNING: All image uploads failed, creating product without images')
+    }
 
     console.log('Inserting product into database...', {
       name: productData.name,

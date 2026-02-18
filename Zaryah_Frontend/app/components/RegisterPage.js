@@ -23,13 +23,13 @@ export const RegisterPage = () => {
     password: '',
     confirmPassword: '',
     role: 'buyer',
-    city: 'Mumbai',
+    city: '',
     // Address fields
     address: {
       fullName: '',
       phone: '',
       address: '',
-      city: 'Mumbai',
+      city: '',
       state: '',
       pincode: '',
       isDefault: true
@@ -67,7 +67,6 @@ export const RegisterPage = () => {
   const router = useRouter()
   const [showAddressModal, setShowAddressModal] = useState(false)
 
-  const cities = ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Hyderabad', 'Pune', 'Ahmedabad']
   const indianStates = [
     'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
     'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
@@ -613,9 +612,15 @@ export const RegisterPage = () => {
           <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">City</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><MapPin className="h-5 w-5 text-gray-400" /></div>
-            <select id="city" name="city" value={formData.city} onChange={handleInputChange} className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors">
-              {cities.map(city => (<option key={city} value={city}>{city}</option>))}
-            </select>
+            <input
+              id="city"
+              name="city"
+              type="text"
+              value={formData.city}
+              onChange={handleInputChange}
+              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+              placeholder="Enter your city"
+            />
           </div>
         </div>
       </div>
@@ -731,17 +736,17 @@ export const RegisterPage = () => {
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <MapPin className="h-5 w-5 text-gray-400" />
               </div>
-              <select
+              <input
                 id="address.city"
                 name="address.city"
+                type="text"
                 value={formData.address.city}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
-              >
-                {cities.map(city => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
+                className={`block w-full pl-10 pr-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
+                  errors['address.city'] ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Enter your city"
+              />
             </div>
             <button
               type="button"
