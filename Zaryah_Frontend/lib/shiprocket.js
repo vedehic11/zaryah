@@ -137,7 +137,12 @@ export async function createShipment({
   await ensurePickupLocation(pickupLocation)
 
   // Calculate total weight and dimensions
-  const totalWeight = items.reduce((sum, item) => sum + ((item.weight || 0.5) * item.quantity), 0)
+  // Weight is stored in grams in the database, but Shiprocket expects kg
+  const totalWeight = items.reduce((sum, item) => {
+    const weightInGrams = item.weight || 500; // Default 500g if not specified
+    const weightInKg = weightInGrams / 1000;
+    return sum + (weightInKg * item.quantity);
+  }, 0);
   const length = 10 // Default package dimensions in cm
   const breadth = 10
   const height = 10

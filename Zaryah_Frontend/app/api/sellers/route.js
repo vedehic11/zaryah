@@ -188,9 +188,11 @@ export async function POST(request) {
       'full_name': ['fullName', 'full_name', 'name'],
       'business_name': ['businessName', 'business_name'],
       'primary_mobile': ['primaryMobile', 'primary_mobile', 'phone'],
-      'business_address': ['businessAddress', 'business_address'],
+      'business_address': ['businessAddress', 'business_address', 'address'],
       'business_description': ['businessDescription', 'business_description', 'description'],
       'city': ['city'],
+      'state': ['state'],
+      'pincode': ['pincode', 'zipCode', 'zip'],
       'id_type': ['idType', 'id_type'],
       'id_number': ['idNumber', 'id_number'],
       'account_holder_name': ['accountHolderName', 'account_holder_name'],
@@ -316,12 +318,14 @@ export async function POST(request) {
       'primary_mobile': 'Primary mobile',
       'business_address': 'Business address',
       'business_description': 'Business description',
+      'city': 'City',
+      'state': 'State',
+      'pincode': 'Pincode',
       'id_type': 'ID type',
       'id_number': 'ID number',
       'account_holder_name': 'Account holder name',
       'account_number': 'Account number',
-      'ifsc_code': 'IFSC code',
-      'city': 'City'
+      'ifsc_code': 'IFSC code'
     }
     
     const missingFields = []
@@ -503,10 +507,10 @@ export async function POST(request) {
     // Only include valid seller table columns
     const validSellerFields = [
       'full_name', 'business_name', 'username', 'cover_photo', 'primary_mobile',
-      'business_address', 'business_description', 'city', 'gst_number', 'pan_number',
-      'id_type', 'id_number', 'id_document', 'business_document', 'instagram',
-      'facebook', 'x', 'linkedin', 'alternate_mobile', 'account_holder_name',
-      'account_number', 'ifsc_code'
+      'business_address', 'business_description', 'city', 'state', 'pincode',
+      'gst_number', 'pan_number', 'id_type', 'id_number', 'id_document',
+      'business_document', 'instagram', 'facebook', 'x', 'linkedin',
+      'alternate_mobile', 'account_holder_name', 'account_number', 'ifsc_code'
     ]
     
     const sellerDataForInsert = {}

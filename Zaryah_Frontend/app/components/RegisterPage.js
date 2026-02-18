@@ -38,6 +38,9 @@ export const RegisterPage = () => {
     username: '',
     description: '',
     businessAddress: '',
+    businessCity: '',
+    businessState: '',
+    businessPincode: '',
     idNumber: '',
     idType: 'aadhar',
     accountHolderName: '',
@@ -65,6 +68,15 @@ export const RegisterPage = () => {
   const [showAddressModal, setShowAddressModal] = useState(false)
 
   const cities = ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Hyderabad', 'Pune', 'Ahmedabad']
+  const indianStates = [
+    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+    'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+    'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+    'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+    'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
+    'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
+  ]
   const idTypes = [
     { value: 'aadhar', label: 'Aadhar Card' },
     { value: 'pan', label: 'PAN Card' },
@@ -232,6 +244,13 @@ export const RegisterPage = () => {
       else if (usernameAvailable === false) newErrors.username = 'This username is already taken'
       if (!formData.description.trim()) newErrors.description = 'Business description is required'
       if (!formData.businessAddress.trim()) newErrors.businessAddress = 'Business address is required'
+      if (!formData.businessCity.trim()) newErrors.businessCity = 'City is required'
+      if (!formData.businessState.trim()) newErrors.businessState = 'State is required'
+      if (!formData.businessPincode.trim()) {
+        newErrors.businessPincode = 'Pincode is required'
+      } else if (!/^\d{6}$/.test(formData.businessPincode)) {
+        newErrors.businessPincode = 'Pincode must be 6 digits'
+      }
     }
     
     if (currentStep === 4 && formData.role === 'seller') {
@@ -388,6 +407,9 @@ export const RegisterPage = () => {
           x: formData.x || null,
           linkedin: formData.linkedin || null,
           businessAddress: formData.businessAddress,
+          city: formData.businessCity,
+          state: formData.businessState,
+          pincode: formData.businessPincode,
           accountHolderName: formData.accountHolderName,
           accountNumber: formData.bankAccountNumber,
           ifscCode: formData.ifscCode,
@@ -872,9 +894,30 @@ export const RegisterPage = () => {
       </div>
       
       <div>
-        <label htmlFor="businessAddress" className="block text-sm font-medium text-gray-700 mb-2">
-          Business Address *
-        </label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Business Address *
+          </label>
+          {formData.address.address && (
+            <button
+              type="button"
+              onClick={() => {
+                setFormData(prev => ({
+                  ...prev,
+                  businessAddress: prev.address.address,
+                  businessCity: prev.address.city,
+                  businessState: prev.address.state,
+                  businessPincode: prev.address.pincode
+                }))
+                toast.success('Address filled from default address')
+              }}
+              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-colors"
+            >
+              <MapPin className="w-4 h-4 mr-1.5" />
+              Use Default Address
+            </button>
+          )}
+        </div>
         <textarea
           id="businessAddress"
           name="businessAddress"
@@ -884,11 +927,77 @@ export const RegisterPage = () => {
           className={`block w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
             errors.businessAddress ? 'border-red-300' : 'border-gray-300'
           }`}
-          placeholder="Enter your complete business address"
+          placeholder="Enter your complete business address (street, area, landmark)"
         />
         {errors.businessAddress && (
           <p className="mt-1 text-sm text-red-600">{errors.businessAddress}</p>
         )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label htmlFor="businessCity" className="block text-sm font-medium text-gray-700 mb-2">
+            City *
+          </label>
+          <input
+            id="businessCity"
+            name="businessCity"
+            type="text"
+            value={formData.businessCity}
+            onChange={handleInputChange}
+            className={`block w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
+              errors.businessCity ? 'border-red-300' : 'border-gray-300'
+            }`}
+            placeholder="Enter city"
+          />
+          {errors.businessCity && (
+            <p className="mt-1 text-sm text-red-600">{errors.businessCity}</p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="businessState" className="block text-sm font-medium text-gray-700 mb-2">
+            State *
+          </label>
+          <select
+            id="businessState"
+            name="businessState"
+            value={formData.businessState}
+            onChange={handleInputChange}
+            className={`block w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
+              errors.businessState ? 'border-red-300' : 'border-gray-300'
+            }`}
+          >
+            <option value="">Select State</option>
+            {indianStates.map(state => (
+              <option key={state} value={state}>{state}</option>
+            ))}
+          </select>
+          {errors.businessState && (
+            <p className="mt-1 text-sm text-red-600">{errors.businessState}</p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="businessPincode" className="block text-sm font-medium text-gray-700 mb-2">
+            Pincode *
+          </label>
+          <input
+            id="businessPincode"
+            name="businessPincode"
+            type="text"
+            maxLength="6"
+            value={formData.businessPincode}
+            onChange={handleInputChange}
+            className={`block w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
+              errors.businessPincode ? 'border-red-300' : 'border-gray-300'
+            }`}
+            placeholder="6-digit pincode"
+          />
+          {errors.businessPincode && (
+            <p className="mt-1 text-sm text-red-600">{errors.businessPincode}</p>
+          )}
+        </div>
       </div>
     </div>
   )
