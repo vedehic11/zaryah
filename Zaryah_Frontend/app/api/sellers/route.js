@@ -14,8 +14,7 @@ export async function GET(request) {
     // Try to get user, but don't require auth for public seller list
     let user = null
     try {
-      const { requireAuth: requireAuthHelper } = await import('@/lib/auth')
-      const session = await requireAuthHelper(request)
+      const session = await requireAuth(request)
       if (session?.user) {
         user = await getUserBySupabaseAuthId(session.user.id)
       }
@@ -144,10 +143,9 @@ export async function POST(request) {
     console.log('Form data received, entries:', Array.from(formData.entries()).map(([k]) => k))
     
     // Get Supabase Auth user from session
-    const { requireAuth: requireAuthHelper } = await import('@/lib/auth')
     let session
     try {
-      session = await requireAuthHelper(request)
+      session = await requireAuth(request)
     } catch (authError) {
       console.log('Auth error:', authError.message)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -561,8 +559,7 @@ export async function POST(request) {
 // PUT /api/sellers - Update seller profile
 export async function PUT(request) {
   try {
-    const { requireAuth: requireAuthHelper } = await import('@/lib/auth')
-    const session = await requireAuthHelper(request)
+    const session = await requireAuth(request)
     
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

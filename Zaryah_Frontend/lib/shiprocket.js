@@ -325,6 +325,103 @@ export function verifyWebhookSignature(payload, signature) {
 }
 
 /**
+ * Calculate shipping rates using Shiprocket's serviceability API
+ * @param {Object} params - Rate calculation parameters
+ * @param {string} params.pickupPincode - Seller pickup pincode
+ * @param {string} params.deliveryPincode - Buyer delivery pincode
+ * @param {number} params.weight - Total package weight in kg
+ * @param {number} params.codAmount - COD amount (0 for prepaid)
+ * @returns {Promise<Array>} Available courier options with rates
+ */
+export async function calculateShippingRates({
+  pickupPincode,
+  deliveryPincode,
+  weight = 0.5,
+  codAmount = 0
+}) {
+  const token = await authenticate()
+
+  // Default dimensions (10x10x10 cm)
+  const length = 10
+  const breadth = 10
+  const height = 10
+
+  const params = new URLSearchParams({
+    pickup_postcode: pickupPincode,
+    delivery_postcode: deliveryPincode,
+    weight: weight.toString(),
+    length: length.toString(),
+    breadth: breadth.toString(),
+    height: height.toString(),
+    cod: codAmount > 0 ? '1' : '0'
+  })
+
+  if (codAmount > 0) {
+    params.append('declared_value', codAmount.toString())
+  }
+
+  const response = await fetch(
+    `${SHIPROCKET_API_BASE}/courier/serviceability/?${params.toString()}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(`Shiprocket serviceability check failed: ${error.message || response.statusText}`)
+  }
+
+  const result = await response.json()
+
+  if (!result.data || !result.data.available_courier_companies) {
+    throw new Error('No courier services available for this route')
+  }
+
+  // Return sorted by rate (cheapest first)
+  const couriers = result.data.available_courier_companies
+    .filter(courier => courier.freight_charge !== null)
+    .map(courier => ({
+      courier_name: courier.courier_name,
+      courier_company_id: courier.courier_company_id,
+      freight_charge: parseFloat(courier.freight_charge),
+      cod_charge: parseFloat(courier.cod_charges || 0),
+      total_charge: parseFloat(courier.rate || courier.freight_charge),
+      estimated_delivery_days: courier.estimated_delivery_days || courier.etd || 'N/A',
+      is_surface: courier.is_surface || false,
+      min_weight: courier.min_weight || 0,
+      rating: courier.rating || 0
+    }))
+    .sort((a, b) => a.total_charge - b.total_charge)
+
+  return couriers
+}
+
+/**
+ * Get the cheapest shipping rate for a route
+ * @param {Object} params - Same as calculateShippingRates
+ * @returns {Promise<number>} Cheapest delivery charge (includes ₹10 markup)
+ */
+export async function getCheapestShippingRate(params) {
+  try {
+    const couriers = await calculateShippingRates(params)
+    if (couriers.length === 0) {
+      // Fallback to standard rate + markup
+      return 50 + 10
+    }
+    // Add ₹10 hidden markup to Shiprocket rate
+    return Math.ceil(couriers[0].total_charge) + 10
+  } catch (error) {
+    console.error('Error fetching shipping rates:', error)
+    // Fallback to standard rate + markup on error
+    return 50 + 10
+  }
+}
+
+/**
  * Map Shiprocket status to internal order status
  * @param {string} shiprocketStatus - Shiprocket shipment status
  * @returns {string|null} Internal order status or null if no change needed

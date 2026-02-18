@@ -136,17 +136,21 @@ export const OrderHistoryPage = () => {
   const calculateOrderBreakdown = (order) => {
     const products = order.products || []
     const subtotal = products.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0)
-    // Only add ₹50 for items that actually have gift_packaging enabled
-    const giftPackagingFee = products.filter(item => item.gift_packaging === true).length * 50
-    const deliveryFee = subtotal >= 500 ? 0 : 40
+    // Only add ₹20 for items that actually have gift_packaging enabled
+    const giftPackagingFee = products.filter(item => item.gift_packaging === true).length * 20
+    // Use delivery_fee from order if available, otherwise calculate
+    const deliveryFee = order.delivery_fee !== undefined ? parseFloat(order.delivery_fee) : (subtotal >= 500 ? 0 : 40)
     const codFee = order.payment_method === 'cod' ? 10 : 0
-    const total = subtotal + giftPackagingFee + deliveryFee + codFee
+    // Use platform_fee from order if available, otherwise calculate based on subtotal
+    const platformFee = order.platform_fee !== undefined ? parseFloat(order.platform_fee) : (subtotal < 500 ? 10 : 20)
+    const total = subtotal + giftPackagingFee + deliveryFee + codFee + platformFee
     
     return {
       subtotal,
       giftPackagingFee,
       deliveryFee,
       codFee,
+      platformFee,
       total
     }
   }
@@ -519,9 +523,64 @@ export const OrderHistoryPage = () => {
                                 <span className="font-medium">{formatCurrency(calculateOrderBreakdown(order).codFee)}</span>
                               </div>
                             )}
+                            <div className="flex justify-between">
+                              <span className="text-charcoal-600 flex items-center gap-1">
+                                Platform Fee
+                              </span>
+                              <span className="font-medium">{formatCurrency(calculateOrderBreakdown(order).platformFee)}</span>
+                            </div>
                             <div className="flex justify-between pt-2 border-t border-gray-200">
                               <span className="text-charcoal-900 font-semibold">Total Amount:</span>
                               <span className="font-bold text-green-600">{formatCurrency(calculateOrderBreakdown(order).total)}</span>
+                            </div>
+                          </div>
+
+                          {/* Payment Breakdown - Where Your Money Goes */}
+                          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h5 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                              <span>💡</span> Where Your Money Goes
+                            </h5>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">To Seller (97.5% of products):</span>
+                                <span className="font-semibold text-blue-900">
+                                  {formatCurrency(parseFloat((calculateOrderBreakdown(order).subtotal * 0.975).toFixed(2)))}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Platform Commission (2.5% from seller):</span>
+                                <span className="font-semibold text-blue-900">
+                                  {formatCurrency(parseFloat((calculateOrderBreakdown(order).subtotal * 0.025).toFixed(2)))}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Platform Fee (you pay):</span>
+                                <span className="font-semibold text-blue-900">
+                                  {formatCurrency(calculateOrderBreakdown(order).platformFee)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Delivery Fee:</span>
+                                <span className="font-semibold text-blue-900">
+                                  {calculateOrderBreakdown(order).deliveryFee === 0 ? 'FREE' : formatCurrency(calculateOrderBreakdown(order).deliveryFee)}
+                                </span>
+                              </div>
+                              {calculateOrderBreakdown(order).giftPackagingFee > 0 && (
+                                <div className="flex justify-between">
+                                  <span className="text-blue-700">Gift Packaging:</span>
+                                  <span className="font-semibold text-blue-900">
+                                    {formatCurrency(calculateOrderBreakdown(order).giftPackagingFee)}
+                                  </span>
+                                </div>
+                              )}
+                              {order.payment_method === 'cod' && (
+                                <div className="flex justify-between">
+                                  <span className="text-blue-700">COD Charges:</span>
+                                  <span className="font-semibold text-blue-900">
+                                    {formatCurrency(calculateOrderBreakdown(order).codFee)}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>

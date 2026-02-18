@@ -14,7 +14,8 @@ import {
   XCircle,
   AlertCircle,
   Star,
-  MessageSquare
+  MessageSquare,
+  Package
 } from 'lucide-react'
 import { apiService } from '../services/api'
 import { useRouter } from 'next/navigation'
@@ -23,6 +24,7 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { AdminSellerManagementPage } from './AdminSellerManagementPage'
 import { AdminSupportPage } from './AdminSupportPage'
+import { AdminPaymentManagement } from './AdminPaymentManagement'
 
 export const AdminDashboardPage = () => {
   const { user, isLoading } = useAuth()
@@ -205,6 +207,7 @@ export const AdminDashboardPage = () => {
             <nav className="flex space-x-8 px-6" aria-label="Tabs">
               {[
                 { id: 'sellers', label: 'Seller Management', icon: Users },
+                { id: 'payments', label: 'Payment Issues', icon: AlertCircle },
                 { id: 'withdrawals', label: 'Withdrawals', icon: Wallet },
                 { id: 'earnings', label: 'Commission Earnings', icon: DollarSign },
                 { id: 'support', label: 'Support Tickets', icon: MessageSquare }
@@ -256,6 +259,13 @@ export const AdminDashboardPage = () => {
                 </div>
               </div>
               <AdminSellerManagementPage initialView={sellerView} />
+            </div>
+          )}
+
+          {/* Payment Issues Tab */}
+          {activeTab === 'payments' && (
+            <div className="p-6">
+              <AdminPaymentManagement />
             </div>
           )}
 
@@ -358,7 +368,10 @@ export const AdminDashboardPage = () => {
           {activeTab === 'earnings' && (
             <div className="p-6 space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold">Platform Commission Earnings (5%)</h2>
+                <div>
+                  <h2 className="text-xl font-bold">Platform Revenue</h2>
+                  <p className="text-sm text-gray-600">2.5% Seller Commission + Platform Fees (₹10/₹20) + Delivery Fees (includes ₹10 markup) + COD Fees</p>
+                </div>
                 <select
                   onChange={(e) => fetchEarnings(e.target.value)}
                   className="px-4 py-2 border border-gray-300 rounded-lg"
@@ -374,54 +387,143 @@ export const AdminDashboardPage = () => {
               {earnings ? (
                 <>
                   {/* Earnings Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                     <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
                       <div className="flex items-center justify-between mb-2">
                         <DollarSign className="w-8 h-8" />
                         <TrendingUp className="w-6 h-6" />
                       </div>
-                      <p className="text-purple-100 text-sm mb-1">Total Commission</p>
-                      <p className="text-3xl font-bold">₹{earnings.totalCommission?.toLocaleString() || '0.00'}</p>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
-                      <div className="flex items-center justify-between mb-2">
-                        <Users className="w-8 h-8" />
-                        <CheckCircle className="w-6 h-6" />
-                      </div>
-                      <p className="text-blue-100 text-sm mb-1">Total Orders</p>
-                      <p className="text-3xl font-bold">{earnings.totalOrders || 0}</p>
+                      <p className="text-purple-100 text-sm mb-1">Total Revenue</p>
+                      <p className="text-3xl font-bold">₹{earnings.totalRevenue?.toLocaleString() || '0.00'}</p>
                     </div>
 
                     <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
                       <div className="flex items-center justify-between mb-2">
-                        <IndianRupee className="w-8 h-8" />
-                        <Star className="w-6 h-6" />
+                        <DollarSign className="w-8 h-8" />
                       </div>
-                      <p className="text-green-100 text-sm mb-1">Avg per Order</p>
-                      <p className="text-3xl font-bold">₹{earnings.avgPerOrder?.toLocaleString() || '0.00'}</p>
+                      <p className="text-green-100 text-sm mb-1">Seller Commission (2.5%)</p>
+                      <p className="text-3xl font-bold">₹{earnings.totalCommission?.toLocaleString() || '0.00'}</p>
+                    </div>
+                    
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+                      <div className="flex items-center justify-between mb-2">
+                        <Package className="w-8 h-8" />
+                      </div>
+                      <p className="text-blue-100 text-sm mb-1">Platform Fees</p>
+                      <p className="text-3xl font-bold">₹{earnings.totalPlatformFees?.toLocaleString() || '0.00'}</p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+                      <div className="flex items-center justify-between mb-2">
+                        <Package className="w-8 h-8" />
+                      </div>
+                      <p className="text-orange-100 text-sm mb-1">Delivery Fees</p>
+                      <p className="text-3xl font-bold">₹{earnings.totalDeliveryFees?.toLocaleString() || '0.00'}</p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-6 text-white">
+                      <div className="flex items-center justify-between mb-2">
+                        <DollarSign className="w-8 h-8" />
+                      </div>
+                      <p className="text-teal-100 text-sm mb-1">COD Fees</p>
+                      <p className="text-3xl font-bold">₹{earnings.totalCODFees?.toLocaleString() || '0.00'}</p>
                     </div>
                   </div>
 
-                  {/* Recent Earnings */}
+                  {/* Recent Earnings - Detailed Table */}
                   {earnings.recentEarnings && earnings.recentEarnings.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-semibold mb-4">Recent Commission Earnings</h3>
-                      <div className="space-y-3">
-                        {earnings.recentEarnings.map((earning) => (
-                          <div key={earning.id} className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">Order #{earning.order_id?.slice(0, 8)}</p>
-                              <p className="text-sm text-gray-500">
-                                {earning.sellers?.business_name} • {new Date(earning.earned_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-green-600">+₹{earning.commission_amount?.toLocaleString()}</p>
-                              <p className="text-xs text-gray-500">{earning.commission_rate}% of ₹{earning.order_amount?.toLocaleString()}</p>
-                            </div>
-                          </div>
-                        ))}
+                      <h3 className="text-lg font-semibold mb-4">Recent Revenue Breakdown</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-gray-50 border-b-2 border-gray-200">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Order</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Seller</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Commission (2.5%)</th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Platform Fee</th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Delivery Fee</th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">COD Fee</th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {earnings.recentEarnings.map((earning) => {
+                              const commission = parseFloat(earning.commission_amount || 0)
+                              const platformFee = parseFloat(earning.platform_fee || 0)
+                              const deliveryFee = parseFloat(earning.delivery_fee || 0)
+                              const codFee = parseFloat(earning.cod_fee || 0)
+                              const total = commission + platformFee + deliveryFee + codFee
+
+                              return (
+                                <tr key={earning.id} className="hover:bg-gray-50 transition-colors">
+                                  <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                    #{earning.order_id?.slice(0, 8)}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {earning.sellers?.business_name || 'N/A'}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {new Date(earning.earned_at).toLocaleDateString('en-IN', {
+                                      day: 'numeric',
+                                      month: 'short'
+                                    })}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right font-semibold text-green-600">
+                                    ₹{commission.toLocaleString()}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right font-semibold text-blue-600">
+                                    {platformFee > 0 ? `₹${platformFee}` : '-'}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right font-semibold text-orange-600">
+                                    {deliveryFee > 0 ? `₹${deliveryFee}` : '-'}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right font-semibold text-teal-600">
+                                    {codFee > 0 ? `₹${codFee}` : '-'}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right font-bold text-purple-600">
+                                    ₹{total.toLocaleString()}
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                          <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+                            <tr>
+                              <td colSpan="3" className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                                Total:
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-bold text-green-600">
+                                ₹{earnings.totalCommission?.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-bold text-blue-600">
+                                ₹{earnings.totalPlatformFees?.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-bold text-orange-600">
+                                ₹{earnings.totalDeliveryFees?.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-bold text-teal-600">
+                                ₹{earnings.totalCODFees?.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-right text-lg font-bold text-purple-600">
+                                ₹{earnings.totalRevenue?.toLocaleString()}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                      
+                      {/* How it's calculated */}
+                      <div className="bg-blue-50 border border-blue-200 rounded p-4 text-xs space-y-1 mt-6">
+                        <p className="font-semibold text-blue-900 mb-2">💡 Revenue Breakdown:</p>
+                        <p className="text-blue-700">• <span className="font-semibold">Seller Commission:</span> 2.5% from product amount (sellers keep 97.5%)</p>
+                        <p className="text-blue-700">• <span className="font-semibold">Platform Fee:</span> ₹10 (if order &lt;₹500) or ₹20 (if order &ge;₹500) paid by buyer</p>
+                        <p className="text-blue-700">• <span className="font-semibold">Delivery Fee:</span> 100% to platform (includes ₹10 markup on Shiprocket charges)</p>
+                        <p className="text-blue-700">• <span className="font-semibold">COD Fee:</span> ₹10 per COD order, paid by buyer</p>
+                        <p className="text-blue-700 mt-2 pt-2 border-t border-blue-300">
+                          <span className="font-semibold">Note:</span> Gift packaging fees (₹20/item) go 100% to seller
+                        </p>
                       </div>
                     </div>
                   )}

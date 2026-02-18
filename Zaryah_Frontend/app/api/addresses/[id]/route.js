@@ -7,8 +7,7 @@ import { supabase } from '@/lib/supabase'
 export async function GET(request, { params }) {
   try {
     const { id } = await params
-    const { requireAuth: requireAuthHelper } = await import('@/lib/auth')
-    const session = await requireAuthHelper(request)
+    const session = await requireAuth(request)
     const user = await getUserBySupabaseAuthId(session.user.id)
     
     if (!user) {
@@ -40,8 +39,7 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     const { id } = await params
-    const { requireAuth: requireAuthHelper } = await import('@/lib/auth')
-    const session = await requireAuthHelper(request)
+    const session = await requireAuth(request)
     const user = await getUserBySupabaseAuthId(session.user.id)
     
     if (!user) {
@@ -108,8 +106,7 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params
-    const { requireAuth: requireAuthHelper } = await import('@/lib/auth')
-    const session = await requireAuthHelper(request)
+    const session = await requireAuth(request)
     const user = await getUserBySupabaseAuthId(session.user.id)
     
     if (!user) {

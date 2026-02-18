@@ -25,6 +25,8 @@ export default function CheckoutPage() {
   ) // 'online' or 'cod'
   const [isProcessing, setIsProcessing] = useState(false)
   const [showAddressForm, setShowAddressForm] = useState(false)
+  const [calculatingDelivery, setCalculatingDelivery] = useState(false)
+  const [dynamicDeliveryCharge, setDynamicDeliveryCharge] = useState(null)
   const [newAddress, setNewAddress] = useState({
     name: user?.name || '',
     phone: '',
@@ -57,12 +59,67 @@ export default function CheckoutPage() {
     }
   }, [user, cart, addresses, router])
 
+  // Calculate delivery charge dynamically when address changes
+  useEffect(() => {
+    const calculateDeliveryCharge = async () => {
+      if (!selectedAddress?.pincode || !cart || cart.length === 0) {
+        setDynamicDeliveryCharge(null)
+        return
+      }
+
+      setCalculatingDelivery(true)
+      console.log('🚚 Calculating delivery charge for pincode:', selectedAddress.pincode)
+      
+      try {
+        const response = await fetch('/api/shipping/calculate-rate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            deliveryPincode: selectedAddress.pincode,
+            cartItems: cart.map(item => ({
+              product_id: item.id || item._id,
+              seller_id: item.sellerId || item.seller_id,
+              weight: item.weight || 0.5,
+              quantity: item.quantity
+            })),
+            codAmount: paymentMethod === 'cod' ? subtotal : 0
+          })
+        })
+
+        const data = await response.json()
+        console.log('🚚 Delivery charge response:', data)
+        
+        if (data.success && data.deliveryCharge !== undefined) {
+          setDynamicDeliveryCharge(data.deliveryCharge)
+          console.log('✅ Dynamic delivery charge set:', data.deliveryCharge)
+          if (data.fallback) {
+            console.warn('⚠️ Using fallback delivery charge:', data.error)
+            toast.error(`Using standard delivery rate: ${data.error}`, { duration: 3000 })
+          }
+        } else {
+          console.error('❌ Failed to get delivery charge:', data)
+        }
+      } catch (error) {
+        console.error('❌ Error calculating delivery charge:', error)
+        toast.error('Could not calculate delivery charge, using standard rate')
+      } finally {
+        setCalculatingDelivery(false)
+      }
+    }
+
+    if (selectedAddress?.pincode) {
+      calculateDeliveryCharge()
+    }
+  }, [selectedAddress, paymentMethod, cart])
+
   // Calculate totals
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-  const giftPackagingFee = cart.filter(item => item.giftPackaging).length * 50
-  const deliveryFee = subtotal >= 500 ? 0 : 40
+  const giftPackagingFee = cart.filter(item => item.giftPackaging).length * 20
+  const deliveryFeeBase = dynamicDeliveryCharge !== null ? dynamicDeliveryCharge : (subtotal >= 500 ? 0 : 40)
+  const deliveryFee = deliveryFeeBase + 10 // Add ₹10 hidden markup
   const codFee = paymentMethod === 'cod' ? 10 : 0
-  const total = subtotal + giftPackagingFee + deliveryFee + codFee
+  const platformFee = subtotal < 500 ? 10 : 20 // Flat platform fee based on order value
+  const total = subtotal + giftPackagingFee + deliveryFee + codFee + platformFee
 
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
@@ -88,10 +145,22 @@ export default function CheckoutPage() {
         })),
         address: addressString,
         paymentMethod,
-        totalAmount: total
+        totalAmount: total,
+        deliveryFee: deliveryFee,
+        giftPackagingFee: giftPackagingFee,
+        codFee: codFee,
+        platformFee: platformFee
       }
 
       console.log('Step 2: Creating order with data:', orderData)
+      console.log('Order breakdown:', {
+        subtotal,
+        giftPackagingFee,
+        deliveryFee,
+        codFee,
+        platformFee,
+        total
+      })
 
       const responseData = await apiService.request('/orders', {
         method: 'POST',
@@ -127,6 +196,14 @@ export default function CheckoutPage() {
         console.log('Step 5: Payment order created:', paymentData)
         const { order_id: razorpayOrderId } = paymentData
 
+        // Update order with razorpay_order_id for webhook tracking
+        await apiService.request(`/orders/${order.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            payment_id: razorpayOrderId
+          })
+        })
+
         const options = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
           amount: total * 100, // Amount in paise for Razorpay
@@ -135,11 +212,14 @@ export default function CheckoutPage() {
           description: 'Order Payment',
           order_id: razorpayOrderId,
           handler: async function (response) {
-            console.log('Payment successful:', response)
+            console.log('✅ Razorpay payment successful:', response)
+            
+            // Show immediate success feedback
+            toast.loading('Verifying payment...', { id: 'payment-verify', duration: 10000 })
             
             try {
-              // Verify payment on backend
-              await apiService.request('/payment/verify', {
+              // Verify payment with 8 second timeout
+              const verificationPromise = apiService.request('/payment/verify', {
                 method: 'POST',
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id,
@@ -149,12 +229,80 @@ export default function CheckoutPage() {
                 })
               })
               
-              toast.success('Payment successful!')
+              const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Verification timeout')), 8000)
+              )
+              
+              const verificationResult = await Promise.race([verificationPromise, timeoutPromise])
+              
+              console.log('✅ Payment verified successfully:', verificationResult)
+              toast.success('Payment successful! Redirecting...', { id: 'payment-verify' })
+              setIsProcessing(false)
               clearCart()
-              router.push(`/orders`)
+              
+              // Small delay before redirect to show success message
+              setTimeout(() => router.push('/orders'), 1000)
             } catch (error) {
-              console.error('Payment verification failed:', error)
-              toast.error('Payment verification failed. Please contact support.')
+              console.error('❌ Payment verification failed:', error)
+              setIsProcessing(false)
+              
+              if (error.message === 'Verification timeout') {
+                // Check actual payment status from Razorpay before assuming anything
+                toast.loading('Checking payment status...', { id: 'payment-verify' })
+                
+                try {
+                  const statusCheck = await apiService.request('/payment/check-status', {
+                    method: 'POST',
+                    body: JSON.stringify({ razorpayOrderId })
+                  })
+                  
+                  if (statusCheck.payment?.status === 'captured' || statusCheck.payment?.status === 'authorized') {
+                    // Payment succeeded, retry verification
+                    toast.loading('Payment confirmed! Finalizing order...', { id: 'payment-verify' })
+                    
+                    await apiService.request('/payment/verify', {
+                      method: 'POST',
+                      body: JSON.stringify({
+                        razorpay_order_id: razorpayOrderId,
+                        razorpay_payment_id: statusCheck.payment.id,
+                        razorpay_signature: response.razorpay_signature,
+                        order_id: order.id
+                      })
+                    })
+                    
+                    toast.success('Payment successful!', { id: 'payment-verify' })
+                    clearCart()
+                    setTimeout(() => router.push('/orders'), 1000)
+                  } else if (statusCheck.payment?.status === 'failed') {
+                    // Payment actually failed
+                    toast.error(`Payment failed: ${statusCheck.payment.error_description || 'Unknown error'}`, { 
+                      id: 'payment-verify',
+                      duration: 5000
+                    })
+                  } else {
+                    // Still processing or uncertain
+                    toast.loading('Payment is being processed. Check your orders in a moment.', { 
+                      id: 'payment-verify',
+                      duration: 5000 
+                    })
+                    setTimeout(() => router.push('/orders'), 3000)
+                  }
+                } catch (statusError) {
+                  console.error('Status check failed:', statusError)
+                  toast.loading('Unable to confirm status. Please check your orders.', { 
+                    id: 'payment-verify',
+                    duration: 5000
+                  })
+                  setTimeout(() => router.push('/orders'), 3000)
+                }
+              } else {
+                // Actual verification error
+                toast.error(`Verification failed. Check your orders or contact support. Order: ${order.id}`, { 
+                  id: 'payment-verify',
+                  duration: 6000
+                })
+                setTimeout(() => router.push('/orders'), 3000)
+              }
             }
           },
           prefill: {
@@ -167,15 +315,38 @@ export default function CheckoutPage() {
           },
           modal: {
             ondismiss: function() {
-              console.log('Payment dismissed by user')
+              console.log('⚠️ Payment modal dismissed by user')
               setIsProcessing(false)
               toast.error('Payment cancelled')
-            }
+            },
+            confirm_close: true
           }
         }
 
         console.log('Step 6: Opening Razorpay modal...')
         const razorpay = new window.Razorpay(options)
+        
+        // Handle payment failure
+        razorpay.on('payment.failed', async function (response) {
+          console.error('❌ Payment failed:', response.error)
+          setIsProcessing(false)
+          
+          // Update order status to failed
+          try {
+            await apiService.request(`/orders/${order.id}`, {
+              method: 'PATCH',
+              body: JSON.stringify({
+                payment_status: 'failed',
+                notes: `Payment failed: ${response.error.description}`
+              })
+            })
+          } catch (error) {
+            console.error('Failed to update order status:', error)
+          }
+          
+          toast.error(`Payment failed: ${response.error.description}`)
+        })
+        
         razorpay.open()
         
         // Don't set isProcessing to false here as payment modal is open
@@ -543,8 +714,13 @@ export default function CheckoutPage() {
                     <span>₹{giftPackagingFee}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-charcoal-700">
-                  <span>Delivery Fee</span>
+                <div className="flex justify-between text-charcoal-700 items-center">
+                  <span className="flex items-center gap-2">
+                    Delivery Fee
+                    {calculatingDelivery && (
+                      <span className="text-xs text-blue-600 animate-pulse">calculating...</span>
+                    )}
+                  </span>
                   <span>{deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`}</span>
                 </div>
                 {codFee > 0 && (
@@ -553,11 +729,42 @@ export default function CheckoutPage() {
                     <span>₹{codFee}</span>
                   </div>
                 )}
+                <div className="flex justify-between text-charcoal-700">
+                  <span className="flex items-center gap-1">
+                    Platform Fee
+                  </span>
+                  <span>₹{platformFee}</span>
+                </div>
                 <div className="border-t border-gray-200 pt-2 flex justify-between text-lg font-bold text-charcoal-900">
                   <span>Total</span>
                   <span>₹{total}</span>
                 </div>
               </div>
+
+              {dynamicDeliveryCharge !== null && selectedAddress && (
+                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <Truck className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-blue-800 font-medium">
+                        Delivery charge calculated
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Based on weight & distance to {selectedAddress.pincode}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {deliveryFee === 0 && (
+                <div className="mt-3 p-3 bg-green-50 rounded-lg flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-green-800">
+                    Yay! You got free delivery
+                  </p>
+                </div>
+              )}
 
               <button
                 onClick={handlePlaceOrder}

@@ -1,6 +1,6 @@
 // Next.js API route for orders
 import { NextResponse } from 'next/server'
-import { requireRole, getBuyerId, getSellerId } from '@/lib/auth'
+import { requireRole, getBuyerId, getSellerId, requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 
 // GET /api/orders - Get orders (buyer, seller, or admin)
@@ -10,8 +10,7 @@ export async function GET(request) {
     const userType = searchParams.get('userType') // buyer, seller, or admin
     
     // Get authenticated user
-    const { requireAuth: requireAuthHelper, getUserBySupabaseAuthId } = await import('@/lib/auth')
-    const session = await requireAuthHelper(request)
+    const session = await requireAuth(request)
     const user = await getUserBySupabaseAuthId(session.user.id)
     
     if (!user) {
@@ -103,7 +102,25 @@ export async function POST(request) {
     const buyerId = user.id
     const body = await request.json()
     console.log('Request body:', JSON.stringify(body, null, 2))
-    const { items, address, paymentMethod, paymentId, totalAmount: frontendTotal } = body
+    const { 
+      items, 
+      address, 
+      paymentMethod, 
+      paymentId, 
+      totalAmount: frontendTotal,
+      deliveryFee,
+      giftPackagingFee,
+      codFee,
+      platformFee
+    } = body
+
+    console.log('Order breakdown from frontend:', {
+      totalAmount: frontendTotal,
+      deliveryFee,
+      giftPackagingFee,
+      codFee,
+      platformFee
+    })
 
     if (!items || items.length === 0) {
       console.error('Cart is empty')
@@ -178,7 +195,9 @@ export async function POST(request) {
         payment_method: paymentMethod || 'cod',
         payment_id: paymentId || null,
         payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
-        status: 'pending'
+        status: 'pending',
+        delivery_fee: deliveryFee || 0,
+        service_charge: platformFee || 0  // Using service_charge column for platform fee
       })
       .select()
       .single()
@@ -251,37 +270,36 @@ export async function POST(request) {
       console.log('Cart cleared')
     }
 
-    // Update seller wallet - add to pending balance (95% after 5% commission)
+    // Update seller wallet - add to pending balance (97.5% after 2.5% commission)
     console.log('Updating seller wallet...')
-    const sellerEarnings = totalAmount * 0.95 // 95% to seller
+    const sellerEarnings = parseFloat((subtotal * 0.975).toFixed(2)) // 97.5% to seller
+    const platformCommission = parseFloat((subtotal * 0.025).toFixed(2)) // 2.5% from seller
     
-    // First ensure wallet exists
+    console.log('💰 SELLER EARNINGS CALCULATED:')
+    console.log('  Product subtotal:', `₹${subtotal}`)
+    console.log('  Seller earnings (97.5%):', `₹${sellerEarnings}`)
+    console.log('  Platform commission (2.5%):', `₹${platformCommission}`)
+    console.log('  Note: Wallet balances are calculated dynamically from order status')
+    
+    // Ensure wallet exists (balances are calculated dynamically, not stored)
     const { data: existingWallet } = await supabase
       .from('wallets')
-      .select('*')
+      .select('id')
       .eq('seller_id', sellerId)
       .single()
 
     if (!existingWallet) {
-      // Create wallet if doesn't exist
+      console.log('  Creating wallet record for seller')
       await supabase
         .from('wallets')
         .insert({
           seller_id: sellerId,
-          pending_balance: sellerEarnings,
+          pending_balance: 0,
           available_balance: 0,
           total_earned: 0
         })
-    } else {
-      // Update existing wallet - add to pending balance
-      await supabase
-        .from('wallets')
-        .update({
-          pending_balance: (parseFloat(existingWallet.pending_balance) || 0) + sellerEarnings
-        })
-        .eq('seller_id', sellerId)
     }
-    console.log(`Wallet updated: +₹${sellerEarnings} to pending balance`)
+    console.log(`✅ Order created - wallet will reflect ₹${sellerEarnings} in pending balance`)
 
     // Create transaction record
     await supabase

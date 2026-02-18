@@ -13,35 +13,19 @@ export async function GET(request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Fetch cart with items and product details
+    // Fetch cart (single cart for now - multi-cart requires seller_id column)
     const { data: cart, error: cartError } = await supabase
       .from('carts')
-      .select(`
-        id,
-        buyer_id,
-        created_at,
-        updated_at
-      `)
+      .select('id, buyer_id, created_at, updated_at')
       .eq('buyer_id', user.id)
-      .single()
+      .maybeSingle()
 
-    // If no cart exists, create one
-    if (cartError && cartError.code === 'PGRST116') {
-      const { data: newCart, error: createError } = await supabase
-        .from('carts')
-        .insert({ buyer_id: user.id })
-        .select()
-        .single()
-
-      if (createError) {
-        return NextResponse.json({ error: createError.message }, { status: 500 })
-      }
-
+    // If no cart exists, return empty
+    if (!cart) {
       return NextResponse.json({
-        id: newCart.id,
-        buyer_id: newCart.buyer_id,
-        items: [],
-        total: 0
+        carts: [],
+        totalItems: 0,
+        totalPrice: 0
       })
     }
 
@@ -49,7 +33,7 @@ export async function GET(request) {
       return NextResponse.json({ error: cartError.message }, { status: 500 })
     }
 
-    // Fetch cart items with product details
+    // Fetch cart items
     const { data: items, error: itemsError } = await supabase
       .from('cart_items')
       .select(`
@@ -81,17 +65,48 @@ export async function GET(request) {
       return NextResponse.json({ error: itemsError.message }, { status: 500 })
     }
 
-    // Calculate total
-    const total = (items || []).reduce((sum, item) => {
-      const price = item.products?.price || 0
-      return sum + (price * item.quantity)
-    }, 0)
+    // Group items by seller
+    const itemsBySeller = {}
+    ;(items || []).forEach(item => {
+      const sellerId = item.products?.seller_id
+      if (!sellerId) return
+      
+      if (!itemsBySeller[sellerId]) {
+        itemsBySeller[sellerId] = {
+          seller_id: sellerId,
+          seller_name: item.products?.sellers?.business_name || item.products?.sellers?.full_name || 'Unknown Seller',
+          items: []
+        }
+      }
+      itemsBySeller[sellerId].items.push(item)
+    })
+
+    // Convert to carts array
+    const cartsArray = Object.values(itemsBySeller).map((sellerCart, index) => {
+      const total = sellerCart.items.reduce((sum, item) => {
+        const price = item.products?.price || 0
+        return sum + (price * item.quantity)
+      }, 0)
+
+      return {
+        id: `${cart.id}-seller-${index}`,
+        buyer_id: cart.buyer_id,
+        seller_id: sellerCart.seller_id,
+        seller_name: sellerCart.seller_name,
+        items: sellerCart.items,
+        total,
+        itemCount: sellerCart.items.reduce((sum, item) => sum + item.quantity, 0)
+      }
+    })
+
+    // Calculate totals
+    const totalItems = cartsArray.reduce((sum, cart) => sum + cart.itemCount, 0)
+    const totalPrice = cartsArray.reduce((sum, cart) => sum + cart.total, 0)
 
     return NextResponse.json({
-      id: cart.id,
-      buyer_id: cart.buyer_id,
-      items: items || [],
-      total
+      carts: cartsArray,
+      totalItems,
+      totalPrice
     })
 
   } catch (error) {
@@ -135,14 +150,15 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Insufficient stock' }, { status: 400 })
     }
 
-    // Get or create cart
+    // Get or create cart for this buyer (single cart for all items)
     let { data: cart, error: cartError } = await supabase
       .from('carts')
       .select('id')
       .eq('buyer_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (cartError && cartError.code === 'PGRST116') {
+    if (!cart) {
+      // No cart exists - create new one
       const { data: newCart, error: createError } = await supabase
         .from('carts')
         .insert({ buyer_id: user.id })

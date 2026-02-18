@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X, Send } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { supabaseClient } from '@/lib/supabase-client'
 
 export function CreateSupportTicket({ isOpen, onClose, orders, prefillData }) {
   const [formData, setFormData] = useState({
@@ -20,11 +21,21 @@ export function CreateSupportTicket({ isOpen, onClose, orders, prefillData }) {
     setLoading(true)
 
     try {
+      // Get auth token from Supabase session
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      const token = session?.access_token
+      
+      if (!token) {
+        throw new Error('You must be logged in to create a support ticket')
+      }
+
       const response = await fetch('/api/support/tickets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Send auth token
         },
+        credentials: 'include',
         body: JSON.stringify({
           subject: formData.subject,
           message: formData.description,
@@ -37,7 +48,11 @@ export function CreateSupportTicket({ isOpen, onClose, orders, prefillData }) {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create ticket')
+        console.error('Server response:', data)
+        const errorMsg = data.error || data.message || 'Failed to create ticket'
+        const details = data.details ? ` (${data.details})` : ''
+        const hint = data.hint ? ` Hint: ${data.hint}` : ''
+        throw new Error(errorMsg + details + hint)
       }
 
       toast.success('Support ticket created successfully!')

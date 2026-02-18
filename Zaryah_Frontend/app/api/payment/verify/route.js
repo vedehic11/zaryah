@@ -56,30 +56,60 @@ export async function POST(request) {
 
       console.log(`Order ${order_id} marked as paid`)
 
-      // Get order details
+      // Get order details with order items to calculate product subtotal
       const { data: order } = await supabase
         .from('orders')
-        .select('seller_id, seller_amount, commission_amount, total_amount')
+        .select(`
+          *,
+          order_items (
+            quantity,
+            price
+          )
+        `)
         .eq('id', order_id)
         .single()
 
       if (order && order.seller_id) {
-        // Calculate amounts if not already set
-        const sellerAmount = order.seller_amount || (order.total_amount * 0.95)
-        const commissionAmount = order.commission_amount || (order.total_amount * 0.05)
-
-        // Credit seller wallet (PENDING balance until delivery)
-        const { data: walletResult, error: walletError } = await supabase.rpc('credit_seller_wallet_pending', {
-          p_seller_id: order.seller_id,
-          p_order_id: order_id,
-          p_amount: sellerAmount,
-          p_description: `Payment received for order - pending delivery confirmation`
+        // Calculate product subtotal from order items
+        const productSubtotal = (order.order_items || []).reduce((sum, item) => 
+          sum + (parseFloat(item.price) * item.quantity), 0
+        )
+        
+        // Seller gets 97.5% of product subtotal (2.5% commission deducted)
+        const sellerAmount = parseFloat((productSubtotal * 0.975).toFixed(2))
+        const sellerCommission = parseFloat((productSubtotal * 0.025).toFixed(2))
+        const buyerServiceCharge = parseFloat((productSubtotal * 0.025).toFixed(2))
+        const deliveryFee = parseFloat(order.delivery_fee || 0)
+        const totalAdminEarnings = sellerCommission + buyerServiceCharge + deliveryFee
+        
+        console.log('Payment verification - Revenue breakdown:', {
+          productSubtotal,
+          sellerAmount: `${sellerAmount} (97.5%)`,
+          sellerCommission: `${sellerCommission} (2.5% from seller)`,
+          buyerServiceCharge: `${buyerServiceCharge} (2.5% from buyer)`,
+          deliveryFee: `${deliveryFee} (100% delivery)`,
+          totalAdminEarnings
         })
 
-        if (walletError) {
-          console.error('Wallet credit error:', walletError)
-        } else {
-          console.log(`✅ Wallet credited (pending) for seller ${order.seller_id}: ₹${sellerAmount}`)
+        console.log(`✅ Payment verified - ₹${sellerAmount} will show in seller's pending balance`)
+        console.log('Note: Wallet balances are calculated dynamically from order status')
+
+        // Ensure wallet exists for seller (balances calculated dynamically)
+        const { data: existingWallet } = await supabase
+          .from('wallets')
+          .select('id')
+          .eq('seller_id', order.seller_id)
+          .single()
+
+        if (!existingWallet) {
+          await supabase
+            .from('wallets')
+            .insert({
+              seller_id: order.seller_id,
+              pending_balance: 0,
+              available_balance: 0,
+              total_earned: 0
+            })
         }
 
         // Record admin commission
@@ -88,17 +118,18 @@ export async function POST(request) {
           .insert({
             order_id: order_id,
             seller_id: order.seller_id,
-            order_amount: order.total_amount,
-            commission_rate: COMMISSION_RATE,
-            commission_amount: commissionAmount,
-            seller_amount: sellerAmount,
-            status: 'earned'
+            order_amount: productSubtotal,
+            commission_rate: 5.0, // 2.5% from seller + 2.5% from buyer
+            commission_amount: totalAdminEarnings,
+            delivery_fee: deliveryFee,
+            status: 'earned',
+            earned_at: new Date().toISOString()
           })
 
         if (commissionError) {
           console.error('Commission record error:', commissionError)
         } else {
-          console.log(`💰 Admin commission recorded: ₹${commissionAmount}`)
+          console.log(`💰 Admin earnings recorded: ₹${totalAdminEarnings} (${sellerCommission} seller commission + ${buyerServiceCharge} service charge + ${deliveryFee} delivery)`)
         }
       }
     }

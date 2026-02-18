@@ -91,18 +91,18 @@ export const GiftSuggesterPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream-50 to-primary-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back Button */}
-        <button
-          onClick={() => router.back()}
-          className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm hover:shadow-md transition-shadow mb-6"
-          aria-label="Go back"
-        >
-          <ChevronLeft className="w-6 h-6 text-charcoal-800" />
-        </button>
-
-        {/* Header */}
+        {/* Header with Back Button */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-charcoal-900 font-serif mb-4">Gift Suggester</h1>
+          <div className="flex items-center gap-4 mb-4">
+            <button
+              onClick={() => router.back()}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm hover:shadow-md transition-shadow flex-shrink-0"
+              aria-label="Go back"
+            >
+              <ChevronLeft className="w-6 h-6 text-charcoal-800" />
+            </button>
+            <h1 className="text-4xl font-bold text-charcoal-900 font-serif">Gift Suggester</h1>
+          </div>
           <p className="text-xl text-charcoal-600">Find the perfect gift for your loved ones</p>
         </div>
 

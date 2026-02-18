@@ -8,7 +8,7 @@ import {
   Plus, Clock, CheckCircle, XCircle, AlertTriangle, Users, Star,
   BarChart3, Settings, Upload, Image as ImageIcon, FileText, MessageCircle,
   Wallet, ArrowUpCircle, ArrowDownCircle, CreditCard, IndianRupee, Truck, ExternalLink, User,
-  Instagram, Facebook, Twitter, Linkedin, MapPin, Building, Sparkles
+  Instagram, Facebook, Twitter, Linkedin, MapPin, Building, Sparkles, X
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
@@ -36,12 +36,66 @@ export default function SellerDashboardPage() {
   const [transactions, setTransactions] = useState([])
   const [withdrawals, setWithdrawals] = useState([])
   const [showWithdrawalForm, setShowWithdrawalForm] = useState(false)
+  const [showPendingBreakdown, setShowPendingBreakdown] = useState(false)
+  const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false)
+  const [showAvailableBreakdown, setShowAvailableBreakdown] = useState(false)
   const [withdrawalData, setWithdrawalData] = useState({
     amount: '',
     bank_account_number: '',
     ifsc_code: '',
     account_holder_name: ''
   })
+
+  // Log pending breakdown when modal opens
+  useEffect(() => {
+    if (showPendingBreakdown && orders.length > 0) {
+      console.log('\n🔍 === PENDING BALANCE BREAKDOWN MODAL OPENED ===')
+      console.log(`📊 Total Pending Balance from Wallet: ₹${wallet?.pending_balance?.toLocaleString() || '0.00'}`)
+      
+      const pendingOrders = orders.filter(o => 
+        ['pending', 'confirmed', 'dispatched'].includes(o.status) && 
+        (o.payment_status === 'paid' || o.payment_method === 'cod')
+      )
+      
+      console.log(`\n📦 Found ${pendingOrders.length} pending orders:`)
+      
+      let calculatedTotal = 0
+      pendingOrders.forEach((order, index) => {
+        const productSubtotal = order.order_items?.reduce((sum, item) => 
+          sum + (item.quantity * item.price), 0
+        ) || 0
+        const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
+        const giftFees = giftItemsCount * 20
+        const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+        const totalForOrder = sellerShare + giftFees
+        calculatedTotal += totalForOrder
+        
+        console.log(`\n  Order ${index + 1}: #${order.order_number}`)
+        console.log(`    Status: ${order.status} | Payment: ${order.payment_method} (${order.payment_status})`)
+        console.log(`    Items: ${order.order_items?.length || 0}`)
+        order.order_items?.forEach((item, i) => {
+          const giftLabel = item.gift_packaging ? ' 🎁 (Gift)' : ''
+          console.log(`      Item ${i + 1}: ${item.products?.name || 'Unknown'}${giftLabel} - Qty: ${item.quantity} × ₹${item.price} = ₹${item.quantity * item.price}`)
+        })
+        console.log(`    Product Subtotal: ₹${productSubtotal.toLocaleString()}`)
+        console.log(`    Your Share (97.5%): ₹${sellerShare.toLocaleString()}`)
+        console.log(`    Gift Packaging Fees: ₹${giftFees} (${giftItemsCount} items)`)
+        console.log(`    Total for this order: ₹${totalForOrder.toLocaleString()}`)
+        console.log(`    Commission (2.5%): ₹${(productSubtotal * 0.025).toFixed(2)}`)
+      })
+      
+      console.log(`\n💰 CALCULATED TOTAL: ₹${calculatedTotal.toLocaleString()}`)
+      console.log(`💳 WALLET PENDING: ₹${wallet?.pending_balance?.toLocaleString() || '0.00'}`)
+      
+      const diff = Math.abs(calculatedTotal - (wallet?.pending_balance || 0))
+      if (diff > 0.01) {
+        console.warn(`⚠️ MISMATCH: Difference of ₹${diff.toFixed(2)}`)
+      } else {
+        console.log('✅ Amounts match!')
+      }
+      console.log('=== END BREAKDOWN ===\n')
+    }
+  }, [showPendingBreakdown, orders, wallet])
   
   // Profile settings state
   const [showEditProfile, setShowEditProfile] = useState(false)
@@ -116,14 +170,30 @@ export default function SellerDashboardPage() {
       ).length
       const completedCount = orders.filter(o => o.status === 'delivered').length
       
-      // Calculate revenue from delivered orders only (95% after 5% commission)
-      const totalRevenue = orders
-        .filter(o => o.status === 'delivered')
-        .reduce((sum, order) => {
-          const orderTotal = parseFloat(order.total_amount) || 0
-          const sellerShare = orderTotal * 0.95 // 95% to seller, 5% platform fee
-          return sum + sellerShare
-        }, 0)
+      // Calculate revenue from delivered orders only
+      // Seller gets 97.5% of product subtotal (2.5% commission deducted)
+      console.log('🔍 REVENUE CALCULATION - Starting...')
+      const deliveredOrders = orders.filter(o => o.status === 'delivered')
+      console.log(`📦 Total delivered orders: ${deliveredOrders.length}`)
+      
+      const totalRevenue = deliveredOrders.reduce((sum, order, index) => {
+        // Calculate product subtotal from order items
+        const productSubtotal = (order.order_items || []).reduce((itemSum, item) => 
+          itemSum + (parseFloat(item.price || 0) * (item.quantity || 1)), 0
+        )
+        const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2)) // 97.5% to seller
+        
+        console.log(`  Order ${index + 1} (${order.id}):`, {
+          productSubtotal: `₹${productSubtotal}`,
+          sellerShare: `₹${sellerShare} (97.5%)`,
+          commission: `₹${(productSubtotal * 0.025).toFixed(2)} (2.5%)`,
+          orderItems: order.order_items?.length || 0
+        })
+        
+        return sum + sellerShare
+      }, 0)
+      
+      console.log(`💰 TOTAL REVENUE (97.5% of delivered orders): ₹${totalRevenue.toFixed(2)}`)
 
       setStats({
         totalProducts: products.length,
@@ -135,6 +205,58 @@ export default function SellerDashboardPage() {
 
       // Process wallet data
       const wallet = walletData.status === 'fulfilled' ? walletData.value : { wallet: null, transactions: [], withdrawals: [] }
+      
+      console.log('💳 WALLET DATA:', {
+        pendingBalance: `₹${parseFloat(wallet.wallet?.pending_balance || 0).toFixed(2)}`,
+        availableBalance: `₹${parseFloat(wallet.wallet?.available_balance || 0).toFixed(2)}`,
+        totalEarned: `₹${parseFloat(wallet.wallet?.total_earned || 0).toFixed(2)}`,
+        transactions: wallet.transactions?.length || 0,
+        withdrawals: wallet.withdrawals?.length || 0
+      })
+      
+      // Validate wallet calculations
+      const pendingOrders = orders.filter(o => 
+        (o.status === 'pending' || o.status === 'confirmed' || o.status === 'dispatched') &&
+        (o.payment_status === 'paid' || o.payment_method === 'cod')
+      )
+      
+      console.log('🔍 PENDING BALANCE VALIDATION:')
+      console.log(`  Orders in pending status: ${pendingOrders.length}`)
+      
+      const calculatedPending = pendingOrders.reduce((sum, order, index) => {
+        const productSubtotal = (order.order_items || []).reduce((itemSum, item) => 
+          itemSum + (parseFloat(item.price || 0) * (item.quantity || 1)), 0
+        )
+        const giftItemsCount = (order.order_items || []).filter(item => item.gift_packaging).length
+        const giftFees = giftItemsCount * 20
+        const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+        const totalForOrder = sellerShare + giftFees
+        
+        const giftInfo = giftItemsCount > 0 ? ` + ₹${giftFees} gift fees (${giftItemsCount} items)` : ''
+        
+        console.log(`  Pending Order ${index + 1} (${order.id}):`, {
+          status: order.status,
+          paymentMethod: order.payment_method,
+          paymentStatus: order.payment_status,
+          productSubtotal: `₹${productSubtotal}`,
+          sellerShare: `₹${sellerShare} (97.5%)`,
+          giftFees: giftItemsCount > 0 ? `₹${giftFees} (${giftItemsCount} items)` : 'None',
+          totalForThisOrder: `₹${totalForOrder}`
+        })
+        
+        return sum + totalForOrder
+      }, 0)
+      
+      console.log(`  Calculated pending (should match wallet): ₹${calculatedPending.toFixed(2)}`)
+      console.log(`  Wallet pending_balance: ₹${parseFloat(wallet.wallet?.pending_balance || 0).toFixed(2)}`)
+      
+      const difference = Math.abs(calculatedPending - parseFloat(wallet.wallet?.pending_balance || 0))
+      if (difference > 0.01) {
+        console.warn(`⚠️ MISMATCH: Difference of ₹${difference.toFixed(2)} detected!`)
+      } else {
+        console.log('✅ Pending balance matches calculations')
+      }
+      
       setWallet(wallet.wallet || null)
       setTransactions(wallet.transactions || [])
       setWithdrawals(wallet.withdrawals || [])
@@ -327,32 +449,50 @@ export default function SellerDashboardPage() {
   // Check if seller is approved
   if (!authLoading && user && !user.isApproved) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-cream-50 via-white to-primary-50 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center"
+          className="bg-white rounded-3xl shadow-2xl p-10 max-w-lg w-full"
         >
-          <div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-            <Clock className="w-8 h-8 text-amber-600" />
+          {/* Icon */}
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <div className="w-20 h-20 bg-gradient-to-br from-primary-100 to-secondary-100 rounded-full flex items-center justify-center">
+                <Clock className="w-10 h-10 text-primary-600" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-6 h-6 bg-secondary-400 rounded-full border-4 border-white"></div>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+
+          {/* Heading */}
+          <h2 className="text-3xl font-bold text-gray-900 mb-3 text-center">
             Approval Pending
           </h2>
-          <p className="text-gray-600 mb-6">
+          
+          {/* Description */}
+          <p className="text-gray-600 text-center mb-8 leading-relaxed">
             Your seller account is currently under review by our admin team. 
             You'll receive an email notification once your account is approved.
           </p>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-blue-800">
-              <strong>What happens next?</strong><br />
+
+          {/* Info Card */}
+          <div className="bg-gradient-to-br from-primary-50 to-secondary-50 border border-primary-200 rounded-2xl p-6 mb-8">
+            <h3 className="text-sm font-bold text-primary-800 mb-3 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-primary-600 rounded-full"></div>
+              What happens next?
+            </h3>
+            <p className="text-sm text-gray-700 leading-relaxed">
               Our team is reviewing your business details and documents. 
-              This usually takes 24-48 hours. Once approved, you'll be able to add products and start selling!
+              This usually takes <span className="font-semibold text-primary-700">24-48 hours</span>. 
+              Once approved, you'll be able to add products and start selling!
             </p>
           </div>
+
+          {/* Button */}
           <Link
             href="/"
-            className="inline-block bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+            className="block w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white px-6 py-4 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl text-center"
           >
             Go to Homepage
           </Link>
@@ -921,36 +1061,45 @@ export default function SellerDashboardPage() {
                 {/* Wallet Balance Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Available Balance */}
-                  <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl p-6 text-white shadow-lg border border-primary-300">
+                  <div 
+                    onClick={() => setShowAvailableBreakdown(true)}
+                    className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl p-6 text-white shadow-lg border border-primary-300 cursor-pointer hover:shadow-xl transition-all transform hover:scale-105"
+                  >
                     <div className="flex items-center justify-between mb-4">
                       <Wallet className="w-8 h-8" />
                       <CheckCircle className="w-6 h-6" />
                     </div>
                     <p className="text-primary-100 text-sm font-medium mb-1">Available Balance</p>
                     <p className="text-3xl font-bold">₹{wallet?.available_balance?.toLocaleString() || '0.00'}</p>
-                    <p className="text-primary-100 text-xs mt-2">Ready to withdraw</p>
+                    <p className="text-primary-100 text-xs mt-2">Ready to withdraw • Click for details</p>
                   </div>
 
                   {/* Pending Balance */}
-                  <div className="bg-gradient-to-br from-secondary-400 to-secondary-500 rounded-xl p-6 text-white shadow-lg border border-secondary-300">
+                  <div 
+                    onClick={() => setShowPendingBreakdown(true)}
+                    className="bg-gradient-to-br from-secondary-400 to-secondary-500 rounded-xl p-6 text-white shadow-lg border border-secondary-300 cursor-pointer hover:shadow-xl transition-all transform hover:scale-105"
+                  >
                     <div className="flex items-center justify-between mb-4">
                       <Clock className="w-8 h-8" />
                       <AlertTriangle className="w-6 h-6" />
                     </div>
                     <p className="text-secondary-50 text-sm font-medium mb-1">Pending Balance</p>
                     <p className="text-3xl font-bold">₹{wallet?.pending_balance?.toLocaleString() || '0.00'}</p>
-                    <p className="text-secondary-50 text-xs mt-2">Awaiting order delivery</p>
+                    <p className="text-secondary-50 text-xs mt-2">Awaiting order delivery • Click for details</p>
                   </div>
 
                   {/* Total Earned */}
-                  <div className="bg-gradient-to-br from-charcoal-700 to-charcoal-800 rounded-xl p-6 text-white shadow-lg border border-charcoal-600">
+                  <div 
+                    onClick={() => setShowRevenueBreakdown(true)}
+                    className="bg-gradient-to-br from-gray-800 to-black rounded-xl p-6 text-white shadow-lg border border-gray-700 cursor-pointer hover:shadow-xl transition-all transform hover:scale-105"
+                  >
                     <div className="flex items-center justify-between mb-4">
                       <TrendingUp className="w-8 h-8" />
                       <Star className="w-6 h-6" />
                     </div>
-                    <p className="text-charcoal-200 text-sm font-medium mb-1">Total Earned</p>
+                    <p className="text-gray-200 text-sm font-medium mb-1">Total Earned</p>
                     <p className="text-3xl font-bold">₹{wallet?.total_earned?.toLocaleString() || '0.00'}</p>
-                    <p className="text-charcoal-200 text-xs mt-2">Lifetime earnings (95% after commission)</p>
+                    <p className="text-gray-200 text-xs mt-2">Lifetime earnings (97.5% after commission) • Click for details</p>
                   </div>
                 </div>
 
@@ -1622,6 +1771,509 @@ export default function SellerDashboardPage() {
             )}
           </div>
         </div>
+
+        {/* Pending Balance Breakdown Modal */}
+        {showPendingBreakdown && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            >
+              <div className="bg-gradient-to-r from-secondary-500 to-secondary-600 px-6 py-4 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Clock className="w-6 h-6" />
+                  Pending Balance Breakdown
+                </h3>
+                <button
+                  onClick={() => setShowPendingBreakdown(false)}
+                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                {/* Summary */}
+                <div className="bg-secondary-50 border-l-4 border-secondary-500 p-4 mb-6 rounded">
+                  <h4 className="font-semibold text-secondary-900">Total Pending Balance: ₹{wallet?.pending_balance?.toLocaleString() || '0.00'}</h4>
+                </div>
+
+                {/* Orders Table */}
+                {orders && orders.length > 0 && (
+                  <div className="overflow-x-auto">\n                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b-2 border-gray-200">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Order ID</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Product Amount</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Your Share (97.5%)</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Gift Fees</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Commission (2.5%)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {orders
+                          .filter(order => 
+                            ['pending', 'confirmed', 'dispatched'].includes(order.status) && 
+                            (order.payment_status === 'paid' || order.payment_method === 'cod')
+                          )
+                          .map(order => {
+                            const productSubtotal = order.order_items?.reduce((sum, item) => 
+                              sum + (item.quantity * item.price), 0
+                            ) || 0
+                            const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
+                            const giftFees = giftItemsCount * 20
+                            const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+                            const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
+
+                            return (
+                              <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-4 py-3 text-sm font-medium text-gray-900">#{order.order_number}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {new Date(order.created_at).toLocaleDateString('en-IN', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric'
+                                  })}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                    order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    order.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-purple-100 text-purple-800'
+                                  }`}>
+                                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                                  ₹{productSubtotal.toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right font-semibold text-green-600">
+                                  ₹{sellerShare.toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right font-semibold text-blue-600">
+                                  {giftFees > 0 ? `₹${giftFees} 🎁` : '-'}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right text-gray-500">
+                                  -₹{commission.toLocaleString()}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                      </tbody>
+                      <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+                        <tr>
+                          <td colSpan="4" className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                            Total Pending:
+                          </td>
+                          <td colSpan="2" className="px-4 py-3 text-right text-lg font-bold text-secondary-600">
+                            ₹{orders
+                              .filter(order => 
+                                ['pending', 'confirmed', 'dispatched'].includes(order.status) && 
+                                (order.payment_status === 'paid' || order.payment_method === 'cod')
+                              )
+                              .reduce((sum, order) => {
+                                const productSubtotal = order.order_items?.reduce((itemSum, item) => 
+                                  itemSum + (item.quantity * item.price), 0
+                                ) || 0
+                                const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
+                                const giftFees = giftItemsCount * 20
+                                const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+                                return sum + sellerShare + giftFees
+                              }, 0)
+                              .toLocaleString()}
+                          </td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+
+                {orders?.filter(order => 
+                  ['pending', 'confirmed', 'dispatched'].includes(order.status) && 
+                  (order.payment_status === 'paid' || order.payment_method === 'cod')
+                ).length === 0 && (
+                  <div className="text-center py-12">
+                    <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg">No pending orders found</p>
+                    <p className="text-gray-400 text-sm mt-2">Orders awaiting delivery will appear here</p>
+                    {wallet?.pending_balance > 0 && (
+                      <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-left max-w-md mx-auto">
+                        <p className="text-red-900 font-semibold text-sm">⚠️ Data Mismatch Detected</p>
+                        <p className="text-red-700 text-xs mt-2">
+                          Your wallet shows ₹{wallet.pending_balance.toLocaleString()} pending balance, but no pending orders were found. 
+                          This could indicate:
+                        </p>
+                        <ul className="text-red-700 text-xs mt-2 space-y-1 list-disc list-inside">
+                          <li>Orders already delivered but wallet not updated</li>
+                          <li>Payment status mismatch</li>
+                          <li>Database synchronization issue</li>
+                        </ul>
+                        <p className="text-red-700 text-xs mt-2 font-semibold">
+                          Please check the browser console (F12) for detailed logs or contact support.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Show mismatch warning if calculated total doesn't match wallet */}
+                {(() => {
+                  const pendingOrders = orders?.filter(order => 
+                    ['pending', 'confirmed', 'dispatched'].includes(order.status) && 
+                    (order.payment_status === 'paid' || order.payment_method === 'cod')
+                  ) || []
+                  
+                  const calculatedTotal = pendingOrders.reduce((sum, order) => {
+                    const productSubtotal = order.order_items?.reduce((itemSum, item) => 
+                      itemSum + (item.quantity * item.price), 0
+                    ) || 0
+                    const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
+                    const giftFees = giftItemsCount * 20
+                    const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+                    return sum + sellerShare + giftFees
+                  }, 0)
+                  
+                  const walletPending = wallet?.pending_balance || 0
+                  const difference = Math.abs(calculatedTotal - walletPending)
+                  
+                  if (pendingOrders.length > 0 && difference > 0.01) {
+                    return (
+                      <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
+                        <p className="text-yellow-900 font-semibold text-sm flex items-center gap-2">
+                          <AlertTriangle className="w-5 h-5" />
+                          Calculation Mismatch Detected
+                        </p>
+                        <div className="mt-2 text-xs text-yellow-800 space-y-1">
+                          <p>• Wallet Pending Balance: ₹{walletPending.toLocaleString()}</p>
+                          <p>• Calculated from Orders: ₹{calculatedTotal.toLocaleString()}</p>
+                          <p>• Difference: ₹{difference.toFixed(2)}</p>
+                        </div>
+                        <p className="text-yellow-700 text-xs mt-3">
+                          Check browser console (F12) for detailed breakdown. This may indicate orders that were paid but status wasn't updated, or wallet transactions that haven't synced.
+                        </p>
+                      </div>
+                    )
+                  }
+                  return null
+                })()}
+
+                {/* How it's calculated - Moved to bottom */}
+                <div className="bg-white border border-secondary-200 rounded p-4 text-xs space-y-1 mt-6">
+                  <p className="font-semibold text-secondary-900 mb-2">💡 How it's calculated:</p>
+                  <p className="text-secondary-700">• For each <span className="font-semibold">Pending/Confirmed/Dispatched</span> order</p>
+                  <p className="text-secondary-700">• Includes: Online orders (paid) + COD orders</p>
+                  <p className="text-secondary-700">• Sum of all product prices = Product Amount</p>
+                  <p className="text-secondary-700">• Your share = Product Amount × 97.5%</p>
+                  <p className="text-secondary-700">• Gift packaging fees = ₹20 per gift item (100% to you)</p>
+                  <p className="text-secondary-700">• Platform keeps 2.5% commission from seller + delivery fees + platform fee from buyer</p>
+                  <p className="text-secondary-700 mt-2 pt-2 border-t border-secondary-200">
+                    <span className="font-semibold">Example:</span> Product Amount ₹1,000 + 2 gift items → You get ₹975 + ₹40 = ₹1,015
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 px-6 py-4 flex justify-end border-t">
+                <button
+                  onClick={() => setShowPendingBreakdown(false)}
+                  className="px-6 py-2 bg-secondary-600 text-white rounded-lg font-semibold hover:bg-secondary-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Available Balance Breakdown Modal */}
+        {showAvailableBreakdown && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            >
+              <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Wallet className="w-6 h-6" />
+                  Available Balance Breakdown
+                </h3>
+                <button
+                  onClick={() => setShowAvailableBreakdown(false)}
+                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                {/* Orders Table */}
+                {orders && orders.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b-2 border-gray-200">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Order ID</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Delivered Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Product Amount</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Your Share (97.5%)</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Gift Fees</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Commission (2.5%)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {orders
+                          .filter(order => order.status === 'delivered')
+                          .map(order => {
+                            const productSubtotal = order.order_items?.reduce((sum, item) => 
+                              sum + (item.quantity * item.price), 0
+                            ) || 0
+                            const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
+                            const giftFees = giftItemsCount * 20
+                            const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+                            const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
+
+                            return (
+                              <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-4 py-3 text-sm font-medium text-gray-900">#{order.order_number}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {order.delivered_at ? new Date(order.delivered_at).toLocaleDateString('en-IN', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric'
+                                  }) : 'N/A'}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    Delivered
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                                  ₹{productSubtotal.toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right font-semibold text-primary-600">
+                                  ₹{sellerShare.toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right font-semibold text-blue-600">
+                                  {giftFees > 0 ? `₹${giftFees} 🎁` : '-'}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right text-gray-500">
+                                  -₹{commission.toLocaleString()}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                      </tbody>
+                      <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+                        <tr>
+                          <td colSpan="4" className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                            Total Available:
+                          </td>
+                          <td colSpan="2" className="px-4 py-3 text-right text-lg font-bold text-primary-600">
+                            ₹{orders
+                              .filter(order => order.status === 'delivered')
+                              .reduce((sum, order) => {
+                                const productSubtotal = order.order_items?.reduce((itemSum, item) => 
+                                  itemSum + (item.quantity * item.price), 0
+                                ) || 0
+                                const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
+                                const giftFees = giftItemsCount * 20
+                                const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+                                return sum + sellerShare + giftFees
+                              }, 0)
+                              .toLocaleString()}
+                          </td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+
+                {orders?.filter(order => order.status === 'delivered').length === 0 && (
+                  <div className="text-center py-12">
+                    <Wallet className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg">No available balance yet</p>
+                    <p className="text-gray-400 text-sm mt-2">Earnings from delivered orders will appear here</p>
+                  </div>
+                )}
+
+                {/* Summary - How it's calculated */}
+                <div className="bg-primary-50 border-l-4 border-primary-500 p-4 mt-6 rounded">
+                  <h4 className="font-semibold text-primary-900 mb-2">Available Balance: ₹{wallet?.available_balance?.toLocaleString() || '0.00'}</h4>
+                  <p className="text-sm text-primary-700 mb-3">
+                    This is money you can withdraw right now. It comes from delivered orders minus any withdrawals you've made.
+                  </p>
+                  <div className="bg-white border border-primary-200 rounded p-3 text-xs space-y-1">
+                    <p className="font-semibold text-primary-900">💡 How it's calculated:</p>
+                    <p className="text-primary-700">• For each <span className="font-semibold">Delivered</span> order</p>
+                    <p className="text-primary-700">• Sum of all product prices = Product Amount</p>
+                    <p className="text-primary-700">• Your share = Product Amount × 97.5%</p>
+                    <p className="text-primary-700">• Gift packaging fees = ₹20 per gift item (100% to you)</p>
+                    <p className="text-primary-700">• Platform keeps 2.5% from seller + delivery fees + platform fee from buyer</p>
+                    <p className="text-primary-700">• Available = Total Earned - Total Withdrawn</p>
+                    <p className="text-primary-700 mt-2 pt-2 border-t border-primary-200">
+                      <span className="font-semibold">Example:</span> Product Amount ₹1,000 + 2 gift items → You get ₹975 + ₹40 = ₹1,015
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 px-6 py-4 flex justify-end border-t">
+                <button
+                  onClick={() => setShowAvailableBreakdown(false)}
+                  className="px-6 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Revenue Breakdown Modal */}
+        {showRevenueBreakdown && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            >
+              <div className="bg-gradient-to-r from-gray-800 to-black px-6 py-4 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <TrendingUp className="w-6 h-6" />
+                  Total Revenue Breakdown
+                </h3>
+                <button
+                  onClick={() => setShowRevenueBreakdown(false)}
+                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                {/* Orders Table */}
+                {orders && orders.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b-2 border-gray-200">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Order ID</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Delivered Date</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Product Amount</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Your Earnings (97.5%)</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Gift Fees</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Commission (2.5%)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {orders
+                          .filter(order => order.status === 'delivered')
+                          .map(order => {
+                            const productSubtotal = order.order_items?.reduce((sum, item) => 
+                              sum + (item.quantity * item.price), 0
+                            ) || 0
+                            const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
+                            const giftFees = giftItemsCount * 20
+                            const earnings = parseFloat((productSubtotal * 0.975).toFixed(2))
+                            const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
+
+                            return (
+                              <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-4 py-3 text-sm font-medium text-gray-900">#{order.order_number}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {order.delivered_at ? new Date(order.delivered_at).toLocaleDateString('en-IN', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric'
+                                  }) : 'N/A'}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                                  ₹{productSubtotal.toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right font-semibold text-gray-900">
+                                  ₹{earnings.toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right font-semibold text-blue-600">
+                                  {giftFees > 0 ? `₹${giftFees} 🎁` : '-'}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right text-gray-500">
+                                  -₹{commission.toLocaleString()}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                      </tbody>
+                      <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+                        <tr>
+                          <td colSpan="3" className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                            Total Revenue:
+                          </td>
+                          <td colSpan="2" className="px-4 py-3 text-right text-lg font-bold text-gray-900">
+                            ₹{orders
+                              .filter(order => order.status === 'delivered')
+                              .reduce((sum, order) => {
+                                const productSubtotal = order.order_items?.reduce((itemSum, item) => 
+                                  itemSum + (item.quantity * item.price), 0
+                                ) || 0
+                                const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
+                                const giftFees = giftItemsCount * 20
+                                const earnings = parseFloat((productSubtotal * 0.975).toFixed(2))
+                                return sum + earnings + giftFees
+                              }, 0)
+                              .toLocaleString()}
+                          </td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+
+                {orders?.filter(order => order.status === 'delivered').length === 0 && (
+                  <div className="text-center py-12">
+                    <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg">No delivered orders yet</p>
+                    <p className="text-gray-400 text-sm mt-2">Completed orders will appear here</p>
+                  </div>
+                )}
+
+                {/* Summary - How it's calculated */}
+                <div className="bg-gray-50 border-l-4 border-gray-800 p-4 mt-6 rounded">
+                  <h4 className="font-semibold text-gray-900 mb-2">Total Earned: ₹{wallet?.total_earned?.toLocaleString() || '0.00'}</h4>
+                  <p className="text-sm text-gray-700 mb-3">
+                    This includes all delivered orders. You receive 97.5% of the product amount (2.5% platform commission).
+                  </p>
+                  <div className="bg-white border border-gray-200 rounded p-3 text-xs space-y-1">
+                    <p className="font-semibold text-gray-900">💡 How it's calculated:</p>
+                    <p className="text-gray-700">• For each <span className="font-semibold">Delivered</span> order</p>
+                    <p className="text-gray-700">• Sum of all product prices = Product Amount</p>
+                    <p className="text-gray-700">• Your share = Product Amount × 97.5%</p>
+                    <p className="text-gray-700">• Gift packaging fees = ₹20 per gift item (100% to you)</p>
+                    <p className="text-gray-700">• Platform keeps 2.5% from seller + delivery fees + platform fee from buyer</p>
+                    <p className="text-gray-700 mt-2 pt-2 border-t border-gray-200">
+                      <span className="font-semibold">Example:</span> Product Amount ₹1,000 + 2 gift items → You get ₹975 + ₹40 = ₹1,015
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 px-6 py-4 flex justify-end border-t">
+                <button
+                  onClick={() => setShowRevenueBreakdown(false)}
+                  className="px-6 py-2 bg-gray-800 text-white rounded-lg font-semibold hover:bg-black transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,6 +1,79 @@
 // API route for updating individual order
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
+
+// PATCH /api/orders/[id] - Update order fields (like payment_id)
+export async function PATCH(request, context) {
+  try {
+    const params = await context.params
+    const { id } = params
+    
+    let session
+    try {
+      session = await requireAuth(request)
+    } catch (authError) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    const user = await getUserBySupabaseAuthId(session.user.id)
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    
+    // Fetch order to check ownership
+    const { data: order, error: fetchError } = await supabase
+      .from('orders')
+      .select('buyer_id, seller_id')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+    
+    // Check permissions: Owner or admin can update
+    const isOwner = order.buyer_id === user.id || order.seller_id === user.id
+    const isAdmin = user.user_type === 'Admin'
+    
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // Update allowed fields
+    const allowedFields = ['payment_id', 'razorpay_order_id', 'razorpay_payment_id', 'notes']
+    const updateData = {}
+    
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        updateData[field] = body[field]
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    }
+
+    // Update order
+    const { data: updatedOrder, error: updateError } = await supabase
+      .from('orders')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 })
+    }
+
+    return NextResponse.json(updatedOrder)
+  } catch (error) {
+    console.error('Error in PATCH /api/orders/[id]:', error)
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 })
+  }
+}
 
 // PUT /api/orders/[id] - Update order status
 export async function PUT(request, context) {
@@ -13,11 +86,9 @@ export async function PUT(request, context) {
     
     console.log('Order ID:', id)
     
-    const { requireAuth: requireAuthHelper, getUserBySupabaseAuthId } = await import('@/lib/auth')
-    
     let session
     try {
-      session = await requireAuthHelper(request)
+      session = await requireAuth(request)
     } catch (authError) {
       console.error('Authentication failed:', authError.message)
       return NextResponse.json({ error: 'Unauthorized - Please log in' }, { status: 401 })
@@ -206,32 +277,63 @@ export async function PUT(request, context) {
         console.log('Parsed delivery address:', deliveryAddress)
 
         // Get seller's address from sellers table (already has address columns from migration)
+        console.log('Seller data from order:', updatedOrder.sellers)
         const sellerCity = updatedOrder.sellers?.city
         const sellerState = updatedOrder.sellers?.state
         const sellerPincode = updatedOrder.sellers?.pincode
-        const sellerAddress = updatedOrder.sellers?.business_address
+        let sellerAddress = updatedOrder.sellers?.business_address
         const sellerPhone = updatedOrder.sellers?.primary_mobile
         const sellerName = updatedOrder.sellers?.full_name || updatedOrder.sellers?.business_name
         
-        if (!sellerCity || !sellerState || !sellerPincode || !sellerAddress || !sellerPhone) {
+        // FALLBACK: If business_address is empty, construct from city/state/pincode
+        if (!sellerAddress || sellerAddress.trim() === '') {
+          if (sellerCity && sellerState && sellerPincode) {
+            sellerAddress = `${sellerCity}, ${sellerState} - ${sellerPincode}`
+            console.log('⚠️ No business_address found, using constructed address:', sellerAddress)
+          }
+        }
+        
+        console.log('Extracted seller address fields:', {
+          city: sellerCity,
+          state: sellerState,
+          pincode: sellerPincode,
+          address: sellerAddress,
+          phone: sellerPhone,
+          name: sellerName
+        })
+        
+        // Validate required fields (city/state/pincode are mandatory for pickup)
+        if (!sellerCity || !sellerState || !sellerPincode || !sellerPhone) {
           throw new Error(`Incomplete seller pickup address. Missing: ${[
             !sellerCity && 'city',
             !sellerState && 'state',
             !sellerPincode && 'pincode',
-            !sellerAddress && 'business_address',
             !sellerPhone && 'phone'
           ].filter(Boolean).join(', ')}. Please ensure seller has completed their profile with complete address details.`)
         }
         
+        // Final address check (either business_address or constructed address must exist)
+        if (!sellerAddress) {
+          throw new Error('Seller must have either business_address or city+state+pincode filled in their profile.')
+        }
+        
+        // Use unique pickup location name per seller to avoid conflict with account's primary address
+        const pickupLocationName = updatedOrder.sellers?.business_name 
+          ? `${updatedOrder.sellers.business_name.substring(0, 20)}_${order.seller_id.substring(0, 8)}`
+          : `Seller_${order.seller_id.substring(0, 8)}`
+        
         const pickupLocation = {
-          name: 'Primary',
+          name: pickupLocationName,
           contactName: sellerName,
           phone: sellerPhone,
           address: sellerAddress,
           city: sellerCity,
           state: sellerState,
-          pincode: sellerPincode
+          pincode: sellerPincode,
+          email: updatedOrder.sellers?.email || 'seller@zaryah.com'
         }
+        
+        console.log('Final pickup location for Shiprocket:', pickupLocation)
 
         const items = (updatedOrder.order_items || []).map(item => ({
           id: item.product_id,
@@ -314,42 +416,82 @@ export async function PUT(request, context) {
       console.log('Processing order delivery...')
       
       try {
-        // Release seller wallet funds from pending to available
+        // When order is delivered, wallet balances update automatically
+        // because they're calculated from order status
         if (order.seller_id) {
-          console.log(`Releasing pending funds for seller ${order.seller_id}...`)
+          console.log(`Order delivered for seller ${order.seller_id}`)
           
-          // Calculate seller earnings (95% of order total)
-          const sellerEarnings = parseFloat(order.total_amount) * 0.95
+          // Calculate seller earnings from product subtotal only
+          const { data: orderItems } = await supabase
+            .from('order_items')
+            .select('quantity, price')
+            .eq('order_id', id)
           
-          // Get current wallet
-          const { data: wallet } = await supabase
+          const productSubtotal = (orderItems || []).reduce((sum, item) => 
+            sum + (parseFloat(item.price) * item.quantity), 0
+          )
+          
+          const sellerEarnings = parseFloat((productSubtotal * 0.975).toFixed(2))
+          const platformCommission = parseFloat((productSubtotal * 0.025).toFixed(2))
+          
+          console.log('Delivery - Revenue calculation:', {
+            productSubtotal,
+            sellerEarnings: `${sellerEarnings} (97.5%)`,
+            platformCommission: `${platformCommission} (2.5%)`
+          })
+          
+          console.log(`✅ Order delivered - ₹${sellerEarnings} moved from pending to available`)
+          console.log('Note: Wallet balances are calculated dynamically from order status')
+          
+          // Ensure wallet exists
+          const { data: existingWallet } = await supabase
             .from('wallets')
-            .select('*')
+            .select('id')
             .eq('seller_id', order.seller_id)
             .single()
-          
-          if (wallet) {
-            // Move funds from pending to available
+
+          if (!existingWallet) {
             await supabase
               .from('wallets')
-              .update({
-                pending_balance: (parseFloat(wallet.pending_balance) || 0) - sellerEarnings,
-                available_balance: (parseFloat(wallet.available_balance) || 0) + sellerEarnings,
-                total_earned: (parseFloat(wallet.total_earned) || 0) + sellerEarnings
+              .insert({
+                seller_id: order.seller_id,
+                pending_balance: 0,
+                available_balance: 0,
+                total_earned: 0
               })
-              .eq('seller_id', order.seller_id)
+          }
+          
+          // Record admin earnings when order is delivered
+          // Admin gets: 2.5% from seller + 2.5% service charge from buyer + delivery fees
+          try {
+            const buyerServiceCharge = parseFloat((productSubtotal * 0.025).toFixed(2)) // 2.5% from buyer
+            const deliveryFee = parseFloat(order.delivery_fee || 0)
+            const totalAdminEarnings = platformCommission + buyerServiceCharge + deliveryFee
             
-            // Update transaction status
+            console.log('Admin earnings calculation:', {
+              sellerCommission: `${platformCommission} (2.5% from seller)`,
+              buyerServiceCharge: `${buyerServiceCharge} (2.5% from buyer)`,
+              deliveryFee: `${deliveryFee} (100% delivery)`,
+              totalAdminEarnings
+            })
+            
             await supabase
-              .from('transactions')
-              .update({
-                status: 'completed',
-                description: `Order #${id} - Delivered`
+              .from('admin_earnings')
+              .insert({
+                order_id: id,
+                seller_id: order.seller_id,
+                commission_amount: totalAdminEarnings,
+                commission_rate: 5.0, // Combined 5% (2.5% + 2.5%)
+                order_amount: productSubtotal,
+                delivery_fee: deliveryFee,
+                status: 'earned',
+                earned_at: new Date().toISOString()
               })
-              .eq('order_id', id)
-              .eq('seller_id', order.seller_id)
             
-            console.log('✅ Seller funds released to available balance')
+            console.log('✅ Admin earnings recorded')
+          } catch (adminEarningsError) {
+            console.error('Error recording admin earnings:', adminEarningsError)
+            // Don't fail the delivery process
           }
         }
         

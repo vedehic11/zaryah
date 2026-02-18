@@ -13,7 +13,7 @@ export const useCart = () => {
 
 export const CartProvider = ({ children }) => {
   const { user, isLoading: authLoading } = useAuth();
-  const [cart, setCart] = useState([]);
+  const [carts, setCarts] = useState([]); // Array of carts (one per seller)
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cartLoaded, setCartLoaded] = useState(false);
@@ -22,7 +22,7 @@ export const CartProvider = ({ children }) => {
 
   // Debug function to manually test cart (for development only)
   const debugCart = async () => {
-    if (user && user.token) {
+    if (user) {
       try {
         await apiService.testCart();
       } catch (error) {
@@ -33,7 +33,7 @@ export const CartProvider = ({ children }) => {
 
   // Load saved addresses for logged-in users
   useEffect(() => {
-    if (user && user.token) {
+    if (user) {
       loadSavedAddresses();
     }
   }, [user]);
@@ -135,29 +135,40 @@ export const CartProvider = ({ children }) => {
   // }, [user, cart, cartLoaded]);
 
   // Helper function to transform backend cart data to frontend format
-  const transformBackendCart = (backendCart) => {
-    if (!backendCart || !backendCart.items) {
+  const transformBackendCarts = (backendData) => {
+    console.log('transformBackendCarts: Input data:', backendData);
+    
+    if (!backendData || !backendData.carts) {
+      console.log('transformBackendCarts: No carts in backend data, returning empty array');
       return [];
     }
     
-    return backendCart.items.map(item => {
-      
-      // Handle both populated and unpopulated product references
-      const product = item.product;
-      if (!product) {
-        console.warn('CartContext: Product not found for item:', item);
-        return null;
-      }
-      
+    const transformed = backendData.carts.map(cart => {
+      console.log('transformBackendCarts: Processing cart:', cart);
       return {
-        ...product,
-        quantity: item.quantity,
-        giftPackaging: item.giftPackaging || false,
-        customizations: item.customizations || [],
-        cartItemId: product._id || product.id, // Use product ID as cart item ID
-        price: product.price
+        id: cart.id,
+        seller_id: cart.seller_id,
+        seller_name: cart.seller_name,
+        items: cart.items.map(item => ({
+          id: item.products?.id,
+          name: item.products?.name,
+          description: item.products?.description,
+          price: item.products?.price,
+          images: item.products?.images,
+          stock: item.products?.stock,
+          instant_delivery: item.products?.instant_delivery,
+          quantity: item.quantity,
+          giftPackaging: item.gift_packaging || false,
+          customizations: item.customizations || [],
+          cartItemId: item.id
+        })),
+        total: cart.total,
+        itemCount: cart.itemCount
       };
-    }).filter(Boolean); // Remove null items
+    });
+    
+    console.log('transformBackendCarts: Transformed output:', transformed);
+    return transformed;
   };
 
   // Fetch cart from backend for logged-in users, localStorage for guests
@@ -176,48 +187,67 @@ export const CartProvider = ({ children }) => {
   }, [user, authLoading]);
 
   const fetchCart = async () => {
-    if (user && user.token) {
+    if (user) {
       // Logged-in user: fetch from backend
       try {
         setLoading(true);
-        const backendCart = await apiService.getCart();
+        console.log('CartContext: Fetching cart from backend...');
+        const backendData = await apiService.getCart();
+        console.log('CartContext: Backend data received:', backendData);
         
-        // Transform backend cart items to frontend format
-        const transformedCart = transformBackendCart(backendCart);
-        setCart(transformedCart);
+        // Transform backend carts to frontend format
+        const transformedCarts = transformBackendCarts(backendData);
+        console.log('CartContext: Transformed carts:', transformedCarts);
+        setCarts(transformedCarts);
       } catch (error) {
-        console.error('CartContext: Error fetching cart from backend:', error);
+        console.error('CartContext: Error fetching carts from backend:', error);
         // If backend fails, try to load from localStorage as fallback
         const savedCart = localStorage.getItem('cart');
         if (savedCart) {
           try {
             const parsedCart = JSON.parse(savedCart);
-            setCart(parsedCart);
+            // Convert single cart to multi-cart format
+            setCarts(parsedCart.length > 0 ? [{
+              id: 'local',
+              seller_id: null,
+              seller_name: 'Local Cart',
+              items: parsedCart,
+              total: 0,
+              itemCount: parsedCart.length
+            }] : []);
           } catch (e) {
             console.error('CartContext: Error parsing localStorage cart:', e);
-            setCart([]);
+            setCarts([]);
           }
         } else {
-          setCart([]);
+          setCarts([]);
         }
       } finally {
         setLoading(false);
         setCartLoaded(true);
       }
     } else {
-      // Guest user: load from localStorage
+      // Guest user: load from localStorage (single cart for guests)
       const savedCart = localStorage.getItem('cart');
       
       if (savedCart) {
         try {
           const parsedCart = JSON.parse(savedCart);
-          setCart(parsedCart);
+          // Convert to multi-cart format
+          setCarts(parsedCart.length > 0 ? [{
+            id: 'guest',
+            seller_id: null,
+            seller_name: 'Your Cart',
+            items: parsedCart,
+            total: 0,
+            itemCount: parsedCart.length
+          }] : []);
         } catch (error) {
           console.error('CartContext: Error parsing localStorage cart:', error);
-          setCart([]);
+          setCarts([]);
         }
       } else {
-        setCart([]);
+        setCarts([]);
       }
       setCartLoaded(true);
     }
@@ -227,23 +257,30 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     if (!user && cartLoaded) {
       try {
-        localStorage.setItem('cart', JSON.stringify(cart));
+        // For guests, flatten all cart items into single localStorage array
+        const allItems = carts.flatMap(cart => cart.items);
+        localStorage.setItem('cart', JSON.stringify(allItems));
       } catch (error) {
         console.error('CartContext: Error saving to localStorage:', error);
       }
     }
-  }, [cart, user, cartLoaded]);
+  }, [carts, user, cartLoaded]);
 
   // Add item to cart
   const addToCart = async (product, options = {}) => {
     const { quantity = 1, giftPackaging = false, customizations = [] } = options;
     
-    if (user && user.token) {
-      // Logged-in user: add to backend
+    console.log('addToCart: Called with product:', product, 'options:', options);
+    console.log('addToCart: User state:', user);
+    console.log('addToCart: User logged in?', !!user);
+    
+    if (user) {
+      // Logged-in user: add to backend (backend will handle seller separation)
       try {
         setLoading(true);
         const productId = product.id || product._id
         
+        console.log('addToCart: Calling API with productId:', productId);
         await apiService.addItemToCart({
           productId,
           quantity,
@@ -251,47 +288,74 @@ export const CartProvider = ({ children }) => {
           customizations
         });
         
-        // Refetch cart from backend to get updated state
-        const backendCart = await apiService.getCart();
+        console.log('addToCart: Item added successfully, fetching updated cart...');
+        // Refetch carts from backend to get updated state
+        const backendData = await apiService.getCart();
         
-        // Transform backend cart items to frontend format
-        const transformedCart = transformBackendCart(backendCart);
-        setCart(transformedCart);
-        toast.success(`${product.name} added to cart!`);
+        // Transform backend carts to frontend format
+        const transformedCarts = transformBackendCarts(backendData);
+        const previousCartCount = carts.length;
+        const newCartCount = transformedCarts.length;
+        
+        console.log('addToCart: Previous cart count:', previousCartCount, 'New cart count:', newCartCount);
+        setCarts(transformedCarts);
+        
+        // Show appropriate message
+        if (newCartCount > previousCartCount) {
+          toast.success(`${product.name} added to Cart ${newCartCount}!\\nYou have multiple carts from different sellers.`, {
+            duration: 4000
+          });
+        } else {
+          toast.success(`${product.name} added to cart!`);
+        }
         setIsCartOpen(true);
       } catch (error) {
         console.error('CartContext: Error adding to backend cart:', error);
+        console.error('CartContext: Error stack:', error.stack);
         toast.error('Failed to add item to cart');
       } finally {
         setLoading(false);
       }
     } else {
-      // Guest user: add to localStorage
-      setCart(prevCart => {
-        const productId = product.id || product._id
-        const existingItemIndex = prevCart.findIndex(
+      console.log('addToCart: User not logged in or no token, using guest cart');
+      // Guest user: add to localStorage (single cart for now)
+      setCarts(prevCarts => {
+        const productId = product.id || product._id;
+        const guestCart = prevCarts[0] || {
+          id: 'guest',
+          seller_id: null,
+          seller_name: 'Your Cart',
+          items: [],
+          total: 0,
+          itemCount: 0
+        };
+        
+        const existingItemIndex = guestCart.items.findIndex(
           item => (item.id || item._id) === productId && 
           JSON.stringify(item.customizations) === JSON.stringify(customizations)
         );
         
-        let newCart;
+        let newItems;
         if (existingItemIndex !== -1) {
-          newCart = [...prevCart];
-          newCart[existingItemIndex].quantity += quantity;
+          newItems = [...guestCart.items];
+          newItems[existingItemIndex].quantity += quantity;
         } else {
-          newCart = [...prevCart, {
+          newItems = [...guestCart.items, {
             ...product,
             quantity,
             giftPackaging,
             customizations,
-            cartItemId: Date.now() + Math.random() // Unique ID for guest items
+            cartItemId: Date.now() + Math.random()
           }];
         }
         
-        return newCart;
+        return [{
+          ...guestCart,
+          items: newItems,
+          itemCount: newItems.reduce((sum, item) => sum + item.quantity, 0)
+        }];
       });
       
-      // Show success message and open cart after state update
       toast.success(`${product.name} added to cart!`);
       setIsCartOpen(true);
     }
@@ -299,19 +363,19 @@ export const CartProvider = ({ children }) => {
 
   // Remove item from cart
   const removeFromCart = async (cartItemId) => {
-    if (user && user.token) {
+    if (user) {
       // Logged-in user: remove from backend
       try {
         setLoading(true);
         
         await apiService.removeItemFromCart(cartItemId);
         
-        // Refetch cart from backend
-        const backendCart = await apiService.getCart();
+        // Refetch carts from backend
+        const backendData = await apiService.getCart();
         
-        // Transform backend cart items to frontend format
-        const transformedCart = transformBackendCart(backendCart);
-        setCart(transformedCart);
+        // Transform backend carts to frontend format
+        const transformedCarts = transformBackendCarts(backendData);
+        setCarts(transformedCarts);
         toast.error('Item removed from cart');
       } catch (error) {
         console.error('CartContext: Error removing from backend cart:', error);
@@ -321,29 +385,39 @@ export const CartProvider = ({ children }) => {
       }
     } else {
       // Guest user: remove from localStorage
-      setCart(prevCart => {
-        const newCart = prevCart.filter(item => item.cartItemId !== cartItemId);
+      setCarts(prevCarts => {
+        const guestCart = prevCarts[0];
+        if (!guestCart) return prevCarts;
+        
+        const newItems = guestCart.items.filter(item => item.cartItemId !== cartItemId);
         toast.error('Item removed from cart');
-        return newCart;
+        
+        if (newItems.length === 0) return [];
+        
+        return [{
+          ...guestCart,
+          items: newItems,
+          itemCount: newItems.reduce((sum, item) => sum + item.quantity, 0)
+        }];
       });
     }
   };
 
   // Update item quantity
   const updateQuantity = async (cartItemId, newQuantity) => {
-    if (user && user.token) {
+    if (user) {
       // Logged-in user: update in backend
       try {
         setLoading(true);
         
-        await apiService.updateCartItem({ productId: cartItemId, quantity: newQuantity });
+        await apiService.updateCartItem(cartItemId, { quantity: newQuantity });
         
-        // Refetch cart from backend
-        const backendCart = await apiService.getCart();
+        // Refetch carts from backend
+        const backendData = await apiService.getCart();
         
-        // Transform backend cart items to frontend format
-        const transformedCart = transformBackendCart(backendCart);
-        setCart(transformedCart);
+        // Transform backend carts to frontend format
+        const transformedCarts = transformBackendCarts(backendData);
+        setCarts(transformedCarts);
       } catch (error) {
         console.error('CartContext: Error updating quantity in backend cart:', error);
         toast.error('Failed to update quantity');
@@ -352,89 +426,63 @@ export const CartProvider = ({ children }) => {
       }
     } else {
       // Guest user: update in localStorage
-      setCart(prevCart =>
-        prevCart.map(item =>
+      setCarts(prevCarts => {
+        const guestCart = prevCarts[0];
+        if (!guestCart) return prevCarts;
+        
+        const newItems = guestCart.items.map(item =>
           item.cartItemId === cartItemId 
             ? { ...item, quantity: Math.max(1, newQuantity) }
             : item
-        )
-      );
+        );
+        
+        return [{
+          ...guestCart,
+          items: newItems,
+          itemCount: newItems.reduce((sum, item) => sum + item.quantity, 0)
+        }];
+      });
     }
   };
 
-  // Clear cart
-  const clearCart = async () => {
-    if (user && user.token) {
+  // Clear cart (or specific cart)
+  const clearCart = async (cartId = null) => {
+    if (user) {
       // Logged-in user: clear backend cart
       try {
         setLoading(true);
         
         await apiService.clearCart();
-        setCart([]);
-        toast.info('Cart cleared');
+        setCarts([]);
+        toast.info('All carts cleared');
       } catch (error) {
         console.error('CartContext: Error clearing backend cart:', error);
-        setCart([]);
+        setCarts([]);
       } finally {
         setLoading(false);
       }
     } else {
       // Guest user: clear localStorage cart
-      setCart([]);
+      setCarts([]);
       localStorage.removeItem('cart');
       toast.success('Cart cleared');
     }
   };
 
-  // Sync guest cart to backend when user logs in - REMOVED
-  // const syncGuestCartToBackend = async () => {
-  //   if (!user || !user.token || cart.length === 0) return;
-  //   
-  //   try {
-  //     console.log('CartContext: Syncing guest cart to backend');
-  //     setLoading(true);
-  //     
-  //     // Add each guest cart item to backend
-  //     for (const item of cart) {
-  //       await apiService.addItemToCart({
-  //         productId: item._id,
-  //         quantity: item.quantity,
-  //         giftPackaging: item.giftPackaging || false,
-  //         customizations: item.customizations || []
-  //       });
-  //     }
-  //     
-  //     // Clear localStorage cart
-  //     localStorage.removeItem('cart');
-  //     
-  //     // Refetch cart from backend
-  //     const backendCart = await apiService.getCart();
-  //     console.log('CartContext: Backend cart after syncing:', backendCart);
-  //     
-  //     // Transform backend cart items to frontend format
-  //     const transformedCart = transformBackendCart(backendCart);
-  //     setCart(transformedCart);
-  //     // toast.success('Guest cart synced to your account!'); // Removed this notification
-  //   } catch (error) {
-  //     console.error('CartContext: Error syncing guest cart:', error);
-  //     toast.error('Failed to sync guest cart');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // Calculate totals
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cart.reduce((sum, item) => {
-    const itemPrice = item.price * item.quantity;
-    const giftPrice = item.giftPackaging ? 30 * item.quantity : 0;
+  // Calculate totals across all carts
+  const allCartItems = carts.flatMap(cart => cart.items || []);
+  const totalItems = allCartItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  const totalPrice = allCartItems.reduce((sum, item) => {
+    const itemPrice = (item.price || 0) * (item.quantity || 0);
+    const giftPrice = item.giftPackaging ? 20 * (item.quantity || 0) : 0;
     return sum + itemPrice + giftPrice;
   }, 0);
 
   return (
     <CartContext.Provider
       value={{
-        cart,
+        carts, // Array of carts
+        cart: allCartItems, // Flattened items for backward compatibility
         addToCart,
         removeFromCart,
         updateQuantity,

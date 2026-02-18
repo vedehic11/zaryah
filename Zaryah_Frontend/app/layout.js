@@ -33,7 +33,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${inter.variable} ${poppins.variable} ${playfair.variable}`}>
+    <html lang="en" className={`${inter.variable} ${poppins.variable} ${playfair.variable}`} suppressHydrationWarning>
       <head>
         <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
       </head>

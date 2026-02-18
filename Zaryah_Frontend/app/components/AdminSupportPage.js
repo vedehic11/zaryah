@@ -16,11 +16,14 @@ import {
   Calendar,
   Edit,
   Save,
-  X
+  X,
+  Send,
+  MessageCircle
 } from 'lucide-react'
 import { apiService } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
+import { supabaseClient } from '@/lib/supabase-client'
 
 export const AdminSupportPage = () => {
   const { user, isLoading } = useAuth()
@@ -35,20 +38,64 @@ export const AdminSupportPage = () => {
   const [editingStatus, setEditingStatus] = useState(false)
   const [editingPriority, setEditingPriority] = useState(false)
   const [additionalInfo, setAdditionalInfo] = useState('')
+  const [messages, setMessages] = useState([])
+  const [newMessage, setNewMessage] = useState('')
+  const [sendingMessage, setSendingMessage] = useState(false)
+  const [loadingMessages, setLoadingMessages] = useState(false)
+  const [unreadCounts, setUnreadCounts] = useState({})
 
   useEffect(() => {
     if (!isLoading && user?.userType === 'Admin') {
       fetchTickets()
+      fetchUnreadCounts()
+      // Poll for unread counts every 30 seconds
+      const interval = setInterval(fetchUnreadCounts, 30000)
+      return () => clearInterval(interval)
     } else if (!isLoading) {
       toast.error('Admin access required')
       setLoading(false)
     }
   }, [user, isLoading])
 
+  const fetchUnreadCounts = async () => {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      const token = session?.access_token
+      
+      if (!token) return
+
+      const response = await fetch('/api/support/tickets/unread-count', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setUnreadCounts(data.unreadByTicket || {})
+      }
+    } catch (error) {
+      console.error('Error fetching unread counts:', error)
+    }
+  }
+
   const fetchTickets = async () => {
     try {
       setLoading(true)
+      
+      // Get auth token
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      const token = session?.access_token
+      
+      if (!token) {
+        throw new Error('Not authenticated')
+      }
+
       const response = await fetch('/api/support/tickets', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         credentials: 'include'
       })
       
@@ -62,6 +109,130 @@ export const AdminSupportPage = () => {
       toast.error('Failed to load support tickets')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchMessages = async (ticketId) => {
+    try {
+      setLoadingMessages(true)
+      
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      const token = session?.access_token
+      
+      const response = await fetch(`/api/support/tickets/${ticketId}/messages`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include'
+      })
+      
+      if (!response.ok) throw new Error('Failed to fetch messages')
+      
+      const data = await response.json()
+      setMessages(data || [])
+      // Clear unread count for this ticket
+      setUnreadCounts(prev => ({ ...prev, [ticketId]: 0 }))
+    } catch (error) {
+      console.error('Error fetching messages:', error)
+      toast.error('Failed to load messages')
+    } finally {
+      setLoadingMessages(false)
+    }
+  }
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !selectedTicket) return
+
+    try {
+      setSendingMessage(true)
+      
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      const token = session?.access_token
+      
+      const response = await fetch(`/api/support/tickets/${selectedTicket.id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include',
+        body: JSON.stringify({ message: newMessage.trim() })
+      })
+      
+      if (!response.ok) throw new Error('Failed to send message')
+      
+      const data = await response.json()
+      setMessages([...messages, data])
+      setNewMessage('')
+      
+      // Scroll to bottom
+      setTimeout(() => {
+        const messagesContainer = document.getElementById('messages-container')
+        if (messagesContainer) {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight
+        }
+      }, 100)
+    } catch (error) {
+      console.error('Error sending message:', error)
+      toast.error('Failed to send message')
+    } finally {
+      setSendingMessage(false)
+    }
+  }
+
+  const resolveTicket = async () => {
+    if (!selectedTicket) return
+    
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      const token = session?.access_token
+      
+      const response = await fetch(`/api/support/tickets/${selectedTicket.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'resolved' })
+      })
+      
+      if (!response.ok) throw new Error('Failed to resolve ticket')
+      
+      toast.success('Ticket marked as resolved')
+      setSelectedTicket({ ...selectedTicket, status: 'resolved' })
+      fetchTickets()
+    } catch (error) {
+      console.error('Error resolving ticket:', error)
+      toast.error('Failed to resolve ticket')
+    }
+  }
+
+  const closeTicket = async () => {
+    if (!selectedTicket) return
+    
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      const token = session?.access_token
+      
+      const response = await fetch(`/api/support/tickets/${selectedTicket.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'closed' })
+      })
+      
+      if (!response.ok) throw new Error('Failed to close ticket')
+      
+      toast.success('Ticket closed')
+      setSelectedTicket(null)
+      fetchTickets()
+    } catch (error) {
+      console.error('Error closing ticket:', error)
+      toast.error('Failed to close ticket')
     }
   }
 
@@ -337,10 +508,19 @@ export const AdminSupportPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
-                          onClick={() => setSelectedTicket(ticket)}
-                          className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                          onClick={() => {
+                            setSelectedTicket(ticket)
+                            fetchMessages(ticket.id)
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium relative"
                         >
-                          View Details
+                          <MessageCircle className="w-4 h-4 mr-1" />
+                          Open Chat
+                          {unreadCounts[ticket.id] > 0 && (
+                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+                              {unreadCounts[ticket.id]}
+                            </span>
+                          )}
                         </button>
                       </td>
                     </tr>
@@ -352,22 +532,35 @@ export const AdminSupportPage = () => {
         )}
       </div>
 
-      {/* Ticket Detail Modal */}
+      {/* Chat Modal */}
       {selectedTicket && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-2xl shadow-xl max-w-4xl w-full h-[85vh] flex flex-col"
           >
+            {/* Header */}
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-start">
-                <div>
+                <div className="flex-1">
                   <h2 className="text-2xl font-bold text-gray-900">{selectedTicket.subject}</h2>
-                  <p className="text-sm text-gray-500 mt-1">Ticket ID: {selectedTicket.ticket_id}</p>
+                  <div className="flex items-center space-x-3 mt-2">
+                    <span className="text-sm text-gray-500">#{selectedTicket.ticket_id}</span>
+                    {getStatusBadge(selectedTicket.status)}
+                    {getPriorityBadge(selectedTicket.priority)}
+                  </div>
+                  <div className="mt-2 text-sm text-gray-600">
+                    <p><strong>User:</strong> {selectedTicket.users?.name} ({selectedTicket.users?.email})</p>
+                    <p className="mt-1"><strong>Category:</strong> {selectedTicket.category}</p>
+                  </div>
                 </div>
                 <button
-                  onClick={() => setSelectedTicket(null)}
+                  onClick={() => {
+                    setSelectedTicket(null)
+                    setMessages([])
+                    setNewMessage('')
+                  }}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-6 h-6" />
@@ -375,98 +568,95 @@ export const AdminSupportPage = () => {
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* User Info */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-2">User Information</h3>
-                <div className="space-y-1 text-sm">
-                  <p><span className="text-gray-600">Name:</span> {selectedTicket.users?.name}</p>
-                  <p><span className="text-gray-600">Email:</span> {selectedTicket.users?.email}</p>
+            {/* Original Issue */}
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Original Issue:</h3>
+              <p className="text-sm text-gray-600">{selectedTicket.description}</p>
+            </div>
+
+            {/* Chat Messages */}
+            <div 
+              id="messages-container"
+              className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"
+            >
+              {loadingMessages ? (
+                <div className="flex justify-center items-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                 </div>
-              </div>
-
-              {/* Ticket Details */}
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
-                <p className="text-gray-700 whitespace-pre-wrap">{selectedTicket.description}</p>
-              </div>
-
-              {/* Related Order/Product */}
-              {(selectedTicket.orders || selectedTicket.products) && (
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">Related Information</h3>
-                  {selectedTicket.orders && (
-                    <div className="text-sm">
-                      <p><span className="text-gray-600">Order ID:</span> {selectedTicket.orders.id}</p>
-                      <p><span className="text-gray-600">Status:</span> {selectedTicket.orders.status}</p>
-                    </div>
-                  )}
-                  {selectedTicket.products && (
-                    <div className="text-sm mt-2">
-                      <p><span className="text-gray-600">Product:</span> {selectedTicket.products.name}</p>
-                    </div>
-                  )}
+              ) : messages.length === 0 ? (
+                <div className="flex flex-col justify-center items-center h-full text-gray-500">
+                  <MessageCircle className="w-12 h-12 mb-3 text-gray-300" />
+                  <p>No messages yet. Start the conversation!</p>
                 </div>
-              )}
-
-              {/* Status Update */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <div className="flex items-center space-x-2">
-                  <select
-                    value={selectedTicket.status}
-                    onChange={(e) => updateTicketStatus(selectedTicket.id, e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              ) : (
+                messages.map((msg, index) => (
+                  <div
+                    key={index}
+                    className={`flex ${msg.is_admin ? 'justify-end' : 'justify-start'}`}
                   >
-                    <option value="open">Open</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="resolved">Resolved</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                </div>
-              </div>
+                    <div
+                      className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                        msg.is_admin
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-white text-gray-900 border border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className={`text-xs font-semibold ${msg.is_admin ? 'text-primary-100' : 'text-gray-600'}`}>
+                          {msg.sender?.name || 'Unknown'} {msg.is_admin && '(Admin)'}
+                        </span>
+                        <span className={`text-xs ${msg.is_admin ? 'text-primary-200' : 'text-gray-400'}`}>
+                          {new Date(msg.created_at).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
 
-              {/* Priority Update */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                <select
-                  value={selectedTicket.priority}
-                  onChange={(e) => updateTicketPriority(selectedTicket.id, e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </div>
-
-              {/* Additional Info */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Additional Information</label>
-                <textarea
-                  value={additionalInfo || selectedTicket.additional_info || ''}
-                  onChange={(e) => setAdditionalInfo(e.target.value)}
-                  placeholder="Add additional information or internal notes about this ticket..."
-                  rows={4}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+            {/* Message Input */}
+            <div className="p-4 border-t border-gray-200 bg-white">
+              <div className="flex space-x-2 mb-3">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                  placeholder="Type your message..."
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  disabled={sendingMessage || selectedTicket.status === 'closed'}
                 />
                 <button
-                  onClick={() => {
-                    saveAdditionalInfo(selectedTicket.id, additionalInfo || selectedTicket.additional_info)
-                  }}
-                  className="mt-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  onClick={sendMessage}
+                  disabled={sendingMessage || !newMessage.trim() || selectedTicket.status === 'closed'}
+                  className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
-                  Save Info
+                  <Send className="w-4 h-4" />
+                  <span>Send</span>
                 </button>
               </div>
-
-              {/* Timestamps */}
-              <div className="text-sm text-gray-500 space-y-1">
-                <p>Created: {new Date(selectedTicket.created_at).toLocaleString()}</p>
-                <p>Updated: {new Date(selectedTicket.updated_at).toLocaleString()}</p>
-                {selectedTicket.resolved_at && (
-                  <p>Resolved: {new Date(selectedTicket.resolved_at).toLocaleString()}</p>
+              
+              {/* Action Buttons */}
+              <div className="flex space-x-2">
+                {selectedTicket.status !== 'resolved' && selectedTicket.status !== 'closed' && (
+                  <button
+                    onClick={resolveTicket}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Mark as Resolved</span>
+                  </button>
+                )}
+                {selectedTicket.status !== 'closed' && (
+                  <button
+                    onClick={closeTicket}
+                    className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    <span>Close Ticket</span>
+                  </button>
                 )}
               </div>
             </div>

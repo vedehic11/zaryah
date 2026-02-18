@@ -6,8 +6,7 @@ import { supabase } from '@/lib/supabase'
 // GET /api/addresses - Get all addresses for authenticated user
 export async function GET(request) {
   try {
-    const { requireAuth: requireAuthHelper } = await import('@/lib/auth')
-    const session = await requireAuthHelper(request)
+    const session = await requireAuth(request)
     const user = await getUserBySupabaseAuthId(session.user.id)
     
     if (!user) {
@@ -38,8 +37,7 @@ export async function GET(request) {
 // POST /api/addresses - Create new address for authenticated user
 export async function POST(request) {
   try {
-    const { requireAuth: requireAuthHelper } = await import('@/lib/auth')
-    const session = await requireAuthHelper(request)
+    const session = await requireAuth(request)
     const user = await getUserBySupabaseAuthId(session.user.id)
     
     if (!user) {

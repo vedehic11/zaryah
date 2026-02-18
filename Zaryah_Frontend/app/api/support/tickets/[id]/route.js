@@ -18,11 +18,11 @@ export async function PATCH(request, { params }) {
     }
 
     // Only admins can update tickets
-    if (user.userType !== 'Admin') {
+    if (user.user_type !== 'Admin') {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    const { id } = params
+    const { id } = await params // Await params in Next.js 15+
     const body = await request.json()
     const { status, priority, assigned_to, additional_info } = body
 

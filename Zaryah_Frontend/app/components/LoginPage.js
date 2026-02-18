@@ -204,18 +204,8 @@ export const LoginPage = () => {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </motion.button>
 
-          {/* Demo Accounts */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-            <p className="text-sm font-medium text-gray-700 mb-2">Demo Accounts:</p>
-            <div className="space-y-1 text-xs text-gray-600">
-              <p><strong>Buyer:</strong> buyer@demo.com / password123</p>
-              <p><strong>Seller:</strong> seller@demo.com / 123</p>
-              <p><strong>Admin:</strong> admin@demo.com / 123</p>
-            </div>
-          </div>
-
           {/* Links */}
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-2 mt-6">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
               <Link href="/register" className="text-primary-600 hover:text-primary-700 font-medium">

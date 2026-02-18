@@ -23,6 +23,8 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
   const [showAddAddress, setShowAddAddress] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('razorpay') // razorpay, cod
   const [orderDetails, setOrderDetails] = useState(null)
+  const [calculatingDelivery, setCalculatingDelivery] = useState(false)
+  const [dynamicDeliveryCharge, setDynamicDeliveryCharge] = useState(null)
 
   const [newAddress, setNewAddress] = useState({
     fullName: user?.name || '',
@@ -34,16 +36,62 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
     isDefault: addresses.length === 0
   })
 
-  // Calculate totals
+  // Calculate totals with dynamic delivery charge
   const subtotal = cartTotal || 0
-  const deliveryCharge = subtotal > 500 ? 0 : 50
+  const deliveryCharge = dynamicDeliveryCharge !== null ? dynamicDeliveryCharge : (subtotal > 500 ? 0 : 50)
   const total = subtotal + deliveryCharge
+
+  // Calculate delivery charge when address changes
+  useEffect(() => {
+    const calculateDeliveryCharge = async () => {
+      if (!selectedAddress?.pincode || !cart || cart.length === 0) {
+        setDynamicDeliveryCharge(null)
+        return
+      }
+
+      setCalculatingDelivery(true)
+      try {
+        const response = await fetch('/api/shipping/calculate-rate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            deliveryPincode: selectedAddress.pincode,
+            cartItems: cart.map(item => ({
+              product_id: item.product?.id || item.productId,
+              seller_id: item.product?.seller_id || item.sellerId,
+              weight: item.product?.weight || 0.5,
+              quantity: item.quantity
+            })),
+            codAmount: paymentMethod === 'cod' ? total : 0
+          })
+        })
+
+        const data = await response.json()
+        if (data.success && data.deliveryCharge) {
+          setDynamicDeliveryCharge(data.deliveryCharge)
+          if (data.fallback) {
+            console.warn('Using fallback delivery charge:', data.error)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to calculate delivery charge:', error)
+        // Keep using static fallback
+      } finally {
+        setCalculatingDelivery(false)
+      }
+    }
+
+    if (selectedAddress) {
+      calculateDeliveryCharge()
+    }
+  }, [selectedAddress, paymentMethod, cart])
 
   // Reset when modal opens
   useEffect(() => {
     if (isOpen) {
       setStep(1)
       setShowAddAddress(false)
+      setDynamicDeliveryCharge(null)
       if (selectedAddress) {
         // Address already selected
       } else if (addresses.length > 0) {
@@ -482,9 +530,16 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
                         <span className="text-gray-600">Subtotal</span>
                         <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Delivery</span>
-                        <span className="font-medium">{deliveryCharge === 0 ? 'FREE' : `₹${deliveryCharge}`}</span>
+                      <div className="flex justify-between text-sm items-center">
+                        <span className="text-gray-600 flex items-center gap-2">
+                          Delivery
+                          {calculatingDelivery && (
+                            <span className="text-xs text-blue-600">calculating...</span>
+                          )}
+                        </span>
+                        <span className="font-medium">
+                          {deliveryCharge === 0 ? 'FREE' : `₹${deliveryCharge}`}
+                        </span>
                       </div>
                       <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
                         <span>Total</span>
@@ -492,10 +547,26 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
                       </div>
                     </div>
 
-                    {subtotal > 500 && (
+                    {deliveryCharge === 0 ? (
                       <div className="mt-4 p-3 bg-green-50 rounded-lg flex items-start gap-2">
                         <Truck className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                         <p className="text-xs text-green-800">Yay! You got free delivery</p>
+                      </div>
+                    ) : (
+                      <div className="mt-4 p-3 bg-blue-50 rounded-lg flex items-start gap-2">
+                        <Package className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-blue-800">
+                            {dynamicDeliveryCharge !== null 
+                              ? 'Delivery charge based on weight & distance'
+                              : 'Standard delivery charge'}
+                          </p>
+                          {selectedAddress?.pincode && (
+                            <p className="text-xs text-blue-600 mt-1">
+                              To pincode: {selectedAddress.pincode}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

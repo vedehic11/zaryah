@@ -145,10 +145,10 @@ class ApiService {
     })
   }
 
-  async updateCartItem(itemId, itemData) {
+  async updateCartItem(itemId, updates) {
     return this.request(`/cart/items/${itemId}`, {
       method: 'PUT',
-      body: JSON.stringify(itemData),
+      body: JSON.stringify(updates),
     })
   }
 

@@ -260,6 +260,7 @@ export const RegisterPage = () => {
 
   // --- Navigation ---
   const nextStep = () => {
+    setErrors({}) // Clear previous errors before validating
     if (validateCurrentStep()) {
       if (currentStep === 1) {
         setCurrentStep(2) // Go to address step
@@ -651,16 +652,6 @@ export const RegisterPage = () => {
   // --- Step 2: Address Collection ---
   const renderStep2 = () => (
     <div className="space-y-6">
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-        <div className="flex items-center space-x-2">
-          <MapPin className="w-5 h-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-blue-700">Delivery Address</h3>
-        </div>
-        <p className="text-sm text-blue-600 mt-1">
-          Add your delivery address to ensure smooth order processing and accurate delivery estimates.
-        </p>
-      </div>
-      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="address.phone" className="block text-sm font-medium text-gray-700 mb-2">
@@ -780,32 +771,12 @@ export const RegisterPage = () => {
           )}
         </div>
       </div>
-      
-      <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-        <div className="flex items-center space-x-2">
-          <CheckCircle className="w-5 h-5 text-green-600" />
-          <span className="text-sm font-medium text-green-700">Default Address</span>
-        </div>
-        <p className="text-sm text-green-600 mt-1">
-          This will be set as your default delivery address. You can add more addresses later from your profile.
-        </p>
-      </div>
     </div>
   )
 
   // --- Step 3: Business Information (Sellers Only) ---
   const renderStep3 = () => (
     <div className="space-y-6">
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-        <div className="flex items-center space-x-2">
-          <AlertCircle className="w-5 h-5 text-amber-600" />
-          <h3 className="text-lg font-semibold text-amber-700">Business Information</h3>
-        </div>
-        <p className="text-sm text-amber-600 mt-1">
-          Tell us about your business to help customers discover your products.
-        </p>
-      </div>
-      
       <div>
         <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 mb-2">
           Business Name *
@@ -925,10 +896,6 @@ export const RegisterPage = () => {
   // --- Step 4 ---
   const renderStep4 = () => (
     <div className="space-y-6">
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-        <div className="flex items-center space-x-2"><AlertCircle className="w-5 h-5 text-amber-600" /><h3 className="text-lg font-semibold text-amber-700">Verification Required</h3></div>
-        <p className="text-sm text-amber-600 mt-1">This information helps us verify your identity and ensure a secure marketplace for all users.</p>
-      </div>
       {/* ID Verification */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
