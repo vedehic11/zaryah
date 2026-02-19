@@ -429,17 +429,37 @@ export async function getCheapestShippingRate(params) {
 /**
  * Map Shiprocket status to internal order status
  * @param {string} shiprocketStatus - Shiprocket shipment status
- * @returns {string|null} Internal order status or null if no change needed
+ * @returns {Object} { status: string, isRTO: boolean, requiresRefund: boolean }
  */
 export function mapShiprocketStatus(shiprocketStatus) {
   const statusMap = {
-    'Delivered': 'delivered',
-    'RTO': 'cancelled',
-    'RTO Delivered': 'cancelled',
-    'Lost': 'cancelled',
-    'Cancelled': 'cancelled',
-    'Undelivered': 'cancelled'
+    // Successful delivery
+    'Delivered': { status: 'delivered', isRTO: false, requiresRefund: false },
+    'DELIVERED': { status: 'delivered', isRTO: false, requiresRefund: false },
+    
+    // In Transit
+    'Shipped': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'IN TRANSIT': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'Out for Delivery': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    
+    // RTO (Return to Origin) - customer refused/not available
+    'RTO': { status: 'cancelled', isRTO: true, requiresRefund: true },
+    'RTO Initiated': { status: 'cancelled', isRTO: true, requiresRefund: true },
+    'RTO IN TRANSIT': { status: 'cancelled', isRTO: true, requiresRefund: true },
+    'RTO Delivered': { status: 'cancelled', isRTO: true, requiresRefund: true },
+    'RTO_DELIVERED': { status: 'cancelled', isRTO: true, requiresRefund: true },
+    
+    // Lost/Damaged by courier
+    'Lost': { status: 'cancelled', isRTO: false, requiresRefund: true },
+    'LOST': { status: 'cancelled', isRTO: false, requiresRefund: true },
+    'Damaged': { status: 'cancelled', isRTO: false, requiresRefund: true },
+    
+    // Cancelled orders
+    'Cancelled': { status: 'cancelled', isRTO: false, requiresRefund: true },
+    'CANCELLED': { status: 'cancelled', isRTO: false, requiresRefund: true },
+    'Undelivered': { status: 'cancelled', isRTO: false, requiresRefund: true },
+    'NOT SERVICEABLE': { status: 'cancelled', isRTO: false, requiresRefund: true }
   }
 
-  return statusMap[shiprocketStatus] || null
+  return statusMap[shiprocketStatus] || { status: null, isRTO: false, requiresRefund: false }
 }

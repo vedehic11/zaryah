@@ -24,48 +24,94 @@ export const AuthProvider = ({ children }) => {
 
   // Sync Supabase Auth user with our users table
   useEffect(() => {
+    let isMounted = true
+    let loadingTimeout = null
+
+    // Don't restore from cache - it causes API auth issues
+    // The session needs to be validated first before user is set
+    // Cache is only used for faster subsequent syncs, not for initial load
+
     // Add timeout fallback to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      console.warn('Auth loading timeout - resetting to logged out state')
-      setIsLoading(false)
-      setUser(null)
-      setSupabaseUser(null)
-    }, 5000) // 5 second timeout
+    loadingTimeout = setTimeout(() => {
+      if (isMounted) {
+        console.warn('Auth loading timeout - resetting to logged out state')
+        setIsLoading(false)
+        setUser(null)
+        setSupabaseUser(null)
+        sessionStorage.removeItem('zaryah_user_cache')
+      }
+    }, 10000) // 10 second timeout
 
     // Get initial session
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
-      clearTimeout(loadingTimeout)
+      if (!isMounted) return
+      if (loadingTimeout) clearTimeout(loadingTimeout)
+      
       if (session) {
         syncUser(session.user)
       } else {
         setUser(null)
         setSupabaseUser(null)
         setIsLoading(false)
+        sessionStorage.removeItem('zaryah_user_cache')
       }
     }).catch((error) => {
-      clearTimeout(loadingTimeout)
+      if (!isMounted) return
+      if (loadingTimeout) clearTimeout(loadingTimeout)
       console.error('Auth session error:', error)
       setIsLoading(false)
       setUser(null)
       setSupabaseUser(null)
+      sessionStorage.removeItem('zaryah_user_cache')
     })
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        await syncUser(session.user)
-        } else {
+      if (!isMounted) return
+      
+      console.log('Auth state changed:', event)
+      
+      // Only sync on specific events to avoid redundant calls
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
+          await syncUser(session.user)
+        }
+      } else if (event === 'SIGNED_OUT') {
         setUser(null)
         setSupabaseUser(null)
         setIsLoading(false)
+        sessionStorage.removeItem('zaryah_user_cache')
       }
     })
 
+    // Handle page visibility changes (tab switching)
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && !isLoading) {
+        // Tab became visible - verify session is still valid
+        try {
+          const { data: { session } } = await supabaseClient.auth.getSession()
+          if (!session && user) {
+            // Session expired while tab was hidden
+            setUser(null)
+            setSupabaseUser(null)
+            sessionStorage.removeItem('zaryah_user_cache')
+            toast.error('Your session has expired. Please log in again.')
+          }
+        } catch (error) {
+          console.error('Error checking session on visibility change:', error)
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
-      clearTimeout(loadingTimeout)
+      isMounted = false
+      if (loadingTimeout) clearTimeout(loadingTimeout)
       subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
@@ -81,13 +127,32 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(true)
       
       console.log('syncUser called for:', authUser.email, 'isAfterRegistration:', isAfterRegistration)
+      
+      // Try to use cached user data if available and auth IDs match
+      const cachedUser = sessionStorage.getItem('zaryah_user_cache')
+      if (cachedUser && !isAfterRegistration) {
+        try {
+          const parsedCache = JSON.parse(cachedUser)
+          if (parsedCache.supabaseAuthId === authUser.id) {
+            console.log('Using cached user data for:', parsedCache.email)
+            setSupabaseUser(authUser)
+            setUser(parsedCache)
+            setIsLoading(false)
+            return
+          }
+        } catch (e) {
+          console.error('Failed to parse cached user', e)
+          sessionStorage.removeItem('zaryah_user_cache')
+        }
+      }
+      
       console.log('Checking sessionStorage for pending data...')
       console.log('pendingBuyerData exists:', !!sessionStorage.getItem('pendingBuyerData'))
       console.log('pendingSellerData exists:', !!sessionStorage.getItem('pendingSellerData'))
 
       // Get user from our users table by Supabase auth ID or email (single query with OR)
       let userData = null
-      let retries = isAfterRegistration ? 5 : 1 // More retries if called after registration
+      let retries = isAfterRegistration ? 3 : 1 // Reduced retries to prevent long waits
       
       for (let i = 0; i < retries; i++) {
         const { data, error } = await supabaseClient
@@ -103,8 +168,8 @@ export const AuthProvider = ({ children }) => {
         }
         
         if (i < retries - 1) {
-          console.log(`User not found, retrying in 1000ms... (attempt ${i + 1}/${retries})`)
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          console.log(`User not found, retrying in 500ms... (attempt ${i + 1}/${retries})`)
+          await new Promise(resolve => setTimeout(resolve, 500))
         }
       }
 
@@ -291,8 +356,7 @@ export const AuthProvider = ({ children }) => {
         
         if (newUserData) {
           // Use the newly created user data
-          setSupabaseUser(newUserData)
-          setUser({
+          const newUserObj = {
             id: newUserData.id,
             email: newUserData.email,
             name: newUserData.name,
@@ -302,7 +366,14 @@ export const AuthProvider = ({ children }) => {
             isApproved: newUserData.is_approved,
             profilePhoto: newUserData.profile_photo,
             supabaseAuthId: newUserData.supabase_auth_id
-          })
+          }
+          
+          setSupabaseUser(newUserData)
+          setUser(newUserObj)
+          
+          // Cache user data
+          sessionStorage.setItem('zaryah_user_cache', JSON.stringify(newUserObj))
+          
           toast.success('Account created successfully!')
         }
         
@@ -311,8 +382,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       // User exists, set their data
-      setSupabaseUser(userData)
-      setUser({
+      const userDataToSet = {
         id: userData.id,
         email: userData.email,
         name: userData.name,
@@ -320,7 +390,14 @@ export const AuthProvider = ({ children }) => {
         userType: userData.user_type,
         supabaseAuthId: userData.supabase_auth_id,
         isApproved: userData.is_approved
-      })
+      }
+      
+      setSupabaseUser(userData)
+      setUser(userDataToSet)
+      
+      // Cache user data for instant restore on page reload
+      sessionStorage.setItem('zaryah_user_cache', JSON.stringify(userDataToSet))
+      
       setIsLoading(false)
     } catch (error) {
       console.error('Error syncing user:', error)
@@ -501,8 +578,7 @@ export const AuthProvider = ({ children }) => {
         sessionStorage.removeItem('registering')
         
         // Set user state manually to log them in immediately
-        setSupabaseUser(authUser)
-        setUser({
+        const newUserData = {
           id: result.user.id,
           email: result.user.email,
           name: result.user.name,
@@ -512,7 +588,13 @@ export const AuthProvider = ({ children }) => {
           isApproved: result.user.is_approved,
           supabaseAuthId: authUser.id,
           created_at: result.user.created_at
-        })
+        }
+        
+        setSupabaseUser(authUser)
+        setUser(newUserData)
+        
+        // Cache user data
+        sessionStorage.setItem('zaryah_user_cache', JSON.stringify(newUserData))
         
         toast.success('Registration successful!')
         return { success: true, requiresOtp: false }
@@ -541,9 +623,10 @@ export const AuthProvider = ({ children }) => {
         return
       }
 
-      // Clear local state
+      // Clear local state and cache
       setUser(null)
       setSupabaseUser(null)
+      sessionStorage.removeItem('zaryah_user_cache')
       
       toast.success('Logged out successfully')
         } catch (error) {

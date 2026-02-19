@@ -454,7 +454,7 @@ export const CartProvider = ({ children }) => {
         
         await apiService.clearCart();
         setCarts([]);
-        toast.info('All carts cleared');
+        toast.success('Cart cleared successfully');
       } catch (error) {
         console.error('CartContext: Error clearing backend cart:', error);
         setCarts([]);

@@ -82,22 +82,18 @@ export async function POST(request) {
         const deliveryFee = parseFloat(order.delivery_fee || 0)
         const totalAdminEarnings = sellerCommission + buyerServiceCharge + deliveryFee
         
-        console.log('Payment verification - Revenue breakdown:', {
-          productSubtotal,
-          sellerAmount: `${sellerAmount} (97.5%)`,
-          sellerCommission: `${sellerCommission} (2.5% from seller)`,
-          buyerServiceCharge: `${buyerServiceCharge} (2.5% from buyer)`,
-          deliveryFee: `${deliveryFee} (100% delivery)`,
-          totalAdminEarnings
-        })
+        console.log('💰 SELLER EARNINGS CALCULATED (from payment verification):')
+        console.log('  Product subtotal:', `₹${productSubtotal}`)
+        console.log('  Seller amount (97.5%):', `₹${sellerAmount}`)
+        console.log('  Seller commission (2.5% from seller):', `₹${sellerCommission}`)
+        console.log('  Buyer service charge (2.5% from buyer):', `₹${buyerServiceCharge}`)
+        console.log('  Delivery fee (100% to admin):', `₹${deliveryFee}`)
+        console.log('  Total admin earnings:', `₹${totalAdminEarnings}`)
 
-        console.log(`✅ Payment verified - ₹${sellerAmount} will show in seller's pending balance`)
-        console.log('Note: Wallet balances are calculated dynamically from order status')
-
-        // Ensure wallet exists for seller (balances calculated dynamically)
+        // Ensure wallet exists and add to pending balance
         const { data: existingWallet } = await supabase
           .from('wallets')
-          .select('id')
+          .select('id, pending_balance')
           .eq('seller_id', order.seller_id)
           .single()
 
@@ -106,13 +102,37 @@ export async function POST(request) {
             .from('wallets')
             .insert({
               seller_id: order.seller_id,
-              pending_balance: 0,
+              pending_balance: sellerAmount,
               available_balance: 0,
               total_earned: 0
             })
+          console.log('  Wallet created with pending balance:', sellerAmount)
+        } else {
+          // Update existing wallet - add to pending balance
+          const currentPending = parseFloat(existingWallet.pending_balance || 0)
+          await supabase
+            .from('wallets')
+            .update({
+              pending_balance: currentPending + sellerAmount,
+              updated_at: new Date().toISOString()
+            })
+            .eq('seller_id', order.seller_id)
+          console.log('  Pending balance updated +₹' + sellerAmount)
         }
+        
+        // Create transaction record for pending credit
+        await supabase
+          .from('transactions')
+          .insert({
+            seller_id: order.seller_id,
+            order_id: order_id,
+            type: 'credit_pending',
+            amount: sellerAmount,
+            status: 'completed',
+            description: `Payment verified - Pending delivery confirmation`
+          })
 
-        // Record admin commission
+        // Record admin commission (recorded once at payment verification)
         const { error: commissionError } = await supabase
           .from('admin_earnings')
           .insert({

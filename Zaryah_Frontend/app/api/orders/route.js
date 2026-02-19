@@ -175,8 +175,16 @@ export async function POST(request) {
     // Otherwise calculate from subtotal
     const totalAmount = frontendTotal || subtotal
     
+    // Calculate commission breakdown
+    const sellerCommission = parseFloat((subtotal * 0.025).toFixed(2)) // 2.5% from seller
+    const buyerServiceCharge = parseFloat((subtotal * 0.025).toFixed(2)) // 2.5% from buyer (service_charge)
+    const totalCommission = sellerCommission + buyerServiceCharge // Total 5%
+    const sellerAmount = parseFloat((subtotal * 0.975).toFixed(2)) // Seller gets 97.5%
+    
     console.log(`Product subtotal: ${subtotal}`)
     console.log(`Total order amount (with fees): ${totalAmount}`)
+    console.log(`Commission breakdown: Seller=${sellerCommission}, Buyer=${buyerServiceCharge}, Total=${totalCommission}`)
+    console.log(`Seller earnings: ${sellerAmount} (97.5%)`)
     console.log(`Order items count: ${orderItems.length}`)
 
     // Get seller ID (assuming all items are from same seller, or handle multiple sellers)
@@ -197,7 +205,9 @@ export async function POST(request) {
         payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
         status: 'pending',
         delivery_fee: deliveryFee || 0,
-        service_charge: platformFee || 0  // Using service_charge column for platform fee
+        service_charge: buyerServiceCharge, // 2.5% service charge from buyer
+        commission_amount: totalCommission, // Total 5% commission (2.5% + 2.5%)
+        seller_amount: sellerAmount // 97.5% of product subtotal goes to seller
       })
       .select()
       .single()
@@ -279,12 +289,11 @@ export async function POST(request) {
     console.log('  Product subtotal:', `₹${subtotal}`)
     console.log('  Seller earnings (97.5%):', `₹${sellerEarnings}`)
     console.log('  Platform commission (2.5%):', `₹${platformCommission}`)
-    console.log('  Note: Wallet balances are calculated dynamically from order status')
     
-    // Ensure wallet exists (balances are calculated dynamically, not stored)
+    // Ensure wallet exists and update pending balance
     const { data: existingWallet } = await supabase
       .from('wallets')
-      .select('id')
+      .select('id, pending_balance')
       .eq('seller_id', sellerId)
       .single()
 
@@ -294,12 +303,24 @@ export async function POST(request) {
         .from('wallets')
         .insert({
           seller_id: sellerId,
-          pending_balance: 0,
+          pending_balance: sellerEarnings, // Add to pending immediately
           available_balance: 0,
           total_earned: 0
         })
+    } else {
+      // Update existing wallet - add to pending balance
+      // Fetch current balance first to avoid SQL raw query
+      const currentPending = parseFloat(existingWallet.pending_balance || 0)
+      await supabase
+        .from('wallets')
+        .update({
+          pending_balance: currentPending + sellerEarnings,
+          updated_at: new Date().toISOString()
+        })
+        .eq('seller_id', sellerId)
     }
-    console.log(`✅ Order created - wallet will reflect ₹${sellerEarnings} in pending balance`)
+    
+    console.log(`✅ Order created - ₹${sellerEarnings} added to seller's pending balance`)
 
     // Create transaction record
     await supabase
@@ -307,10 +328,10 @@ export async function POST(request) {
       .insert({
         seller_id: sellerId,
         order_id: order.id,
-        type: 'order',
+        type: 'credit_pending',
         amount: sellerEarnings,
-        status: 'pending',
-        description: `Order #${order.id} - Pending delivery`
+        status: 'completed',
+        description: `Order #${order.id.substring(0, 8)} - Pending delivery confirmation`
       })
 
     // Fetch complete order with relations

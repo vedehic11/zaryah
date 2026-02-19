@@ -442,8 +442,13 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => {
-                              setSelectedDocument(seller.idDocument)
-                              setIsDocumentViewerOpen(true)
+                              const documentUrl = seller.id_document || seller.idDocument
+                              if (documentUrl && documentUrl !== 'pending') {
+                                setSelectedDocument(documentUrl)
+                                setIsDocumentViewerOpen(true)
+                              } else {
+                                toast.error('No document available to view')
+                              }
                             }}
                             className="p-1.5 text-gray-500 hover:text-blue-600 transition-colors"
                             title="View documents"

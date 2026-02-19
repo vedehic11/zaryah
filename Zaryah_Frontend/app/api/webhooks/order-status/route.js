@@ -1,3 +1,7 @@
+// DEPRECATED: This webhook is legacy and should not be used for new integrations
+// Use /api/webhooks/delivery-updates instead, which handles Shiprocket webhooks properly
+// This endpoint is kept for backwards compatibility only
+//
 // Next.js API route for order status webhook (from Shiprocket or manual update)
 // This moves seller funds from pending_balance to available_balance on delivery
 import { NextResponse } from 'next/server'
@@ -6,6 +10,10 @@ import { supabase } from '@/lib/supabase'
 // POST /api/webhooks/order-status - Handle order status updates
 export async function POST(request) {
   try {
+    // Log deprecation warning
+    console.warn('⚠️ DEPRECATED WEBHOOK CALLED: /api/webhooks/order-status')
+    console.warn('⚠️ Please use /api/webhooks/delivery-updates instead')
+    
     // Verify webhook authenticity (optional but recommended)
     const webhookSecret = process.env.WEBHOOK_SECRET
     const signature = request.headers.get('x-webhook-signature')

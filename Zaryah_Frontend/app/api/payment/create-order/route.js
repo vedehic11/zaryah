@@ -155,9 +155,13 @@ export async function POST(request) {
   }
 }
 
-// PATCH /api/payment/verify - Verify payment signature and credit seller wallets
+// DEPRECATED: PATCH method moved to /api/payment/verify
+// This PATCH handler should not be used - kept for backwards compatibility only
+// Use POST /api/payment/verify instead
 export async function PATCH(request) {
   try {
+    console.warn('⚠️ DEPRECATED: Use POST /api/payment/verify instead of PATCH /api/payment/create-order')
+    
     const session = await requireAuth(request)
     const user = await getUserBySupabaseAuthId(session.user.id)
 

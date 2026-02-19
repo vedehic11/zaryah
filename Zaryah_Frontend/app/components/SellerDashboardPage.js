@@ -45,6 +45,9 @@ export default function SellerDashboardPage() {
     ifsc_code: '',
     account_holder_name: ''
   })
+  
+  // State to track which order is being updated (to prevent double-clicks)
+  const [updatingOrders, setUpdatingOrders] = useState(new Set())
 
   // Log pending breakdown when modal opens
   useEffect(() => {
@@ -555,21 +558,6 @@ export default function SellerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - Add Product Button Only */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-end">
-            <Link
-              href="/seller/products/new"
-              className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Add Product</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Grid */}
@@ -849,11 +837,89 @@ export default function SellerDashboardPage() {
                             </div>
                           </div>
                           
+                          {/* Shipment Error / Notes - Show prominently if exists */}
+                          {(order.shipment_error || (order.notes && order.notes.includes('SHIPMENT ERROR'))) && (
+                            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                              <div className="flex items-start space-x-3">
+                                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-red-800 mb-1">Shipment Creation Failed</h4>
+                                  <p className="text-sm text-red-700 mb-2">
+                                    {order.shipment_error || order.notes}
+                                  </p>
+                                  <div className="flex items-center gap-2 text-xs text-red-600">
+                                    <p>
+                                      Please create the shipment manually in your{' '}
+                                      <a 
+                                        href="https://app.shiprocket.in/seller/orders" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="underline font-medium hover:text-red-800"
+                                      >
+                                        Shiprocket dashboard
+                                      </a>
+                                      {' '}or contact support.
+                                    </p>
+                                  </div>
+                                  {/* Retry button */}
+                                  <button
+                                    onClick={async () => {
+                                      if (updatingOrders.has(order.id)) return
+                                      
+                                      setUpdatingOrders(prev => new Set(prev).add(order.id))
+                                      
+                                      try {
+                                        // First clear the notes/error so backend can retry
+                                        await apiService.request(`/orders/${order.id}`, {
+                                          method: 'PATCH',
+                                          body: JSON.stringify({ 
+                                            notes: null,
+                                            shipment_error: null 
+                                          })
+                                        })
+                                        
+                                        // Then trigger shipment creation by confirming again
+                                        await apiService.request(`/orders/${order.id}`, {
+                                          method: 'PUT',
+                                          body: JSON.stringify({ status: 'confirmed' })
+                                        })
+                                        
+                                        toast.success('Retrying shipment creation...')
+                                        setTimeout(() => fetchDashboardData(), 2000) // Refresh after 2s
+                                      } catch (error) {
+                                        console.error('Error retrying shipment:', error)
+                                        toast.error(error.message || 'Failed to retry. Please check your seller profile has complete address.')
+                                      } finally {
+                                        setUpdatingOrders(prev => {
+                                          const newSet = new Set(prev)
+                                          newSet.delete(order.id)
+                                          return newSet
+                                        })
+                                      }
+                                    }}
+                                    disabled={updatingOrders.has(order.id)}
+                                    className="mt-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-md font-medium disabled:opacity-50"
+                                  >
+                                    {updatingOrders.has(order.id) ? 'Retrying...' : 'Retry Shipment Creation'}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
                           {/* Action Buttons */}
                           {order.status === 'pending' && (
                             <div className="mt-4 pt-4 border-t border-gray-200">
                               <button
                                 onClick={async () => {
+                                  // Prevent double-clicks
+                                  if (updatingOrders.has(order.id)) {
+                                    toast.error('Already updating this order...')
+                                    return
+                                  }
+                                  
+                                  setUpdatingOrders(prev => new Set(prev).add(order.id))
+                                  
                                   try {
                                     await apiService.request(`/orders/${order.id}`, {
                                       method: 'PUT',
@@ -864,13 +930,30 @@ export default function SellerDashboardPage() {
                                     fetchDashboardData() // Refresh orders
                                   } catch (error) {
                                     console.error('Error confirming order:', error)
-                                    toast.error(error.message || 'Failed to confirm order')
+                                    const errorMsg = error.message || 'Failed to confirm order'
+                                    
+                                    // Better error message for status transition error
+                                    if (errorMsg.includes('Invalid status transition')) {
+                                      toast.error('This order cannot be confirmed. Please refresh the page.')
+                                      fetchDashboardData() // Auto-refresh to show current state
+                                    } else {
+                                      toast.error(errorMsg)
+                                    }
+                                  } finally {
+                                    setUpdatingOrders(prev => {
+                                      const newSet = new Set(prev)
+                                      newSet.delete(order.id)
+                                      return newSet
+                                    })
                                   }
                                 }}
-                                className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2"
+                                disabled={updatingOrders.has(order.id)}
+                                className={`w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 ${
+                                  updatingOrders.has(order.id) ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
                               >
                                 <CheckCircle className="w-5 h-5" />
-                                <span>Confirm Order</span>
+                                <span>{updatingOrders.has(order.id) ? 'Confirming...' : 'Confirm Order'}</span>
                               </button>
                             </div>
                           )}
@@ -879,6 +962,14 @@ export default function SellerDashboardPage() {
                             <div className="mt-4 pt-4 border-t border-gray-200">
                               <button
                                 onClick={async () => {
+                                  // Prevent double-clicks
+                                  if (updatingOrders.has(order.id)) {
+                                    toast.error('Already updating this order...')
+                                    return
+                                  }
+                                  
+                                  setUpdatingOrders(prev => new Set(prev).add(order.id))
+                                  
                                   try {
                                     await apiService.request(`/orders/${order.id}`, {
                                       method: 'PUT',
@@ -889,13 +980,30 @@ export default function SellerDashboardPage() {
                                     fetchDashboardData()
                                   } catch (error) {
                                     console.error('Error updating order:', error)
-                                    toast.error(error.message || 'Failed to update order')
+                                    const errorMsg = error.message || 'Failed to update order'
+                                    
+                                    // Better error message for status transition error
+                                    if (errorMsg.includes('Invalid status transition')) {
+                                      toast.error('This order cannot be dispatched. Please refresh the page.')
+                                      fetchDashboardData() // Auto-refresh to show current state
+                                    } else {
+                                      toast.error(errorMsg)
+                                    }
+                                  } finally {
+                                    setUpdatingOrders(prev => {
+                                      const newSet = new Set(prev)
+                                      newSet.delete(order.id)
+                                      return newSet
+                                    })
                                   }
                                 }}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2"
+                                disabled={updatingOrders.has(order.id)}
+                                className={`w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 ${
+                                  updatingOrders.has(order.id) ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
                               >
                                 <Package className="w-5 h-5" />
-                                <span>Mark as Dispatched</span>
+                                <span>{updatingOrders.has(order.id) ? 'Updating...' : 'Mark as Dispatched'}</span>
                               </button>
                             </div>
                           )}

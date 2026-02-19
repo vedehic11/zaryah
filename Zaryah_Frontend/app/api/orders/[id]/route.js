@@ -135,21 +135,28 @@ export async function PUT(request, context) {
     console.log('Order found - current status:', order.status, '- requested:', status)
 
     // VALIDATION: Check if status transition is allowed
-    const validTransitions = {
-      'pending': ['confirmed', 'cancelled'],
-      'confirmed': ['dispatched', 'cancelled'],
-      'dispatched': ['delivered', 'cancelled'],
-      'delivered': [], // No transitions allowed from delivered
-      'cancelled': [] // No transitions allowed from cancelled
-    }
+    // Allow idempotent operations (setting same status again)
+    if (order.status === status) {
+      console.log(`Status already ${status}, allowing idempotent operation`)
+      // Continue to process (useful for retry scenarios like shipment creation)
+    } else {
+      // Check valid transitions for different statuses
+      const validTransitions = {
+        'pending': ['confirmed', 'cancelled'],
+        'confirmed': ['dispatched', 'cancelled'],
+        'dispatched': ['delivered', 'cancelled'],
+        'delivered': [], // No transitions allowed from delivered
+        'cancelled': [] // No transitions allowed from cancelled
+      }
 
-    const allowedNextStatuses = validTransitions[order.status] || []
-    if (!allowedNextStatuses.includes(status)) {
-      console.error(`Invalid status transition: ${order.status} -> ${status}`)
-      return NextResponse.json({ 
-        error: 'Invalid status transition',
-        message: `Cannot change status from "${order.status}" to "${status}". Allowed: ${allowedNextStatuses.join(', ') || 'none'}`
-      }, { status: 400 })
+      const allowedNextStatuses = validTransitions[order.status] || []
+      if (!allowedNextStatuses.includes(status)) {
+        console.error(`Invalid status transition: ${order.status} -> ${status}`)
+        return NextResponse.json({ 
+          error: 'Invalid status transition',
+          message: `Cannot change status from "${order.status}" to "${status}". Allowed: ${allowedNextStatuses.join(', ') || 'none'}`
+        }, { status: 400 })
+      }
     }
 
     // Check permissions: Seller can update orders they own, Admin can update any
@@ -161,6 +168,25 @@ export async function PUT(request, context) {
     if (user.user_type === 'Buyer') {
       console.error('Permission denied - buyers cannot update')
       return NextResponse.json({ error: 'Forbidden - Buyers cannot update order status' }, { status: 403 })
+    }
+    
+    // Sellers can only confirm orders and mark COD orders as delivered
+    // Dispatched status is always automatic from shipping system
+    if (user.user_type === 'Seller') {
+      if (status === 'dispatched') {
+        console.error('Permission denied - sellers cannot manually mark as dispatched')
+        return NextResponse.json({ 
+          error: 'Forbidden - Orders are automatically marked as dispatched when shipment is created and AWB is assigned by the courier.' 
+        }, { status: 403 })
+      }
+      
+      // For delivered status, only allow if it's a COD order (sellers confirm cash received)
+      if (status === 'delivered' && order.payment_method !== 'cod') {
+        console.error('Permission denied - only COD orders can be manually marked as delivered by seller')
+        return NextResponse.json({ 
+          error: 'Forbidden - Online payment orders are automatically marked as delivered by the shipping system. Only COD orders can be manually confirmed.' 
+        }, { status: 403 })
+      }
     }
 
     // Update order status
@@ -408,6 +434,7 @@ export async function PUT(request, context) {
         console.log('Shipment details saved to order')
       } catch (shipmentError) {
         console.error('❌ Shipment creation failed:', shipmentError.message)
+        console.error('Full shipment error:', shipmentError)
         
         // Set order to special status indicating shipment needs manual creation
         await supabase
@@ -415,15 +442,36 @@ export async function PUT(request, context) {
           .update({ 
             status: 'confirmed',
             // Store error message for seller to see
-            notes: `Shipment creation failed: ${shipmentError.message}. Please create shipment manually in Shiprocket dashboard.`
+            notes: `⚠️ SHIPMENT ERROR: ${shipmentError.message}. Please create shipment manually in Shiprocket dashboard or contact support.`
           })
           .eq('id', id)
+        
+        // Send notification to seller about shipment failure
+        try {
+          await supabase
+            .from('notifications')
+            .insert({
+              user_id: order.seller_id,
+              user_model: 'Seller',
+              title: 'Shipment Creation Failed',
+              message: `Failed to create shipment for order automatically. Error: ${shipmentError.message}. Please create the shipment manually in your Shiprocket dashboard.`,
+              type: 'order',
+              related_order_id: id,
+              priority: 'high',
+              action_url: '/seller/dashboard?tab=orders'
+            })
+          console.log('✅ Notification sent to seller about shipment failure')
+        } catch (notifError) {
+          console.error('Failed to send notification:', notifError)
+        }
         
         // Update response to reflect shipment failure
         updatedOrder.status = 'confirmed'
         updatedOrder.shipment_error = shipmentError.message
+        updatedOrder.notes = `⚠️ SHIPMENT ERROR: ${shipmentError.message}. Please create shipment manually in Shiprocket dashboard or contact support.`
         
         console.warn('⚠️  Order confirmed but shipment creation failed. Manual intervention required.')
+        console.warn('Error details:', shipmentError.message)
       }
     }
 
@@ -456,59 +504,44 @@ export async function PUT(request, context) {
             platformCommission: `${platformCommission} (2.5%)`
           })
           
-          console.log(`✅ Order delivered - ₹${sellerEarnings} moved from pending to available`)
-          console.log('Note: Wallet balances are calculated dynamically from order status')
+          console.log(`✅ Order delivered - ₹${sellerEarnings} moving from pending to available`)
           
-          // Ensure wallet exists
-          const { data: existingWallet } = await supabase
+          // Fetch current wallet balances
+          const { data: wallet } = await supabase
             .from('wallets')
-            .select('id')
+            .select('pending_balance, available_balance, total_earned')
             .eq('seller_id', order.seller_id)
             .single()
-
-          if (!existingWallet) {
+          
+          if (wallet) {
+            // Update wallet balances directly (no RPC calls)
+            // Move funds from pending to available balance
             await supabase
               .from('wallets')
-              .insert({
-                seller_id: order.seller_id,
-                pending_balance: 0,
-                available_balance: 0,
-                total_earned: 0
+              .update({
+                pending_balance: parseFloat(wallet.pending_balance || 0) - sellerEarnings,
+                available_balance: parseFloat(wallet.available_balance || 0) + sellerEarnings,
+                total_earned: parseFloat(wallet.total_earned || 0) + sellerEarnings,
+                updated_at: new Date().toISOString()
               })
+              .eq('seller_id', order.seller_id)
           }
           
-          // Record admin earnings when order is delivered
-          // Admin gets: 2.5% from seller + 2.5% service charge from buyer + delivery fees
-          try {
-            const buyerServiceCharge = parseFloat((productSubtotal * 0.025).toFixed(2)) // 2.5% from buyer
-            const deliveryFee = parseFloat(order.delivery_fee || 0)
-            const totalAdminEarnings = platformCommission + buyerServiceCharge + deliveryFee
-            
-            console.log('Admin earnings calculation:', {
-              sellerCommission: `${platformCommission} (2.5% from seller)`,
-              buyerServiceCharge: `${buyerServiceCharge} (2.5% from buyer)`,
-              deliveryFee: `${deliveryFee} (100% delivery)`,
-              totalAdminEarnings
+          // Create transaction record for wallet movement
+          await supabase
+            .from('transactions')
+            .insert({
+              seller_id: order.seller_id,
+              order_id: id,
+              amount: sellerEarnings,
+              type: 'credit_available',
+              status: 'completed',
+              description: `Order delivered - Funds released to available balance`
             })
-            
-            await supabase
-              .from('admin_earnings')
-              .insert({
-                order_id: id,
-                seller_id: order.seller_id,
-                commission_amount: totalAdminEarnings,
-                commission_rate: 5.0, // Combined 5% (2.5% + 2.5%)
-                order_amount: productSubtotal,
-                delivery_fee: deliveryFee,
-                status: 'earned',
-                earned_at: new Date().toISOString()
-              })
-            
-            console.log('✅ Admin earnings recorded')
-          } catch (adminEarningsError) {
-            console.error('Error recording admin earnings:', adminEarningsError)
-            // Don't fail the delivery process
-          }
+          
+          console.log('✅ Wallet updated: ₹' + sellerEarnings + ' released to available balance')
+          
+          // Note: admin_earnings already recorded in payment/verify - no duplicate insertion needed
         }
         
         // Update COD payment status to paid on delivery

@@ -59,6 +59,35 @@ export async function POST(request, { params }) {
 
     console.log('Seller updated, business_name:', updatedSeller?.business_name)
 
+    // Create wallet for seller if approved
+    if (isApproved && updatedSeller) {
+      const { data: existingWallet } = await supabase
+        .from('wallets')
+        .select('id')
+        .eq('seller_id', id)
+        .single()
+      
+      if (!existingWallet) {
+        const { error: walletError } = await supabase
+          .from('wallets')
+          .insert({
+            seller_id: id,
+            pending_balance: 0,
+            available_balance: 0,
+            total_earned: 0,
+            total_withdrawn: 0
+          })
+        
+        if (walletError) {
+          console.error('Wallet creation error:', walletError)
+        } else {
+          console.log('✅ Wallet created for seller:', id)
+        }
+      } else {
+        console.log('Wallet already exists for seller:', id)
+      }
+    }
+
     // Send email notification to seller
     if (isApproved && updatedSeller) {
       try {
