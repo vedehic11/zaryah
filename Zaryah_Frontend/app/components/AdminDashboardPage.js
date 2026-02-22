@@ -370,7 +370,7 @@ export const AdminDashboardPage = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-xl font-bold">Platform Revenue</h2>
-                  <p className="text-sm text-gray-600">2.5% Seller Commission + Platform Fees (₹10/₹20) + Delivery Fees (includes ₹10 markup) + COD Fees</p>
+                  <p className="text-sm text-gray-600">2.5% Seller Commission + Platform Fees (₹10/₹20) + Delivery Fees (includes ₹10 markup on Shiprocket rate) + COD Fees</p>
                 </div>
                 <select
                   onChange={(e) => fetchEarnings(e.target.value)}

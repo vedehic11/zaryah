@@ -177,13 +177,12 @@ export async function POST(request) {
     
     // Calculate commission breakdown
     const sellerCommission = parseFloat((subtotal * 0.025).toFixed(2)) // 2.5% from seller
-    const buyerServiceCharge = parseFloat((subtotal * 0.025).toFixed(2)) // 2.5% from buyer (service_charge)
-    const totalCommission = sellerCommission + buyerServiceCharge // Total 5%
+    const buyerPlatformFee = parseFloat(platformFee || 0) // Platform fee from buyer (₹10 or ₹20)
     const sellerAmount = parseFloat((subtotal * 0.975).toFixed(2)) // Seller gets 97.5%
     
     console.log(`Product subtotal: ${subtotal}`)
     console.log(`Total order amount (with fees): ${totalAmount}`)
-    console.log(`Commission breakdown: Seller=${sellerCommission}, Buyer=${buyerServiceCharge}, Total=${totalCommission}`)
+    console.log(`Commission breakdown: Seller commission (2.5%)=${sellerCommission}, Buyer Platform Fee=${buyerPlatformFee}`)
     console.log(`Seller earnings: ${sellerAmount} (97.5%)`)
     console.log(`Order items count: ${orderItems.length}`)
 
@@ -205,8 +204,8 @@ export async function POST(request) {
         payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
         status: 'pending',
         delivery_fee: deliveryFee || 0,
-        service_charge: buyerServiceCharge, // 2.5% service charge from buyer
-        commission_amount: totalCommission, // Total 5% commission (2.5% + 2.5%)
+        platform_fee: buyerPlatformFee, // ₹10 or ₹20 platform fee from buyer
+        commission_amount: sellerCommission, // 2.5% seller commission only
         seller_amount: sellerAmount // 97.5% of product subtotal goes to seller
       })
       .select()

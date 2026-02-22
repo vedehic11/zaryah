@@ -138,8 +138,8 @@ export const OrderHistoryPage = () => {
     const subtotal = products.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0)
     // Only add ₹20 for items that actually have gift_packaging enabled
     const giftPackagingFee = products.filter(item => item.gift_packaging === true).length * 20
-    // Use delivery_fee from order if available, otherwise calculate
-    const deliveryFee = order.delivery_fee !== undefined ? parseFloat(order.delivery_fee) : (subtotal >= 500 ? 0 : 40)
+    // Use delivery_fee from order if available, otherwise calculate (fallback matches Shiprocket API default)
+    const deliveryFee = order.delivery_fee !== undefined ? parseFloat(order.delivery_fee) : (subtotal >= 500 ? 0 : 60)
     const codFee = order.payment_method === 'cod' ? 10 : 0
     // Use platform_fee from order if available, otherwise calculate based on subtotal
     const platformFee = order.platform_fee !== undefined ? parseFloat(order.platform_fee) : (subtotal < 500 ? 10 : 20)

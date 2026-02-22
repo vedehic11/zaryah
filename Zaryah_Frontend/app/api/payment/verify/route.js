@@ -4,8 +4,8 @@ import { requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import crypto from 'crypto'
 
-// Commission rate (5%)
-const COMMISSION_RATE = 5.0
+// Commission: 2.5% from seller + Platform fee (₹10 or ₹20) from buyer
+const SELLER_COMMISSION_RATE = 2.5
 
 export async function POST(request) {
   try {
@@ -78,16 +78,18 @@ export async function POST(request) {
         // Seller gets 97.5% of product subtotal (2.5% commission deducted)
         const sellerAmount = parseFloat((productSubtotal * 0.975).toFixed(2))
         const sellerCommission = parseFloat((productSubtotal * 0.025).toFixed(2))
-        const buyerServiceCharge = parseFloat((productSubtotal * 0.025).toFixed(2))
-        const deliveryFee = parseFloat(order.delivery_fee || 0)
-        const totalAdminEarnings = sellerCommission + buyerServiceCharge + deliveryFee
+        const buyerPlatformFee = parseFloat(order.platform_fee || 0)
+        const deliveryMarkup = 10 // Platform keeps ₹10 markup on delivery (rest goes to Shiprocket)
+        const codFee = order.payment_method === 'cod' ? 10 : 0 // ₹10 COD fee
+        const totalAdminEarnings = sellerCommission + buyerPlatformFee + deliveryMarkup + codFee
         
         console.log('💰 SELLER EARNINGS CALCULATED (from payment verification):')
         console.log('  Product subtotal:', `₹${productSubtotal}`)
         console.log('  Seller amount (97.5%):', `₹${sellerAmount}`)
         console.log('  Seller commission (2.5% from seller):', `₹${sellerCommission}`)
-        console.log('  Buyer service charge (2.5% from buyer):', `₹${buyerServiceCharge}`)
-        console.log('  Delivery fee (100% to admin):', `₹${deliveryFee}`)
+        console.log('  Buyer platform fee (₹10 or ₹20):', `₹${buyerPlatformFee}`)
+        console.log('  Delivery markup (₹10 to admin):', `₹${deliveryMarkup}`)
+        console.log('  COD fee:', `₹${codFee}`)
         console.log('  Total admin earnings:', `₹${totalAdminEarnings}`)
 
         // Ensure wallet exists and add to pending balance
@@ -139,9 +141,9 @@ export async function POST(request) {
             order_id: order_id,
             seller_id: order.seller_id,
             order_amount: productSubtotal,
-            commission_rate: 5.0, // 2.5% from seller + 2.5% from buyer
-            commission_amount: totalAdminEarnings,
-            delivery_fee: deliveryFee,
+            commission_rate: 2.5, // 2.5% from seller only
+            commission_amount: sellerCommission, // Only seller commission (2.5%)
+            delivery_fee: deliveryMarkup, // Only the ₹10 markup, not full delivery fee
             status: 'earned',
             earned_at: new Date().toISOString()
           })
@@ -149,7 +151,7 @@ export async function POST(request) {
         if (commissionError) {
           console.error('Commission record error:', commissionError)
         } else {
-          console.log(`💰 Admin earnings recorded: ₹${totalAdminEarnings} (${sellerCommission} seller commission + ${buyerServiceCharge} service charge + ${deliveryFee} delivery)`)
+          console.log(`💰 Admin earnings recorded: ₹${totalAdminEarnings} (₹${sellerCommission} seller commission + ₹${buyerPlatformFee} platform fee + ₹${deliveryMarkup} delivery markup + ₹${codFee} COD fee)`)
         }
       }
     }

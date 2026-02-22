@@ -427,6 +427,84 @@ export async function getCheapestShippingRate(params) {
 }
 
 /**
+ * Get shipment details by shipment ID
+ * @param {number} shipmentId - Shiprocket shipment ID
+ * @returns {Promise<Object>} Shipment details including courier assignment status
+ */
+export async function getShipmentDetails(shipmentId) {
+  const token = await authenticate()
+  
+  const response = await fetch(`${SHIPROCKET_API_BASE}/shipments/${shipmentId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch shipment details')
+  }
+
+  const result = await response.json()
+  const shipmentData = result.data || result
+
+  return {
+    shipmentId: shipmentData.id,
+    awbCode: shipmentData.awb_code,
+    courierName: shipmentData.courier_name,
+    courierAssigned: !!shipmentData.courier_name,
+    status: shipmentData.status,
+    orderId: shipmentData.order_id
+  }
+}
+
+/**
+ * Generate shipping label for a shipment
+ * This only works AFTER courier is manually assigned in Shiprocket dashboard
+ * @param {number} shipmentId - Shiprocket shipment ID
+ * @returns {Promise<Object>} Label URL and generation status
+ */
+export async function generateShippingLabel(shipmentId) {
+  const token = await authenticate()
+  
+  // First check if courier is assigned
+  const shipmentDetails = await getShipmentDetails(shipmentId)
+  
+  if (!shipmentDetails.courierAssigned) {
+    throw new Error('Courier not assigned. Please assign a courier service in Shiprocket dashboard first.')
+  }
+
+  // Generate the shipping label (PDF with QR code)
+  const response = await fetch(`${SHIPROCKET_API_BASE}/courier/generate/label`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      shipment_id: [shipmentId]
+    })
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.message || 'Failed to generate shipping label')
+  }
+
+  const result = await response.json()
+
+  return {
+    labelUrl: result.label_url, // PDF URL with QR code
+    isLabelGenerated: result.is_label_generated || true,
+    notGeneratedIds: result.not_generated_ids || [],
+    shipmentId: shipmentId,
+    awbCode: shipmentDetails.awbCode,
+    courierName: shipmentDetails.courierName
+  }
+}
+
+/**
  * Map Shiprocket status to internal order status
  * @param {string} shiprocketStatus - Shiprocket shipment status
  * @returns {Object} { status: string, isRTO: boolean, requiresRefund: boolean }

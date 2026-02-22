@@ -10,8 +10,8 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 })
 
-// Commission rate (5%)
-const COMMISSION_RATE = 5.0
+// Commission: 2.5% from seller + Platform fee (₹10 or ₹20) from buyer
+const SELLER_COMMISSION_RATE = 2.5
 
 // POST /api/payment/create-order - Create Razorpay order for checkout
 export async function POST(request) {

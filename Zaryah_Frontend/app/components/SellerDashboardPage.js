@@ -959,7 +959,67 @@ export default function SellerDashboardPage() {
                           )}
                           
                           {order.status === 'confirmed' && (
-                            <div className="mt-4 pt-4 border-t border-gray-200">
+                            <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+                              {/* Shipping Label Section */}
+                              {order.shipment_id && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <p className="text-sm font-semibold text-blue-900 mb-1">
+                                        📦 Shipping Label
+                                      </p>
+                                      <p className="text-xs text-blue-700 mb-2">
+                                        1. Assign courier in Shiprocket dashboard<br />
+                                        2. Generate & print label below<br />
+                                        3. Stick on package & ship
+                                      </p>
+                                      {order.awb_code && (
+                                        <p className="text-xs text-blue-800 mt-2">
+                                          <span className="font-semibold">Tracking:</span> {order.awb_code} | {order.courier_name}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={async () => {
+                                        try {
+                                          const response = await apiService.request('/orders/shipping-label', {
+                                            method: 'POST',
+                                            body: JSON.stringify({ orderId: order.id })
+                                          })
+                                          
+                                          if (response.labelUrl) {
+                                            // Open label in new window for printing
+                                            window.open(response.labelUrl, '_blank')
+                                            toast.success(`Label generated! Courier: ${response.courierName}`)
+                                            fetchDashboardData() // Refresh to show updated AWB
+                                          }
+                                        } catch (error) {
+                                          if (error.message.includes('Courier not assigned')) {
+                                            toast.error('Please assign courier in Shiprocket first', { duration: 5000 })
+                                          } else {
+                                            toast.error(error.message || 'Failed to generate label')
+                                          }
+                                        }
+                                      }}
+                                      className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                                    >
+                                      <Truck className="w-4 h-4" />
+                                      <span>Print Label</span>
+                                    </button>
+                                    <button
+                                      onClick={() => window.open('https://app.shiprocket.in/seller', '_blank')}
+                                      className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-blue-300 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                      <span>Shiprocket</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Mark as Dispatched Button */}
                               <button
                                 onClick={async () => {
                                   // Prevent double-clicks
@@ -1005,6 +1065,55 @@ export default function SellerDashboardPage() {
                                 <Package className="w-5 h-5" />
                                 <span>{updatingOrders.has(order.id) ? 'Updating...' : 'Mark as Dispatched'}</span>
                               </button>
+                            </div>
+                          )}
+                          
+                          {/* Dispatched orders - allow reprinting label */}
+                          {order.status === 'dispatched' && order.shipment_id && (
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+                                <p className="text-sm font-semibold text-green-900">
+                                  ✓ Order Dispatched
+                                </p>
+                                {order.awb_code && (
+                                  <p className="text-xs text-green-800">
+                                    <span className="font-semibold">Tracking:</span> {order.awb_code}<br />
+                                    <span className="font-semibold">Courier:</span> {order.courier_name}
+                                  </p>
+                                )}
+                                <div className="flex gap-2 mt-3">
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        const response = await apiService.request('/orders/shipping-label', {
+                                          method: 'POST',
+                                          body: JSON.stringify({ orderId: order.id })
+                                        })
+                                        
+                                        if (response.labelUrl) {
+                                          window.open(response.labelUrl, '_blank')
+                                          toast.success('Label opened for printing')
+                                        }
+                                      } catch (error) {
+                                        toast.error(error.message || 'Failed to get label')
+                                      }
+                                    }}
+                                    className="flex-1 inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                                  >
+                                    <Truck className="w-4 h-4" />
+                                    <span>Reprint Label</span>
+                                  </button>
+                                  {order.tracking_url && (
+                                    <button
+                                      onClick={() => window.open(order.tracking_url, '_blank')}
+                                      className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-green-300 text-green-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                      <span>Track</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>

@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import crypto from 'crypto'
 
-const COMMISSION_RATE = 5.0
+// Commission: 2.5% from seller + Platform fee (₹10 or ₹20) from buyer
+const SELLER_COMMISSION_RATE = 2.5
 
 export async function POST(request) {
   try {

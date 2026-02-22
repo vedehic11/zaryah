@@ -38,7 +38,7 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
 
   // Calculate totals with dynamic delivery charge
   const subtotal = cartTotal || 0
-  const deliveryCharge = dynamicDeliveryCharge !== null ? dynamicDeliveryCharge : (subtotal > 500 ? 0 : 50)
+  const deliveryCharge = dynamicDeliveryCharge !== null ? dynamicDeliveryCharge : (subtotal > 500 ? 0 : 60)
   const total = subtotal + deliveryCharge
 
   // Calculate delivery charge when address changes

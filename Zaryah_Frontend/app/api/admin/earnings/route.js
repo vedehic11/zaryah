@@ -18,7 +18,7 @@ export async function GET(request) {
         id,
         seller_id,
         total_amount,
-        service_charge,
+        platform_fee,
         delivery_fee,
         payment_method,
         payment_status,
@@ -86,23 +86,23 @@ export async function GET(request) {
       // Calculate commission (2.5% of product amount)
       const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
       
-      // Platform fee (service_charge)
-      const platformFee = parseFloat(order.service_charge || 0)
+      // Platform fee (₹10 or ₹20 from buyer)
+      const platformFee = parseFloat(order.platform_fee || 0)
       
-      // Delivery fee
-      const deliveryFee = parseFloat(order.delivery_fee || 0)
+      // Delivery markup (only ₹10 markup goes to admin, rest to Shiprocket)
+      const deliveryMarkup = 10
       
       // COD fee (₹10 if payment method is COD, otherwise 0)
       const codFee = order.payment_method === 'cod' ? 10 : 0
       
       // Total admin revenue from this order
-      const totalRevenue = commission + platformFee + deliveryFee + codFee
+      const totalRevenue = commission + platformFee + deliveryMarkup + codFee
 
       console.log(`\nOrder #${order.id.slice(0, 8)} (${order.payment_method.toUpperCase()}, ${order.payment_status}):`)
       console.log(`  Product Amount: ₹${productSubtotal.toFixed(2)}`)
       console.log(`  Commission (2.5%): ₹${commission}`)
       console.log(`  Platform Fee: ₹${platformFee}`)
-      console.log(`  Delivery Fee: ₹${deliveryFee}`)
+      console.log(`  Delivery Markup: ₹${deliveryMarkup}`)
       console.log(`  COD Fee: ₹${codFee}`)
       console.log(`  Total Admin Revenue: ₹${totalRevenue.toFixed(2)}`)
 
@@ -113,7 +113,7 @@ export async function GET(request) {
         sellers: order.sellers,
         commission_amount: commission,
         platform_fee: platformFee,
-        delivery_fee: deliveryFee,
+        delivery_fee: deliveryMarkup, // Only the ₹10 markup
         cod_fee: codFee,
         total_revenue: totalRevenue,
         payment_method: order.payment_method,
