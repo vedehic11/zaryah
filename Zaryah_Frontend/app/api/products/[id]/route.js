@@ -147,7 +147,19 @@ export async function GET(request, { params }) {
 // PUT /api/products/[id] - Update product (seller/admin only)
 export async function PUT(request, { params }) {
   try {
-    // TODO: Implement proper authentication
+    // Authenticate user
+    const { requireAuth, getUserBySupabaseAuthId } = await import('@/lib/auth')
+    const session = await requireAuth(request)
+    
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await getUserBySupabaseAuthId(session.user.id)
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
     // Next.js 16: params is a Promise, unwrap it
     const { id } = await params
 
@@ -160,6 +172,11 @@ export async function PUT(request, { params }) {
 
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    }
+
+    // Verify ownership or admin role
+    if (user.user_type !== 'Admin' && product.seller_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden: You can only edit your own products' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -187,7 +204,19 @@ export async function PUT(request, { params }) {
 // DELETE /api/products/[id] - Delete product (seller/admin only)
 export async function DELETE(request, { params }) {
   try {
-    // TODO: Implement proper authentication
+    // Authenticate user
+    const { requireAuth, getUserBySupabaseAuthId } = await import('@/lib/auth')
+    const session = await requireAuth(request)
+    
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await getUserBySupabaseAuthId(session.user.id)
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
     // Next.js 16: params is a Promise, unwrap it
     const { id } = await params
 
@@ -200,6 +229,11 @@ export async function DELETE(request, { params }) {
 
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    }
+
+    // Verify ownership or admin role
+    if (user.user_type !== 'Admin' && product.seller_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden: You can only delete your own products' }, { status: 403 })
     }
 
     const { error } = await supabase

@@ -178,12 +178,15 @@ export async function POST(request) {
     // Calculate commission breakdown
     const sellerCommission = parseFloat((subtotal * 0.025).toFixed(2)) // 2.5% from seller
     const buyerPlatformFee = parseFloat(platformFee || 0) // Platform fee from buyer (₹10 or ₹20)
-    const sellerAmount = parseFloat((subtotal * 0.975).toFixed(2)) // Seller gets 97.5%
+    const sellerProductShare = parseFloat((subtotal * 0.975).toFixed(2)) // Seller gets 97.5% of products
+    const giftPackagingTotal = parseFloat(giftPackagingFee || 0) // Gift fees go 100% to seller
+    const sellerAmount = parseFloat((sellerProductShare + giftPackagingTotal).toFixed(2)) // Total seller earnings
     
     console.log(`Product subtotal: ${subtotal}`)
+    console.log(`Gift packaging fees: ${giftPackagingTotal} (100% to seller)`)
     console.log(`Total order amount (with fees): ${totalAmount}`)
     console.log(`Commission breakdown: Seller commission (2.5%)=${sellerCommission}, Buyer Platform Fee=${buyerPlatformFee}`)
-    console.log(`Seller earnings: ${sellerAmount} (97.5%)`)
+    console.log(`Seller earnings: ${sellerAmount} (97.5% of products + 100% of gift fees)`)
     console.log(`Order items count: ${orderItems.length}`)
 
     // Get seller ID (assuming all items are from same seller, or handle multiple sellers)
@@ -204,9 +207,10 @@ export async function POST(request) {
         payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
         status: 'pending',
         delivery_fee: deliveryFee || 0,
+        gift_packaging_fee: giftPackagingTotal, // Gift packaging fees (100% to seller)
         platform_fee: buyerPlatformFee, // ₹10 or ₹20 platform fee from buyer
         commission_amount: sellerCommission, // 2.5% seller commission only
-        seller_amount: sellerAmount // 97.5% of product subtotal goes to seller
+        seller_amount: sellerAmount // 97.5% of products + 100% gift fees
       })
       .select()
       .single()
@@ -279,59 +283,64 @@ export async function POST(request) {
       console.log('Cart cleared')
     }
 
-    // Update seller wallet - add to pending balance (97.5% after 2.5% commission)
-    console.log('Updating seller wallet...')
-    const sellerEarnings = parseFloat((subtotal * 0.975).toFixed(2)) // 97.5% to seller
-    const platformCommission = parseFloat((subtotal * 0.025).toFixed(2)) // 2.5% from seller
-    
-    console.log('💰 SELLER EARNINGS CALCULATED:')
-    console.log('  Product subtotal:', `₹${subtotal}`)
-    console.log('  Seller earnings (97.5%):', `₹${sellerEarnings}`)
-    console.log('  Platform commission (2.5%):', `₹${platformCommission}`)
-    
-    // Ensure wallet exists and update pending balance
-    const { data: existingWallet } = await supabase
-      .from('wallets')
-      .select('id, pending_balance')
-      .eq('seller_id', sellerId)
-      .single()
-
-    if (!existingWallet) {
-      console.log('  Creating wallet record for seller')
-      await supabase
+    // Update seller wallet - add to pending balance for COD orders only
+    // Online orders will be credited during payment verification
+    if (paymentMethod === 'cod') {
+      console.log('Updating seller wallet (COD order)...')
+      const sellerEarnings = parseFloat(order.seller_amount || 0) // Use seller_amount from order (includes gift fees)
+      const platformCommission = parseFloat((subtotal * 0.025).toFixed(2)) // 2.5% from seller
+      
+      console.log('💰 SELLER EARNINGS CALCULATED:')
+      console.log('  Product subtotal:', `₹${subtotal}`)
+      console.log('  Gift packaging fees:', `₹${giftPackagingTotal}`)
+      console.log('  Seller earnings (97.5% + gift fees):', `₹${sellerEarnings}`)
+      console.log('  Platform commission (2.5%):', `₹${platformCommission}`)
+      
+      // Ensure wallet exists and update pending balance
+      const { data: existingWallet } = await supabase
         .from('wallets')
+        .select('id, pending_balance')
+        .eq('seller_id', sellerId)
+        .single()
+
+      if (!existingWallet) {
+        console.log('  Creating wallet record for seller')
+        await supabase
+          .from('wallets')
+          .insert({
+            seller_id: sellerId,
+            pending_balance: sellerEarnings, // Add to pending immediately
+            available_balance: 0,
+            total_earned: 0
+          })
+      } else {
+        // Update existing wallet - add to pending balance
+        const currentPending = parseFloat(existingWallet.pending_balance || 0)
+        await supabase
+          .from('wallets')
+          .update({
+            pending_balance: currentPending + sellerEarnings,
+            updated_at: new Date().toISOString()
+          })
+          .eq('seller_id', sellerId)
+      }
+      
+      console.log(`✅ COD Order created - ₹${sellerEarnings} added to seller's pending balance`)
+
+      // Create transaction record
+      await supabase
+        .from('transactions')
         .insert({
           seller_id: sellerId,
-          pending_balance: sellerEarnings, // Add to pending immediately
-          available_balance: 0,
-          total_earned: 0
+          order_id: order.id,
+          type: 'credit_pending',
+          amount: sellerEarnings,
+          status: 'completed',
+          description: `COD Order #${order.id.substring(0, 8)} - Pending delivery confirmation`
         })
     } else {
-      // Update existing wallet - add to pending balance
-      // Fetch current balance first to avoid SQL raw query
-      const currentPending = parseFloat(existingWallet.pending_balance || 0)
-      await supabase
-        .from('wallets')
-        .update({
-          pending_balance: currentPending + sellerEarnings,
-          updated_at: new Date().toISOString()
-        })
-        .eq('seller_id', sellerId)
+      console.log('Online payment order - wallet will be credited after payment verification')
     }
-    
-    console.log(`✅ Order created - ₹${sellerEarnings} added to seller's pending balance`)
-
-    // Create transaction record
-    await supabase
-      .from('transactions')
-      .insert({
-        seller_id: sellerId,
-        order_id: order.id,
-        type: 'credit_pending',
-        amount: sellerEarnings,
-        status: 'completed',
-        description: `Order #${order.id.substring(0, 8)} - Pending delivery confirmation`
-      })
 
     // Fetch complete order with relations
     console.log('Fetching complete order details...')

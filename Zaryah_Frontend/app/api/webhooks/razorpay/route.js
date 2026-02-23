@@ -52,6 +52,12 @@ export async function POST(request) {
           continue
         }
 
+        // Skip if wallet already credited (payment/verify route handles wallet crediting)
+        if (order.wallet_credited) {
+          console.log(`Order ${order.id} wallet already credited, skipping`)
+          continue
+        }
+
         // Update order payment status
         await supabase
           .from('orders')
@@ -62,54 +68,7 @@ export async function POST(request) {
           .eq('id', order.id)
 
         console.log(`✅ Webhook: Order ${order.id} marked as paid`)
-
-        // Calculate seller amount and commission
-        const sellerAmount = order.seller_amount || (order.total_amount * 0.95)
-        const commissionAmount = order.commission_amount || (order.total_amount * 0.05)
-
-        // Get or create seller wallet
-        let { data: wallet } = await supabase
-          .from('wallets')
-          .select('*')
-          .eq('user_id', order.seller_id)
-          .single()
-
-        if (!wallet) {
-          const { data: newWallet } = await supabase
-            .from('wallets')
-            .insert({
-              user_id: order.seller_id,
-              pending_balance: sellerAmount,
-              available_balance: 0,
-              total_earned: sellerAmount
-            })
-            .select()
-            .single()
-          wallet = newWallet
-        } else {
-          await supabase
-            .from('wallets')
-            .update({
-              pending_balance: parseFloat(wallet.pending_balance || 0) + sellerAmount,
-              total_earned: parseFloat(wallet.total_earned || 0) + sellerAmount
-            })
-            .eq('user_id', order.seller_id)
-        }
-
-        // Create transaction record
-        await supabase
-          .from('transactions')
-          .insert({
-            wallet_id: wallet.id,
-            type: 'credit',
-            amount: sellerAmount,
-            status: 'pending',
-            description: `Payment for order #${order.id}`,
-            order_id: order.id,
-            payment_id: razorpayPaymentId
-          })
-
-        console.log(`✅ Webhook: Wallet credited for seller ${order.seller_id}`)
+        console.log('ℹ️  Note: Wallet crediting handled by payment/verify route')
       }
     }
 

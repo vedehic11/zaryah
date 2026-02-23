@@ -315,6 +315,20 @@ export async function POST(request) {
       console.log('Processing order delivery from webhook...')
       
       try {
+        // Update COD payment status to paid FIRST (before wallet crediting)
+        if (order.payment_method === 'cod' && order.payment_status !== 'paid') {
+          console.log('Updating COD order payment status to paid...')
+          
+          await supabase
+            .from('orders')
+            .update({ payment_status: 'paid' })
+            .eq('id', order.id)
+          
+          // Update local order object
+          order.payment_status = 'paid'
+          console.log('✅ COD payment marked as paid')
+        }
+        
         // Release seller wallet funds from pending to available
         if (order.payment_status === 'paid' && order.seller_id && !order.wallet_credited) {
           console.log(`Releasing pending funds for seller ${order.seller_id}...`)
@@ -324,6 +338,10 @@ export async function POST(request) {
           
           if (sellerEarnings > 0) {
             // Fetch current wallet balances
+            // NOTE: RACE CONDITION RISK - If multiple deliveries happen simultaneously,
+            // wallet updates could overwrite each other. This should be wrapped in a
+            // database transaction with row-level locking for production use.
+            // Example: SELECT ... FOR UPDATE followed by UPDATE in same transaction
             const { data: wallet } = await supabase
               .from('wallets')
               .select('pending_balance, available_balance, total_earned')
@@ -369,18 +387,6 @@ export async function POST(request) {
               console.error('Wallet not found for seller:', order.seller_id)
             }
           }
-        }
-        
-        // Update COD payment status to paid on delivery
-        if (order.payment_method === 'cod' && order.payment_status !== 'paid') {
-          console.log('Updating COD order payment status to paid...')
-          
-          await supabase
-            .from('orders')
-            .update({ payment_status: 'paid' })
-            .eq('id', order.id)
-          
-          console.log('✅ COD payment marked as paid')
         }
       } catch (deliveryError) {
         console.error('Error processing delivery in webhook:', deliveryError)

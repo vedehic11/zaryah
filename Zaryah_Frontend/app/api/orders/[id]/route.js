@@ -507,6 +507,9 @@ export async function PUT(request, context) {
           console.log(`✅ Order delivered - ₹${sellerEarnings} moving from pending to available`)
           
           // Fetch current wallet balances
+          // NOTE: RACE CONDITION RISK - If multiple deliveries happen simultaneously,
+          // wallet updates could overwrite each other. This should be wrapped in a
+          // database transaction with row-level locking for production use.
           const { data: wallet } = await supabase
             .from('wallets')
             .select('pending_balance, available_balance, total_earned')

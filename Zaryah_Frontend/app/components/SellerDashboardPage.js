@@ -67,8 +67,9 @@ export default function SellerDashboardPage() {
         const productSubtotal = order.order_items?.reduce((sum, item) => 
           sum + (item.quantity * item.price), 0
         ) || 0
-        const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
-        const giftFees = giftItemsCount * 20
+        const giftFees = order.order_items?.reduce((sum, item) => 
+          sum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+        ) || 0
         const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
         const totalForOrder = sellerShare + giftFees
         calculatedTotal += totalForOrder
@@ -82,7 +83,7 @@ export default function SellerDashboardPage() {
         })
         console.log(`    Product Subtotal: ₹${productSubtotal.toLocaleString()}`)
         console.log(`    Your Share (97.5%): ₹${sellerShare.toLocaleString()}`)
-        console.log(`    Gift Packaging Fees: ₹${giftFees} (${giftItemsCount} items)`)
+        console.log(`    Gift Packaging Fees: ₹${giftFees}`)
         console.log(`    Total for this order: ₹${totalForOrder.toLocaleString()}`)
         console.log(`    Commission (2.5%): ₹${(productSubtotal * 0.025).toFixed(2)}`)
       })
@@ -230,12 +231,13 @@ export default function SellerDashboardPage() {
         const productSubtotal = (order.order_items || []).reduce((itemSum, item) => 
           itemSum + (parseFloat(item.price || 0) * (item.quantity || 1)), 0
         )
-        const giftItemsCount = (order.order_items || []).filter(item => item.gift_packaging).length
-        const giftFees = giftItemsCount * 20
+        const giftFees = (order.order_items || []).reduce((giftSum, item) => 
+          giftSum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+        )
         const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
         const totalForOrder = sellerShare + giftFees
         
-        const giftInfo = giftItemsCount > 0 ? ` + ₹${giftFees} gift fees (${giftItemsCount} items)` : ''
+        const giftInfo = giftFees > 0 ? ` + ₹${giftFees} gift fees` : ''
         
         console.log(`  Pending Order ${index + 1} (${order.id}):`, {
           status: order.status,
@@ -2040,8 +2042,9 @@ export default function SellerDashboardPage() {
                             const productSubtotal = order.order_items?.reduce((sum, item) => 
                               sum + (item.quantity * item.price), 0
                             ) || 0
-                            const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
-                            const giftFees = giftItemsCount * 20
+                            const giftFees = order.order_items?.reduce((sum, item) => 
+                              sum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                            ) || 0
                             const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
                             const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
 
@@ -2095,8 +2098,9 @@ export default function SellerDashboardPage() {
                                 const productSubtotal = order.order_items?.reduce((itemSum, item) => 
                                   itemSum + (item.quantity * item.price), 0
                                 ) || 0
-                                const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
-                                const giftFees = giftItemsCount * 20
+                                const giftFees = order.order_items?.reduce((giftSum, item) => 
+                                  giftSum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                                ) || 0
                                 const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
                                 return sum + sellerShare + giftFees
                               }, 0)
@@ -2148,8 +2152,9 @@ export default function SellerDashboardPage() {
                     const productSubtotal = order.order_items?.reduce((itemSum, item) => 
                       itemSum + (item.quantity * item.price), 0
                     ) || 0
-                    const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
-                    const giftFees = giftItemsCount * 20
+                    const giftFees = order.order_items?.reduce((giftSum, item) => 
+                      giftSum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                    ) || 0
                     const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
                     return sum + sellerShare + giftFees
                   }, 0)
@@ -2249,8 +2254,9 @@ export default function SellerDashboardPage() {
                             const productSubtotal = order.order_items?.reduce((sum, item) => 
                               sum + (item.quantity * item.price), 0
                             ) || 0
-                            const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
-                            const giftFees = giftItemsCount * 20
+                            const giftFees = order.order_items?.reduce((sum, item) => 
+                              sum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                            ) || 0
                             const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
                             const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
 
@@ -2297,8 +2303,9 @@ export default function SellerDashboardPage() {
                                 const productSubtotal = order.order_items?.reduce((itemSum, item) => 
                                   itemSum + (item.quantity * item.price), 0
                                 ) || 0
-                                const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
-                                const giftFees = giftItemsCount * 20
+                                const giftFees = order.order_items?.reduce((giftSum, item) => 
+                                  giftSum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                                ) || 0
                                 const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
                                 return sum + sellerShare + giftFees
                               }, 0)
@@ -2395,8 +2402,9 @@ export default function SellerDashboardPage() {
                             const productSubtotal = order.order_items?.reduce((sum, item) => 
                               sum + (item.quantity * item.price), 0
                             ) || 0
-                            const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
-                            const giftFees = giftItemsCount * 20
+                            const giftFees = order.order_items?.reduce((sum, item) => 
+                              sum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                            ) || 0
                             const earnings = parseFloat((productSubtotal * 0.975).toFixed(2))
                             const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
 
@@ -2438,8 +2446,9 @@ export default function SellerDashboardPage() {
                                 const productSubtotal = order.order_items?.reduce((itemSum, item) => 
                                   itemSum + (item.quantity * item.price), 0
                                 ) || 0
-                                const giftItemsCount = order.order_items?.filter(item => item.gift_packaging).length || 0
-                                const giftFees = giftItemsCount * 20
+                                const giftFees = order.order_items?.reduce((giftSum, item) => 
+                                  giftSum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                                ) || 0
                                 const earnings = parseFloat((productSubtotal * 0.975).toFixed(2))
                                 return sum + earnings + giftFees
                               }, 0)

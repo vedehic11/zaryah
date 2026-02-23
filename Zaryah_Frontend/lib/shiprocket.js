@@ -515,10 +515,31 @@ export function mapShiprocketStatus(shiprocketStatus) {
     'Delivered': { status: 'delivered', isRTO: false, requiresRefund: false },
     'DELIVERED': { status: 'delivered', isRTO: false, requiresRefund: false },
     
+    // Pickup pending
+    'Pending Pickup': { status: 'confirmed', isRTO: false, requiresRefund: false },
+    'PENDING_PICKUP': { status: 'confirmed', isRTO: false, requiresRefund: false },
+    'Pickup Scheduled': { status: 'confirmed', isRTO: false, requiresRefund: false },
+    'PICKUP_SCHEDULED': { status: 'confirmed', isRTO: false, requiresRefund: false },
+    'Out for Pickup': { status: 'confirmed', isRTO: false, requiresRefund: false },
+    'OUT_FOR_PICKUP': { status: 'confirmed', isRTO: false, requiresRefund: false },
+    'Pickup Complete': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'PICKUP_COMPLETE': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'Pickup Exception': { status: 'confirmed', isRTO: false, requiresRefund: false },
+    'PICKUP_EXCEPTION': { status: 'confirmed', isRTO: false, requiresRefund: false },
+    
     // In Transit
     'Shipped': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'SHIPPED': { status: 'dispatched', isRTO: false, requiresRefund: false },
     'IN TRANSIT': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'In Transit': { status: 'dispatched', isRTO: false, requiresRefund: false },
     'Out for Delivery': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'OUT_FOR_DELIVERY': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'Shipment Delayed': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'SHIPMENT_DELAYED': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'Attempted Delivery': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'ATTEMPTED_DELIVERY': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'Customer Unavailable': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'CUSTOMER_UNAVAILABLE': { status: 'dispatched', isRTO: false, requiresRefund: false },
     
     // RTO (Return to Origin) - customer refused/not available
     'RTO': { status: 'cancelled', isRTO: true, requiresRefund: true },

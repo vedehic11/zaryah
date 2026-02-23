@@ -70,13 +70,12 @@ export async function POST(request) {
         .single()
 
       if (order && order.seller_id) {
-        // Calculate product subtotal from order items
+        // Use seller_amount from order (includes 97.5% of products + 100% gift packaging fees)
+        const sellerAmount = parseFloat(order.seller_amount || 0)
         const productSubtotal = (order.order_items || []).reduce((sum, item) => 
           sum + (parseFloat(item.price) * item.quantity), 0
         )
-        
-        // Seller gets 97.5% of product subtotal (2.5% commission deducted)
-        const sellerAmount = parseFloat((productSubtotal * 0.975).toFixed(2))
+        const giftPackagingFee = parseFloat(order.gift_packaging_fee || 0)
         const sellerCommission = parseFloat((productSubtotal * 0.025).toFixed(2))
         const buyerPlatformFee = parseFloat(order.platform_fee || 0)
         const deliveryMarkup = 10 // Platform keeps ₹10 markup on delivery (rest goes to Shiprocket)
@@ -85,7 +84,8 @@ export async function POST(request) {
         
         console.log('💰 SELLER EARNINGS CALCULATED (from payment verification):')
         console.log('  Product subtotal:', `₹${productSubtotal}`)
-        console.log('  Seller amount (97.5%):', `₹${sellerAmount}`)
+        console.log('  Gift packaging fees:', `₹${giftPackagingFee}`)
+        console.log('  Seller amount (97.5% + gift fees):', `₹${sellerAmount}`)
         console.log('  Seller commission (2.5% from seller):', `₹${sellerCommission}`)
         console.log('  Buyer platform fee (₹10 or ₹20):', `₹${buyerPlatformFee}`)
         console.log('  Delivery markup (₹10 to admin):', `₹${deliveryMarkup}`)

@@ -67,7 +67,7 @@ export async function POST(request) {
           seller_id: order.seller_id,
           pending_balance: sellerAmount,
           available_balance: 0,
-          total_earned: sellerAmount
+          total_earned: 0
         })
         .select()
         .single()
@@ -88,8 +88,7 @@ export async function POST(request) {
       const { error: updateError } = await supabase
         .from('wallets')
         .update({
-          pending_balance: parseFloat(wallet.pending_balance) + sellerAmount,
-          total_earned: parseFloat(wallet.total_earned) + sellerAmount
+          pending_balance: parseFloat(wallet.pending_balance) + sellerAmount
         })
         .eq('seller_id', order.seller_id)
       

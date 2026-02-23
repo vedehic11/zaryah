@@ -114,7 +114,9 @@ export default function CheckoutPage() {
 
   // Calculate totals
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-  const giftPackagingFee = cart.filter(item => item.giftPackaging).length * 20
+  const giftPackagingFee = cart.reduce((sum, item) => {
+    return sum + (item.giftPackaging ? 20 * item.quantity : 0)
+  }, 0)
   const deliveryFee = dynamicDeliveryCharge !== null ? dynamicDeliveryCharge : (subtotal >= 500 ? 0 : 60)
   // Note: deliveryFee already includes ₹10 markup from Shiprocket API (getCheapestShippingRate)
   const codFee = paymentMethod === 'cod' ? 10 : 0
