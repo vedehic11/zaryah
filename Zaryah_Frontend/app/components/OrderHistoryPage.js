@@ -53,7 +53,7 @@ export const OrderHistoryPage = () => {
         
         if (isMounted && data) {
           // Transform order_items to products array for easier access
-          const transformedOrders = data.map(order => ({
+          let transformedOrders = data.map(order => ({
             ...order,
             products: order.order_items?.map(item => ({
               ...item.products,
@@ -66,6 +66,55 @@ export const OrderHistoryPage = () => {
             seller: order.sellers || {},
             buyer: order.buyers || {}
           }))
+
+          // Live reconciliation: pull latest tracking status for active shipments
+          const ordersNeedingLiveSync = transformedOrders
+            .filter(order =>
+              order?.id &&
+              order?.awb_code &&
+              !['delivered', 'cancelled'].includes(order.status)
+            )
+            .slice(0, 6)
+
+          if (ordersNeedingLiveSync.length > 0) {
+            const trackingResults = await Promise.allSettled(
+              ordersNeedingLiveSync.map(order =>
+                apiService.request(`/orders/${order.id}/tracking`, { method: 'GET' })
+              )
+            )
+
+            const liveStatusByOrderId = new Map()
+
+            trackingResults.forEach((result, index) => {
+              if (result.status !== 'fulfilled') return
+
+              const order = ordersNeedingLiveSync[index]
+              const payload = result.value || {}
+              const mappedStatus = payload?.shipment?.mapped_status
+              const currentShipmentStatus = payload?.shipment?.current_status
+
+              if (mappedStatus || currentShipmentStatus) {
+                liveStatusByOrderId.set(order.id, {
+                  status: mappedStatus || order.status,
+                  shipment_status: currentShipmentStatus || order.shipment_status
+                })
+              }
+            })
+
+            if (liveStatusByOrderId.size > 0) {
+              transformedOrders = transformedOrders.map(order => {
+                const live = liveStatusByOrderId.get(order.id)
+                if (!live) return order
+
+                return {
+                  ...order,
+                  status: live.status,
+                  shipment_status: live.shipment_status
+                }
+              })
+            }
+          }
+
           setOrders(transformedOrders)
         }
       } catch (error) {
@@ -81,9 +130,27 @@ export const OrderHistoryPage = () => {
     }
     
     fetchOrders()
+
+    const intervalId = setInterval(fetchOrders, 20000)
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchOrders()
+      }
+    }
+
+    const handleWindowFocus = () => {
+      fetchOrders()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleWindowFocus)
     
     return () => {
       isMounted = false
+      clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleWindowFocus)
     }
   }, [user])
 

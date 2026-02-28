@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
@@ -8,7 +8,7 @@ import {
   Plus, Clock, CheckCircle, XCircle, AlertTriangle, Users, Star,
   BarChart3, Settings, Upload, Image as ImageIcon, FileText, MessageCircle,
   Wallet, ArrowUpCircle, ArrowDownCircle, CreditCard, IndianRupee, Truck, ExternalLink, User,
-  Instagram, Facebook, Twitter, Linkedin, MapPin, Building, Sparkles, X
+  Instagram, Facebook, Twitter, Linkedin, MapPin, Building, Sparkles, X, ChevronDown, ChevronUp, Filter, Printer
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
@@ -31,6 +31,14 @@ export default function SellerDashboardPage() {
   const [orders, setOrders] = useState([])
   const [tickets, setTickets] = useState([])
   
+  // Order filters and expansion state
+  const [orderFilter, setOrderFilter] = useState('all') // all, pending, confirmed, dispatched, delivered, cancelled
+  const [expandedOrders, setExpandedOrders] = useState(new Set()) // Track which orders are expanded
+  const [ordersPage, setOrdersPage] = useState(1)
+  const [ordersPageSize] = useState(20)
+  const [ordersTotalPages, setOrdersTotalPages] = useState(1)
+  const [ordersTotalCount, setOrdersTotalCount] = useState(0)
+  
   // Wallet state
   const [wallet, setWallet] = useState(null)
   const [transactions, setTransactions] = useState([])
@@ -48,6 +56,8 @@ export default function SellerDashboardPage() {
   
   // State to track which order is being updated (to prevent double-clicks)
   const [updatingOrders, setUpdatingOrders] = useState(new Set())
+  const dashboardFetchInProgress = useRef(false)
+  const dashboardLastFetchAt = useRef(0)
 
   // Log pending breakdown when modal opens
   useEffect(() => {
@@ -142,31 +152,100 @@ export default function SellerDashboardPage() {
     }
 
     if (user && user.role === 'seller') {
-      fetchDashboardData()
-    }
-  }, [user?.id, user?.role, authLoading]) // Only depend on user ID and role, not full user object
+      fetchDashboardData({ reason: 'initial' })
 
-  const fetchDashboardData = async () => {
+      // Poll only when orders tab is visible to prevent unnecessary repeated API calls
+      const intervalId = activeTab === 'orders'
+        ? setInterval(() => {
+            fetchDashboardData({ reason: 'poll' })
+          }, 60000)
+        : null
+
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible' && activeTab === 'orders') {
+          fetchDashboardData({ reason: 'visibility' })
+        }
+      }
+
+      const handleWindowFocus = () => {
+        if (activeTab === 'orders') {
+          fetchDashboardData({ reason: 'focus' })
+        }
+      }
+
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      window.addEventListener('focus', handleWindowFocus)
+
+      return () => {
+        if (intervalId) {
+          clearInterval(intervalId)
+        }
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        window.removeEventListener('focus', handleWindowFocus)
+      }
+    }
+  }, [user?.id, user?.role, authLoading, activeTab]) // Keep polling scoped to current tab
+
+  const fetchDashboardData = async ({ reason = 'manual' } = {}) => {
+    if (dashboardFetchInProgress.current) {
+      return
+    }
+
+    const now = Date.now()
+    // Cooldown for automated triggers to avoid burst duplicate calls
+    if (reason !== 'manual' && now - dashboardLastFetchAt.current < 4000) {
+      return
+    }
+
+    dashboardFetchInProgress.current = true
+
     try {
       setLoading(true)
 
       // Fetch all data in parallel for better performance
       const [productsData, ordersData, walletData] = await Promise.allSettled([
         apiService.getProducts({ sellerId: user.id }),
-        apiService.getOrders('seller').catch(() => []),
+        apiService.getSellerOrdersPaginated({
+          page: ordersPage,
+          pageSize: ordersPageSize,
+          status: orderFilter
+        }).catch(() => ({ orders: [], pagination: null })),
         apiService.getWallet().catch(() => ({ wallet: null, transactions: [], withdrawals: [] }))
       ])
 
-      // Fetch seller profile for profile tab
-      fetchSellerProfile()
+      // Fetch seller profile only when needed
+      if (!profileData?.business_name) {
+        fetchSellerProfile()
+      }
 
       // Process products
       const products = productsData.status === 'fulfilled' ? productsData.value || [] : []
       setProducts(products)
 
       // Process orders
-      const orders = ordersData.status === 'fulfilled' ? ordersData.value || [] : []
+      const paginatedOrdersPayload = ordersData.status === 'fulfilled' ? ordersData.value : { orders: [], pagination: null }
+      const orders = paginatedOrdersPayload?.orders || []
+      const pagination = paginatedOrdersPayload?.pagination
+      
+      // Debug: Log raw orders data from API
+      console.log('🔍 RAW ORDERS DATA FROM API (first 2 orders):')
+      orders.slice(0, 2).forEach((order, idx) => {
+        console.log(`Order ${idx + 1}:`, {
+          id: order.id?.slice(0, 8),
+          status: order.status,
+          shipment_id: order.shipment_id,
+          courier_name: order.courier_name,
+          courier_name_type: typeof order.courier_name,
+          awb_code: order.awb_code,
+          awb_code_type: typeof order.awb_code,
+          tracking_url: order.tracking_url,
+          allKeys: Object.keys(order)
+        })
+      })
+      
       setOrders(orders)
+      setOrdersTotalPages(pagination?.totalPages || 1)
+      setOrdersTotalCount(pagination?.totalCount || orders.length)
         
       // Calculate stats using the fetched orders
       const pendingCount = orders.filter(o => 
@@ -201,7 +280,7 @@ export default function SellerDashboardPage() {
 
       setStats({
         totalProducts: products.length,
-        totalOrders: orders.length,
+        totalOrders: pagination?.totalCount || orders.length,
         pendingOrders: pendingCount,
         completedOrders: completedCount,
         totalRevenue: totalRevenue
@@ -233,6 +312,9 @@ export default function SellerDashboardPage() {
         )
         const giftFees = (order.order_items || []).reduce((giftSum, item) => 
           giftSum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+        )
+        const giftItemsCount = (order.order_items || []).reduce((count, item) => 
+          count + (item.gift_packaging ? item.quantity : 0), 0
         )
         const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
         const totalForOrder = sellerShare + giftFees
@@ -273,9 +355,17 @@ export default function SellerDashboardPage() {
       console.error('Error fetching dashboard data:', error)
       toast.error('Failed to load dashboard data')
     } finally {
+      dashboardLastFetchAt.current = Date.now()
+      dashboardFetchInProgress.current = false
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (user && user.role === 'seller' && activeTab === 'orders') {
+      fetchDashboardData({ reason: 'manual' })
+    }
+  }, [ordersPage, orderFilter])
   
   const fetchSellerProfile = async () => {
     try {
@@ -708,420 +798,579 @@ export default function SellerDashboardPage() {
                     <p className="text-gray-600">No orders yet</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {orders.map((order) => {
-                      const buyer = order.buyers
-                      const orderItemsArray = order.order_items || []
-                      
-                      return (
-                        <div key={order.id} className="bg-white border border-gray-200 rounded-lg p-3 sm:p-6 hover:shadow-lg transition-shadow">
-                          <div className="flex items-start justify-between mb-4">
-                            <div>
-                              <h4 className="font-semibold text-sm sm:text-base text-gray-900">Order #{order.id.slice(0, 8)}</h4>
-                              <p className="text-xs sm:text-sm text-gray-600">{new Date(order.created_at).toLocaleString()}</p>
-                            </div>
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                              order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                              order.status === 'dispatched' ? 'bg-blue-100 text-blue-700' :
-                              order.status === 'confirmed' ? 'bg-indigo-100 text-indigo-700' :
-                              order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                            </span>
-                          </div>
+                  <>
+                    {/* Filters */}
+                    {/* Filter Dropdown */}
+                    <div className="mb-6 bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Filter className="w-5 h-5 text-gray-600" />
+                        <h3 className="font-semibold text-gray-900">Filter Orders</h3>
+                      </div>
+                      <select
+                        value={orderFilter}
+                        onChange={(e) => {
+                          setOrderFilter(e.target.value)
+                          setOrdersPage(1)
+                        }}
+                        className="w-full md:w-64 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      >
+                        <option value="all">All Orders ({ordersTotalCount})</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="dispatched">Dispatched</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+
+                    {/* Orders List */}
+                    <div className="space-y-3">
+                      {orders
+                        .map((order) => {
+                          const buyer = order.buyers
+                          const orderItemsArray = order.order_items || []
+                          const isExpanded = expandedOrders.has(order.id)
+                          const totalItems = orderItemsArray.reduce((sum, item) => sum + item.quantity, 0)
                           
-                          {/* Buyer Information */}
-                          <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
-                            <h5 className="font-semibold text-sm sm:text-base text-gray-900 mb-2">Buyer Information</h5>
-                            <div className="space-y-1 text-xs sm:text-sm">
-                              <p className="text-gray-700">
-                                <span className="font-medium">Address:</span> {order.address || 'N/A'}
-                              </p>
-                              {buyer && (
-                                <>
-                                  <p className="text-gray-700">
-                                    <span className="font-medium">City:</span> {buyer.city || 'N/A'}
-                                  </p>
-                                </>
-                              )}
-                            </div>
-                          </div>
+                          // Debug: Log courier/shipment fields
+                          if (order.shipment_id) {
+                            console.log(`📦 Order #${order.id.slice(0, 8)} shipment info:`, {
+                              shipment_id: order.shipment_id,
+                              courier_name: order.courier_name,
+                              courier_name_type: typeof order.courier_name,
+                              courier_name_empty: !order.courier_name || order.courier_name.trim() === '',
+                              awb_code: order.awb_code,
+                              awb_code_type: typeof order.awb_code,
+                              awb_code_empty: !order.awb_code || order.awb_code.trim() === '',
+                              tracking_url: order.tracking_url,
+                              status: order.status
+                            })
+                            
+                            // Auto-fetch courier info for dispatched orders without courier details
+                            if (order.status === 'dispatched' && (!order.courier_name || !order.awb_code)) {
+                              console.log('⚠️ Dispatched order missing courier info, attempting to fetch...')
+                              // Trigger a background fetch
+                              apiService.request('/orders/shipping-label', {
+                                method: 'POST',
+                                body: JSON.stringify({ orderId: order.id })
+                              }).then(response => {
+                                if (response.courierName) {
+                                  console.log('✅ Auto-fetched courier info:', response.courierName)
+                                  // Refresh the dashboard to show updated data
+                                  setTimeout(() => fetchDashboardData(), 1000)
+                                }
+                              }).catch(err => {
+                                console.log('ℹ️ Could not auto-fetch courier info:', err.message)
+                              })
+                            }
+                          }
                           
-                          {/* Order Items */}
-                          <div className="mb-3 sm:mb-4">
-                            <h5 className="font-semibold text-sm sm:text-base text-gray-900 mb-2">Items</h5>
-                            <div className="space-y-2 sm:space-y-3">
-                              {orderItemsArray.map((item, idx) => (
-                                <div key={idx} className="bg-gray-50 p-2 sm:p-3 rounded-lg">
-                                  <div className="flex justify-between items-start">
-                                    <div className="flex-1">
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">
-                                          {item.products?.name || 'Product'} x {item.quantity}
-                                        </span>
-                                        <span className="font-medium text-sm sm:text-base text-gray-900">₹{(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
-                                      </div>
-                                      
-                                      {/* Gift Packaging */}
-                                      {item.gift_packaging && (
-                                        <div className="flex items-center mt-1">
-                                          <Package className="w-3 h-3 text-purple-600 mr-1" />
-                                          <span className="text-xs text-purple-600 font-medium">Gift Packaging (+₹50)</span>
-                                        </div>
-                                      )}
-                                      
-                                      {/* Customizations */}
-                                      {item.customizations && Array.isArray(item.customizations) && item.customizations.length > 0 && (
-                                        <div className="mt-2 space-y-1">
-                                          <p className="text-xs font-semibold text-gray-700">Customer Requests:</p>
-                                          {item.customizations.map((custom, customIdx) => (
-                                            <div key={customIdx} className="text-xs text-gray-600 pl-3 border-l-2 border-blue-400">
-                                              <span className="font-medium">{custom.question}:</span> <span className="text-gray-800">{custom.answer}</span>
-                                            </div>
-                                          ))}
-                                        </div>
+                          return (
+                            <div key={order.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                              {/* Compact Header - Always Visible */}
+                              <div className="p-4">
+                                <div className="flex items-start justify-between gap-4">
+                                  {/* Left side - Order Info (Clickable) */}
+                                  <div 
+                                    className="flex-1 cursor-pointer hover:bg-gray-50 -m-4 p-4 rounded transition-colors"
+                                    onClick={() => {
+                                      setExpandedOrders(prev => {
+                                        const newSet = new Set(prev)
+                                        if (newSet.has(order.id)) {
+                                          newSet.delete(order.id)
+                                        } else {
+                                          newSet.add(order.id)
+                                        }
+                                        return newSet
+                                      })
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-3 mb-2">
+                                      <h4 className="font-semibold text-gray-900">#{order.id.slice(0, 8)}</h4>
+                                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                        order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                                        order.status === 'dispatched' ? 'bg-blue-100 text-blue-700' :
+                                        order.status === 'confirmed' ? 'bg-indigo-100 text-indigo-700' :
+                                        order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                        'bg-gray-100 text-gray-700'
+                                      }`}>
+                                        {order.status.toUpperCase()}
+                                      </span>
+                                      {isExpanded ? (
+                                        <ChevronUp className="w-4 h-4 text-gray-400" />
+                                      ) : (
+                                        <ChevronDown className="w-4 h-4 text-gray-400" />
                                       )}
                                     </div>
+                                    
+                                    {/* Product Name */}
+                                    <div className="mb-2">
+                                      <p className="text-sm text-gray-700 font-medium">
+                                        {orderItemsArray.slice(0, 2).map((item, idx) => (
+                                          <span key={idx}>
+                                            {item.products?.name || 'Product'}
+                                            {idx < Math.min(2, orderItemsArray.length) - 1 ? ', ' : ''}
+                                          </span>
+                                        ))}
+                                        {orderItemsArray.length > 2 && (
+                                          <span className="text-gray-500"> +{orderItemsArray.length - 2} more</span>
+                                        )}
+                                      </p>
+                                    </div>
+                                    
+                                    {/* Minimal Order Details */}
+                                    <div className="flex items-center gap-2 text-xs text-gray-600 flex-wrap">
+                                      <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                                      <span>•</span>
+                                      <span className="font-semibold text-gray-900">₹{parseFloat(order.total_amount).toFixed(2)}</span>
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          
-                          {/* Shipment Tracking (if available) */}
-                          {(order.awb_code || order.courier_name || order.tracking_url) && (
-                            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                              <h5 className="font-semibold text-blue-900 mb-2 flex items-center">
-                                <Truck className="w-4 h-4 mr-2" />
-                                Shipment Details
-                              </h5>
-                              <div className="space-y-1 text-sm">
-                                {order.courier_name && (
-                                  <p className="text-gray-700">
-                                    <span className="font-medium">Courier:</span> {order.courier_name}
-                                  </p>
-                                )}
-                                {order.awb_code && (
-                                  <p className="text-gray-700">
-                                    <span className="font-medium">AWB Code:</span> {order.awb_code}
-                                  </p>
-                                )}
-                                {order.tracking_url && (
-                                  <a
-                                    href={order.tracking_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
-                                  >
-                                    <ExternalLink className="w-3 h-3 mr-1" />
-                                    Track Shipment
-                                  </a>
-                                )}
-                                {order.shipment_status && (
-                                  <p className="text-gray-700">
-                                    <span className="font-medium">Shipment Status:</span> {order.shipment_status}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          )}
 
-                          {/* Payment & Total */}
-                          <div className="border-t border-gray-200 pt-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-gray-600">Payment Method</span>
-                              <span className="font-medium text-gray-900">{order.payment_method.toUpperCase()}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600 font-semibold">Total Amount</span>
-                              <span className="font-bold text-gray-900 text-lg">₹{parseFloat(order.total_amount).toFixed(2)}</span>
-                            </div>
-                          </div>
-                          
-                          {/* Shipment Error / Notes - Show prominently if exists */}
-                          {(order.shipment_error || (order.notes && order.notes.includes('SHIPMENT ERROR'))) && (
-                            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                              <div className="flex items-start space-x-3">
-                                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                                <div className="flex-1">
-                                  <h4 className="font-semibold text-red-800 mb-1">Shipment Creation Failed</h4>
-                                  <p className="text-sm text-red-700 mb-2">
-                                    {order.shipment_error || order.notes}
-                                  </p>
-                                  <div className="flex items-center gap-2 text-xs text-red-600">
-                                    <p>
-                                      Please create the shipment manually in your{' '}
-                                      <a 
-                                        href="https://app.shiprocket.in/seller/orders" 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="underline font-medium hover:text-red-800"
+                                  {/* Right side - Actions */}
+                                  <div className="flex flex-col gap-2 min-w-[120px]">
+                                    {order.status === 'pending' && (
+                                      <button
+                                        onClick={async (e) => {
+                                          e.stopPropagation()
+                                          if (updatingOrders.has(order.id)) {
+                                            toast.error('Already updating...')
+                                            return
+                                          }
+                                          setUpdatingOrders(prev => new Set(prev).add(order.id))
+                                          try {
+                                            await apiService.request(`/orders/${order.id}`, {
+                                              method: 'PUT',
+                                              body: JSON.stringify({ status: 'confirmed' })
+                                            })
+                                            toast.success('Order confirmed')
+                                            fetchDashboardData()
+                                          } catch (error) {
+                                            toast.error(error.message || 'Failed to confirm')
+                                          } finally {
+                                            setUpdatingOrders(prev => {
+                                              const newSet = new Set(prev)
+                                              newSet.delete(order.id)
+                                              return newSet
+                                            })
+                                          }
+                                        }}
+                                        disabled={updatingOrders.has(order.id)}
+                                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1"
                                       >
-                                        Shiprocket dashboard
-                                      </a>
-                                      {' '}or contact support.
-                                    </p>
+                                        <CheckCircle className="w-3 h-3" />
+                                        {updatingOrders.has(order.id) ? 'Confirming...' : 'Confirm'}
+                                      </button>
+                                    )}
+
+                                    {order.status === 'confirmed' && (
+                                      <>
+                                        {order.shipment_id && (
+                                          <button
+                                            onClick={async (e) => {
+                                              e.stopPropagation()
+                                              try {
+                                                const response = await apiService.request('/orders/shipping-label', {
+                                                  method: 'POST',
+                                                  body: JSON.stringify({ orderId: order.id })
+                                                })
+                                                if (response.labelUrl) {
+                                                  window.open(response.labelUrl, '_blank')
+                                                  toast.success('Label opened!')
+                                                }
+                                              } catch (error) {
+                                                toast.error(error.message || 'Failed to get label')
+                                              }
+                                            }}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1"
+                                          >
+                                            <Printer className="w-3 h-3" />
+                                            Print Label
+                                          </button>
+                                        )}
+
+                                        <button
+                                          onClick={async (e) => {
+                                            e.stopPropagation()
+                                            if (updatingOrders.has(order.id)) {
+                                              toast.error('Already updating...')
+                                              return
+                                            }
+                                            setUpdatingOrders(prev => new Set(prev).add(order.id))
+                                            try {
+                                              await apiService.request(`/orders/${order.id}`, {
+                                                method: 'PUT',
+                                                body: JSON.stringify({ status: 'dispatched' })
+                                              })
+                                              toast.success('Order dispatched')
+                                              fetchDashboardData()
+                                            } catch (error) {
+                                              toast.error(error.message || 'Failed to dispatch')
+                                            } finally {
+                                              setUpdatingOrders(prev => {
+                                                const newSet = new Set(prev)
+                                                newSet.delete(order.id)
+                                                return newSet
+                                              })
+                                            }
+                                          }}
+                                          disabled={updatingOrders.has(order.id)}
+                                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1"
+                                        >
+                                          <Package className="w-3 h-3" />
+                                          {updatingOrders.has(order.id) ? 'Updating...' : 'Dispatch'}
+                                        </button>
+                                      </>
+                                    )}
+
+                                    {order.status === 'dispatched' && order.shipment_id && (
+                                      <button
+                                        onClick={async (e) => {
+                                          e.stopPropagation()
+                                          try {
+                                            const response = await apiService.request('/orders/shipping-label', {
+                                              method: 'POST',
+                                              body: JSON.stringify({ orderId: order.id })
+                                            })
+                                            if (response.labelUrl) {
+                                              window.open(response.labelUrl, '_blank')
+                                              toast.success('Label opened')
+                                            }
+                                          } catch (error) {
+                                            toast.error(error.message || 'Failed to get label')
+                                          }
+                                        }}
+                                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1"
+                                      >
+                                        <Printer className="w-3 h-3" />
+                                        Print Label
+                                      </button>
+                                    )}
                                   </div>
-                                  {/* Retry button */}
-                                  <button
-                                    onClick={async () => {
-                                      if (updatingOrders.has(order.id)) return
-                                      
-                                      setUpdatingOrders(prev => new Set(prev).add(order.id))
-                                      
-                                      try {
-                                        // First clear the notes/error so backend can retry
-                                        await apiService.request(`/orders/${order.id}`, {
-                                          method: 'PATCH',
-                                          body: JSON.stringify({ 
-                                            notes: null,
-                                            shipment_error: null 
-                                          })
-                                        })
-                                        
-                                        // Then trigger shipment creation by confirming again
-                                        await apiService.request(`/orders/${order.id}`, {
-                                          method: 'PUT',
-                                          body: JSON.stringify({ status: 'confirmed' })
-                                        })
-                                        
-                                        toast.success('Retrying shipment creation...')
-                                        setTimeout(() => fetchDashboardData(), 2000) // Refresh after 2s
-                                      } catch (error) {
-                                        console.error('Error retrying shipment:', error)
-                                        toast.error(error.message || 'Failed to retry. Please check your seller profile has complete address.')
-                                      } finally {
-                                        setUpdatingOrders(prev => {
-                                          const newSet = new Set(prev)
-                                          newSet.delete(order.id)
-                                          return newSet
-                                        })
-                                      }
-                                    }}
-                                    disabled={updatingOrders.has(order.id)}
-                                    className="mt-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-md font-medium disabled:opacity-50"
-                                  >
-                                    {updatingOrders.has(order.id) ? 'Retrying...' : 'Retry Shipment Creation'}
-                                  </button>
                                 </div>
                               </div>
-                            </div>
-                          )}
-                          
-                          {/* Action Buttons */}
-                          {order.status === 'pending' && (
-                            <div className="mt-4 pt-4 border-t border-gray-200">
-                              <button
-                                onClick={async () => {
-                                  // Prevent double-clicks
-                                  if (updatingOrders.has(order.id)) {
-                                    toast.error('Already updating this order...')
-                                    return
-                                  }
-                                  
-                                  setUpdatingOrders(prev => new Set(prev).add(order.id))
-                                  
-                                  try {
-                                    await apiService.request(`/orders/${order.id}`, {
-                                      method: 'PUT',
-                                      body: JSON.stringify({ status: 'confirmed' })
-                                    })
-                                    
-                                    toast.success('Order confirmed successfully')
-                                    fetchDashboardData() // Refresh orders
-                                  } catch (error) {
-                                    console.error('Error confirming order:', error)
-                                    const errorMsg = error.message || 'Failed to confirm order'
-                                    
-                                    // Better error message for status transition error
-                                    if (errorMsg.includes('Invalid status transition')) {
-                                      toast.error('This order cannot be confirmed. Please refresh the page.')
-                                      fetchDashboardData() // Auto-refresh to show current state
-                                    } else {
-                                      toast.error(errorMsg)
-                                    }
-                                  } finally {
-                                    setUpdatingOrders(prev => {
-                                      const newSet = new Set(prev)
-                                      newSet.delete(order.id)
-                                      return newSet
-                                    })
-                                  }
-                                }}
-                                disabled={updatingOrders.has(order.id)}
-                                className={`w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 ${
-                                  updatingOrders.has(order.id) ? 'opacity-50 cursor-not-allowed' : ''
-                                }`}
-                              >
-                                <CheckCircle className="w-5 h-5" />
-                                <span>{updatingOrders.has(order.id) ? 'Confirming...' : 'Confirm Order'}</span>
-                              </button>
-                            </div>
-                          )}
-                          
-                          {order.status === 'confirmed' && (
-                            <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
-                              {/* Shipping Label Section */}
-                              {order.shipment_id && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                      <p className="text-sm font-semibold text-blue-900 mb-1">
-                                        📦 Shipping Label
+
+                              {/* Expanded Details */}
+                              {isExpanded && (
+                                <div className="border-t border-gray-200 p-4 bg-gray-50 space-y-4">
+                                  {/* Buyer Information */}
+                                  <div className="bg-white p-3 rounded-lg border border-gray-200">
+                                    <h5 className="font-semibold text-sm text-gray-900 mb-2 flex items-center">
+                                      <User className="w-4 h-4 mr-2" />
+                                      Buyer Information
+                                    </h5>
+                                    <div className="space-y-1 text-sm">
+                                      <p className="text-gray-700">
+                                        <span className="font-medium">Address:</span> {order.address || 'N/A'}
                                       </p>
-                                      <p className="text-xs text-blue-700 mb-2">
-                                        1. Assign courier in Shiprocket dashboard<br />
-                                        2. Generate & print label below<br />
-                                        3. Stick on package & ship
-                                      </p>
-                                      {order.awb_code && (
-                                        <p className="text-xs text-blue-800 mt-2">
-                                          <span className="font-semibold">Tracking:</span> {order.awb_code} | {order.courier_name}
+                                      {buyer && (
+                                        <p className="text-gray-700">
+                                          <span className="font-medium">City:</span> {buyer.city || 'N/A'}
                                         </p>
                                       )}
                                     </div>
                                   </div>
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={async () => {
-                                        try {
-                                          const response = await apiService.request('/orders/shipping-label', {
-                                            method: 'POST',
-                                            body: JSON.stringify({ orderId: order.id })
-                                          })
-                                          
-                                          if (response.labelUrl) {
-                                            // Open label in new window for printing
-                                            window.open(response.labelUrl, '_blank')
-                                            toast.success(`Label generated! Courier: ${response.courierName}`)
-                                            fetchDashboardData() // Refresh to show updated AWB
+                                  
+                                  {/* Order Items */}
+                                  <div className="bg-white p-3 rounded-lg border border-gray-200">
+                                    <h5 className="font-semibold text-sm text-gray-900 mb-2 flex items-center">
+                                      <Package className="w-4 h-4 mr-2" />
+                                      Items Ordered
+                                    </h5>
+                                    <div className="space-y-2">
+                                      {orderItemsArray.map((item, idx) => (
+                                        <div key={idx} className="p-2 bg-gray-50 rounded">
+                                          <div className="flex justify-between items-start">
+                                            <div className="flex-1">
+                                              <div className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-700 font-medium">
+                                                  {item.products?.name || 'Product'} x {item.quantity}
+                                                </span>
+                                                <span className="font-medium text-gray-900">₹{(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
+                                              </div>
+                                              
+                                              {item.gift_packaging && (
+                                                <div className="flex items-center mt-1">
+                                                  <Package className="w-3 h-3 text-purple-600 mr-1" />
+                                                  <span className="text-xs text-purple-600 font-medium">Gift Packaging (+₹50)</span>
+                                                </div>
+                                              )}
+                                              
+                                              {item.customizations && Array.isArray(item.customizations) && item.customizations.length > 0 && (
+                                                <div className="mt-2 space-y-1">
+                                                  <p className="text-xs font-semibold text-gray-700">Customer Requests:</p>
+                                                  {item.customizations.map((custom, customIdx) => (
+                                                    <div key={customIdx} className="text-xs text-gray-600 pl-3 border-l-2 border-blue-400">
+                                                      <span className="font-medium">{custom.question}:</span> {custom.answer}
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Shipment Tracking */}
+                                  {(order.awb_code || order.courier_name || order.tracking_url) && (
+                                    <div className="bg-white p-3 rounded-lg border border-blue-200">
+                                      <h5 className="font-semibold text-sm text-blue-900 mb-2 flex items-center">
+                                        <Truck className="w-4 h-4 mr-2" />
+                                        Shipment Details
+                                      </h5>
+                                      <div className="space-y-1 text-sm">
+                                        {order.courier_name && (
+                                          <p className="text-gray-700">
+                                            <span className="font-medium">Courier:</span> {order.courier_name}
+                                          </p>
+                                        )}
+                                        {order.awb_code && (
+                                          <p className="text-gray-700">
+                                            <span className="font-medium">AWB Code:</span> {order.awb_code}
+                                          </p>
+                                        )}
+                                        {order.tracking_url && (
+                                          <a
+                                            href={order.tracking_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
+                                          >
+                                            <ExternalLink className="w-3 h-3 mr-1" />
+                                            Track Shipment
+                                          </a>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Shipment Error */}
+                                  {(order.shipment_error || (order.notes && order.notes.includes('SHIPMENT ERROR'))) && (
+                                    <div className="bg-white p-3 rounded-lg border border-red-200">
+                                      <div className="flex items-start space-x-2">
+                                        <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                          <h5 className="font-semibold text-sm text-red-800 mb-1">Shipment Creation Failed</h5>
+                                          <p className="text-xs text-red-700 mb-2">
+                                            {order.shipment_error || order.notes}
+                                          </p>
+                                          <button
+                                            onClick={async () => {
+                                              if (updatingOrders.has(order.id)) return
+                                              setUpdatingOrders(prev => new Set(prev).add(order.id))
+                                              try {
+                                                await apiService.request(`/orders/${order.id}`, {
+                                                  method: 'PATCH',
+                                                  body: JSON.stringify({ notes: null, shipment_error: null })
+                                                })
+                                                await apiService.request(`/orders/${order.id}`, {
+                                                  method: 'PUT',
+                                                  body: JSON.stringify({ status: 'confirmed' })
+                                                })
+                                                toast.success('Retrying shipment creation...')
+                                                setTimeout(() => fetchDashboardData(), 2000)
+                                              } catch (error) {
+                                                toast.error(error.message || 'Failed to retry')
+                                              } finally {
+                                                setUpdatingOrders(prev => {
+                                                  const newSet = new Set(prev)
+                                                  newSet.delete(order.id)
+                                                  return newSet
+                                                })
+                                              }
+                                            }}
+                                            disabled={updatingOrders.has(order.id)}
+                                            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded font-medium disabled:opacity-50"
+                                          >
+                                            {updatingOrders.has(order.id) ? 'Retrying...' : 'Retry Shipment'}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Action Buttons */}
+                                  <div className="space-y-2">
+                                    {order.status === 'pending' && (
+                                      <button
+                                        onClick={async () => {
+                                          if (updatingOrders.has(order.id)) {
+                                            toast.error('Already updating...')
+                                            return
                                           }
-                                        } catch (error) {
-                                          if (error.message.includes('Courier not assigned')) {
-                                            toast.error('Please assign courier in Shiprocket first', { duration: 5000 })
-                                          } else {
-                                            toast.error(error.message || 'Failed to generate label')
+                                          setUpdatingOrders(prev => new Set(prev).add(order.id))
+                                          try {
+                                            await apiService.request(`/orders/${order.id}`, {
+                                              method: 'PUT',
+                                              body: JSON.stringify({ status: 'confirmed' })
+                                            })
+                                            toast.success('Order confirmed')
+                                            fetchDashboardData()
+                                          } catch (error) {
+                                            toast.error(error.message || 'Failed to confirm')
+                                          } finally {
+                                            setUpdatingOrders(prev => {
+                                              const newSet = new Set(prev)
+                                              newSet.delete(order.id)
+                                              return newSet
+                                            })
                                           }
-                                        }
-                                      }}
-                                      className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                                    >
-                                      <Truck className="w-4 h-4" />
-                                      <span>Print Label</span>
-                                    </button>
-                                    <button
-                                      onClick={() => window.open('https://app.shiprocket.in/seller', '_blank')}
-                                      className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-blue-300 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                                    >
-                                      <ExternalLink className="w-4 h-4" />
-                                      <span>Shiprocket</span>
-                                    </button>
+                                        }}
+                                        disabled={updatingOrders.has(order.id)}
+                                        className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                      >
+                                        <CheckCircle className="w-5 h-5" />
+                                        <span>{updatingOrders.has(order.id) ? 'Confirming...' : 'Confirm Order'}</span>
+                                      </button>
+                                    )}
+                                    
+                                    {order.status === 'confirmed' && (
+                                      <div className="space-y-2">
+                                        {order.shipment_id && (
+                                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                                            <p className="text-xs font-semibold text-blue-900">📦 Shipping Label</p>
+                                            <div className="flex gap-2">
+                                              <button
+                                                onClick={async () => {
+                                                  try {
+                                                    const response = await apiService.request('/orders/shipping-label', {
+                                                      method: 'POST',
+                                                      body: JSON.stringify({ orderId: order.id })
+                                                    })
+                                                    if (response.labelUrl) {
+                                                      window.open(response.labelUrl, '_blank')
+                                                      toast.success('Label opened!')
+                                                      fetchDashboardData()
+                                                    }
+                                                  } catch (error) {
+                                                    toast.error(error.message || 'Failed to get label')
+                                                  }
+                                                }}
+                                                className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                                              >
+                                                <Truck className="w-4 h-4" />
+                                                Print Label
+                                              </button>
+                                              <button
+                                                onClick={() => window.open('https://app.shiprocket.in/seller', '_blank')}
+                                                className="px-3 py-2 bg-white hover:bg-gray-50 border border-blue-300 text-blue-700 rounded-lg text-sm font-medium"
+                                              >
+                                                <ExternalLink className="w-4 h-4" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        )}
+                                        <button
+                                          onClick={async () => {
+                                            if (updatingOrders.has(order.id)) {
+                                              toast.error('Already updating...')
+                                              return
+                                            }
+                                            setUpdatingOrders(prev => new Set(prev).add(order.id))
+                                            try {
+                                              await apiService.request(`/orders/${order.id}`, {
+                                                method: 'PUT',
+                                                body: JSON.stringify({ status: 'dispatched' })
+                                              })
+                                              toast.success('Order dispatched')
+                                              fetchDashboardData()
+                                            } catch (error) {
+                                              toast.error(error.message || 'Failed to dispatch')
+                                            } finally {
+                                              setUpdatingOrders(prev => {
+                                                const newSet = new Set(prev)
+                                                newSet.delete(order.id)
+                                                return newSet
+                                              })
+                                            }
+                                          }}
+                                          disabled={updatingOrders.has(order.id)}
+                                          className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                        >
+                                          <Package className="w-5 h-5" />
+                                          <span>{updatingOrders.has(order.id) ? 'Updating...' : 'Mark as Dispatched'}</span>
+                                        </button>
+                                      </div>
+                                    )}
+                                    
+                                    {order.status === 'dispatched' && order.shipment_id && (
+                                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                                        <p className="text-sm font-semibold text-green-900">✓ Order Dispatched</p>
+                                        <div className="flex gap-2">
+                                          <button
+                                            onClick={async () => {
+                                              try {
+                                                const response = await apiService.request('/orders/shipping-label', {
+                                                  method: 'POST',
+                                                  body: JSON.stringify({ orderId: order.id })
+                                                })
+                                                if (response.labelUrl) {
+                                                  window.open(response.labelUrl, '_blank')
+                                                  toast.success('Label opened')
+                                                }
+                                              } catch (error) {
+                                                toast.error(error.message || 'Failed to get label')
+                                              }
+                                            }}
+                                            className="flex-1 inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                                          >
+                                            <Truck className="w-4 h-4" />
+                                            Reprint Label
+                                          </button>
+                                          {order.tracking_url && (
+                                            <button
+                                              onClick={() => window.open(order.tracking_url, '_blank')}
+                                              className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-green-300 text-green-700 px-3 py-2 rounded-lg text-sm font-medium"
+                                            >
+                                              <ExternalLink className="w-4 h-4" />
+                                              Track
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               )}
-                              
-                              {/* Mark as Dispatched Button */}
-                              <button
-                                onClick={async () => {
-                                  // Prevent double-clicks
-                                  if (updatingOrders.has(order.id)) {
-                                    toast.error('Already updating this order...')
-                                    return
-                                  }
-                                  
-                                  setUpdatingOrders(prev => new Set(prev).add(order.id))
-                                  
-                                  try {
-                                    await apiService.request(`/orders/${order.id}`, {
-                                      method: 'PUT',
-                                      body: JSON.stringify({ status: 'dispatched' })
-                                    })
-                                    
-                                    toast.success('Order marked as dispatched')
-                                    fetchDashboardData()
-                                  } catch (error) {
-                                    console.error('Error updating order:', error)
-                                    const errorMsg = error.message || 'Failed to update order'
-                                    
-                                    // Better error message for status transition error
-                                    if (errorMsg.includes('Invalid status transition')) {
-                                      toast.error('This order cannot be dispatched. Please refresh the page.')
-                                      fetchDashboardData() // Auto-refresh to show current state
-                                    } else {
-                                      toast.error(errorMsg)
-                                    }
-                                  } finally {
-                                    setUpdatingOrders(prev => {
-                                      const newSet = new Set(prev)
-                                      newSet.delete(order.id)
-                                      return newSet
-                                    })
-                                  }
-                                }}
-                                disabled={updatingOrders.has(order.id)}
-                                className={`w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 ${
-                                  updatingOrders.has(order.id) ? 'opacity-50 cursor-not-allowed' : ''
-                                }`}
-                              >
-                                <Package className="w-5 h-5" />
-                                <span>{updatingOrders.has(order.id) ? 'Updating...' : 'Mark as Dispatched'}</span>
-                              </button>
                             </div>
-                          )}
-                          
-                          {/* Dispatched orders - allow reprinting label */}
-                          {order.status === 'dispatched' && order.shipment_id && (
-                            <div className="mt-4 pt-4 border-t border-gray-200">
-                              <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
-                                <p className="text-sm font-semibold text-green-900">
-                                  ✓ Order Dispatched
-                                </p>
-                                {order.awb_code && (
-                                  <p className="text-xs text-green-800">
-                                    <span className="font-semibold">Tracking:</span> {order.awb_code}<br />
-                                    <span className="font-semibold">Courier:</span> {order.courier_name}
-                                  </p>
-                                )}
-                                <div className="flex gap-2 mt-3">
-                                  <button
-                                    onClick={async () => {
-                                      try {
-                                        const response = await apiService.request('/orders/shipping-label', {
-                                          method: 'POST',
-                                          body: JSON.stringify({ orderId: order.id })
-                                        })
-                                        
-                                        if (response.labelUrl) {
-                                          window.open(response.labelUrl, '_blank')
-                                          toast.success('Label opened for printing')
-                                        }
-                                      } catch (error) {
-                                        toast.error(error.message || 'Failed to get label')
-                                      }
-                                    }}
-                                    className="flex-1 inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                                  >
-                                    <Truck className="w-4 h-4" />
-                                    <span>Reprint Label</span>
-                                  </button>
-                                  {order.tracking_url && (
-                                    <button
-                                      onClick={() => window.open(order.tracking_url, '_blank')}
-                                      className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-green-300 text-green-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                                    >
-                                      <ExternalLink className="w-4 h-4" />
-                                      <span>Track</span>
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                          )
+                        })}
+                    </div>
+
+                    {/* No orders for selected filter */}
+                    {orders.length === 0 && (
+                      <div className="text-center py-12 bg-gray-50 rounded-lg">
+                        <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600">No {orderFilter !== 'all' ? orderFilter : ''} orders</p>
+                      </div>
+                    )}
+
+                    {/* Pagination */}
+                    {ordersTotalPages > 1 && (
+                      <div className="mt-6 flex items-center justify-between gap-3 border border-gray-200 rounded-lg p-3 bg-white">
+                        <button
+                          onClick={() => setOrdersPage(prev => Math.max(1, prev - 1))}
+                          disabled={ordersPage <= 1}
+                          className="px-3 py-2 text-sm rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                        >
+                          Previous
+                        </button>
+
+                        <div className="text-sm text-gray-700">
+                          Page {ordersPage} of {ordersTotalPages}
                         </div>
-                      )
-                    })}
-                  </div>
+
+                        <button
+                          onClick={() => setOrdersPage(prev => Math.min(ordersTotalPages, prev + 1))}
+                          disabled={ordersPage >= ordersTotalPages}
+                          className="px-3 py-2 text-sm rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

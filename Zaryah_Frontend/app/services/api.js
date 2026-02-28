@@ -31,6 +31,14 @@ class ApiService {
       },
       ...options,
     }
+
+    // Always fetch fresh data for GET requests (critical for live order status updates)
+    if (!config.method || config.method.toUpperCase() === 'GET') {
+      config.cache = 'no-store'
+      config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+      config.headers['Pragma'] = 'no-cache'
+      config.headers['Expires'] = '0'
+    }
     
     // Add Authorization header if token exists
     if (token) {
@@ -400,6 +408,21 @@ class ApiService {
 
   async getOrdersForSeller(sellerId) {
     return this.request(`/orders?userType=seller`, { method: 'GET' })
+  }
+
+  async getSellerOrdersPaginated({ page = 1, pageSize = 20, status = 'all' } = {}) {
+    const params = new URLSearchParams({
+      userType: 'seller',
+      paginated: 'true',
+      page: String(page),
+      pageSize: String(pageSize)
+    })
+
+    if (status && status !== 'all') {
+      params.append('status', status)
+    }
+
+    return this.request(`/orders?${params.toString()}`, { method: 'GET' })
   }
 }
 

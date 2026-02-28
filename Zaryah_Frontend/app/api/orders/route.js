@@ -2,12 +2,22 @@
 import { NextResponse } from 'next/server'
 import { requireRole, getBuyerId, getSellerId, requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
+import { getShipmentTracking, getShipmentDetails, mapShiprocketStatus } from '@/lib/shiprocket'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 // GET /api/orders - Get orders (buyer, seller, or admin)
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
     const userType = searchParams.get('userType') // buyer, seller, or admin
+    const statusFilter = searchParams.get('status')
+    const paginated = searchParams.get('paginated') === 'true'
+    const requestedPage = parseInt(searchParams.get('page') || '1', 10)
+    const requestedPageSize = parseInt(searchParams.get('pageSize') || '20', 10)
+    const page = Number.isNaN(requestedPage) ? 1 : Math.max(1, requestedPage)
+    const pageSize = Number.isNaN(requestedPageSize) ? 20 : Math.min(100, Math.max(5, requestedPageSize))
     
     // Get authenticated user
     const session = await requireAuth(request)
@@ -77,13 +87,198 @@ export async function GET(request) {
       query = query.or('payment_method.eq.cod,payment_status.eq.paid')
     }
 
+    // Optional status filter for list views
+    if (statusFilter && statusFilter !== 'all') {
+      query = query.eq('status', statusFilter)
+    }
+
+    // Optional pagination
+    if (paginated) {
+      const from = (page - 1) * pageSize
+      const to = from + pageSize - 1
+      query = query.range(from, to)
+    }
+
     const { data: orders, error } = await query
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json(orders)
+    // Fail-safe reconciliation: if webhook was missed, refresh active shipment statuses
+    if (orders && orders.length > 0) {
+      const reconcilableOrders = orders
+        .filter(order =>
+          order?.awb_code &&
+          !['delivered', 'cancelled'].includes(order.status) &&
+          !['delivered', 'cancelled', 'rto_delivered'].includes((order.shipment_status || '').toLowerCase())
+        )
+        .slice(0, 10)
+
+      if (reconcilableOrders.length > 0) {
+        await Promise.all(reconcilableOrders.map(async (order) => {
+          try {
+            const trackingData = await getShipmentTracking(order.awb_code)
+            const tracking = trackingData?.tracking_data || trackingData || {}
+            const liveStatus = tracking.shipment_status || tracking.current_status || order.shipment_status
+
+            if (!liveStatus || liveStatus === order.shipment_status) {
+              return
+            }
+
+            const mapped = mapShiprocketStatus(liveStatus)
+            const updates = {
+              shipment_status: liveStatus
+            }
+
+            if (mapped.status && mapped.status !== order.status) {
+              updates.status = mapped.status
+            }
+
+            await supabase
+              .from('orders')
+              .update(updates)
+              .eq('id', order.id)
+
+            order.shipment_status = updates.shipment_status
+            if (updates.status) {
+              order.status = updates.status
+            }
+          } catch (syncError) {
+            console.warn('Order status reconciliation skipped for order:', order.id, syncError.message)
+          }
+        }))
+      }
+
+      const shipmentOnlyOrders = orders
+        .filter(order =>
+          order?.shipment_id &&
+          !order?.awb_code &&
+          !['delivered', 'cancelled'].includes(order.status)
+        )
+        .slice(0, 10)
+
+      if (shipmentOnlyOrders.length > 0) {
+        await Promise.all(shipmentOnlyOrders.map(async (order) => {
+          try {
+            const shipment = await getShipmentDetails(order.shipment_id)
+            const mapped = mapShiprocketStatus(shipment?.status)
+            const updates = {}
+
+            if (shipment?.awbCode) {
+              updates.awb_code = shipment.awbCode
+              updates.tracking_url = `https://shiprocket.co/tracking/${shipment.awbCode}`
+            }
+
+            if (shipment?.courierName) {
+              updates.courier_name = shipment.courierName
+            }
+
+            if (shipment?.status !== undefined && shipment?.status !== null) {
+              updates.shipment_status = String(shipment.status)
+            }
+
+            if (mapped.status && mapped.status !== order.status) {
+              updates.status = mapped.status
+            }
+
+            if (Object.keys(updates).length === 0) {
+              return
+            }
+
+            await supabase
+              .from('orders')
+              .update(updates)
+              .eq('id', order.id)
+
+            Object.assign(order, updates)
+          } catch (syncError) {
+            console.warn('Shipment-id reconciliation skipped for order:', order.id, syncError.message)
+          }
+        }))
+      }
+    }
+
+    // Log shipping/courier fields for debugging
+    console.log('📦 Orders API - Sample order data (first order):')
+    if (orders && orders.length > 0) {
+      const sampleOrder = orders[0]
+      console.log({
+        id: sampleOrder.id?.slice(0, 8),
+        status: sampleOrder.status,
+        shipment_id: sampleOrder.shipment_id,
+        courier_name: sampleOrder.courier_name,
+        awb_code: sampleOrder.awb_code,
+        tracking_url: sampleOrder.tracking_url,
+        allFields: Object.keys(sampleOrder)
+      })
+    }
+
+    const headers = {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0'
+    }
+
+    if (!paginated) {
+      return NextResponse.json(orders, {
+        headers
+      })
+    }
+
+    // Count query for pagination metadata
+    let countQuery = supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+
+    let countIsSeller = false
+    if (userType === 'buyer' || user.user_type === 'Buyer') {
+      countQuery = countQuery.eq('buyer_id', user.id)
+    } else if (userType === 'seller' || user.user_type === 'Seller') {
+      countQuery = countQuery.eq('seller_id', user.id)
+      countIsSeller = true
+    } else if (user.user_type !== 'Admin') {
+      if (user.user_type === 'Buyer') {
+        countQuery = countQuery.eq('buyer_id', user.id)
+      } else if (user.user_type === 'Seller') {
+        countQuery = countQuery.eq('seller_id', user.id)
+        countIsSeller = true
+      }
+    }
+
+    if (countIsSeller) {
+      countQuery = countQuery.or('payment_method.eq.cod,payment_status.eq.paid')
+    }
+
+    if (statusFilter && statusFilter !== 'all') {
+      countQuery = countQuery.eq('status', statusFilter)
+    }
+
+    const { count, error: countError } = await countQuery
+    if (countError) {
+      console.warn('Orders count query failed:', countError.message)
+    }
+
+    const totalCount = typeof count === 'number' ? count : (orders?.length || 0)
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+
+    return NextResponse.json({
+      orders,
+      pagination: {
+        page,
+        pageSize,
+        totalCount,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0'
+      }
+    })
   } catch (error) {
     if (error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

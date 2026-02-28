@@ -55,53 +55,86 @@ export async function POST(request) {
     const payload = JSON.parse(rawBody)
     console.log('Webhook payload:', JSON.stringify(payload, null, 2))
     
-    // Extract shipment details from payload
-    const {
-      order_id,
-      shipment_id,
-      awb_code,
-      courier_name,
-      current_status,
-      delivered_date,
-      shipment_track
-    } = payload
-    
-    if (!order_id && !shipment_id) {
-      console.error('Missing order_id or shipment_id in webhook')
-      return NextResponse.json({ error: 'Missing order or shipment ID' }, { status: 400 })
+    // Extract shipment details from payload with fallbacks for Shiprocket format variations
+    const orderId = payload.order_id || payload.orderId || payload.channel_order_id || payload.channelOrderId || payload.reference_id
+    const shipmentId = payload.shipment_id || payload.shipmentId || payload.shipment?.id
+    const awbCode = payload.awb_code || payload.awbCode || payload.awb || payload.shipment_awb
+    const courierName = payload.courier_name || payload.courierName || payload.courier
+    const shipmentTrack = payload.shipment_track || payload.shipmentTrack || payload.tracking_data || payload.scans || []
+    const fallbackTrackStatus = Array.isArray(shipmentTrack) && shipmentTrack.length > 0
+      ? (shipmentTrack[0]?.current_status || shipmentTrack[0]?.status || shipmentTrack[0]?.activity)
+      : null
+    const currentStatus = payload.current_status || payload.currentStatus || payload.shipment_status || payload.status || payload.shipment_status_id || fallbackTrackStatus
+    const deliveredDate = payload.delivered_date || payload.deliveredDate || payload.delivery_date || payload.deliveryDate
+
+    if (!orderId && !shipmentId && !awbCode) {
+      console.error('Missing order_id, shipment_id, and awb_code in webhook')
+      return NextResponse.json({ error: 'Missing order identifiers' }, { status: 400 })
     }
-    
-    // Find order by order_id or shipment_id
-    let query = supabase.from('orders').select('*')
-    
-    if (order_id) {
-      query = query.eq('id', order_id)
-    } else {
-      query = query.eq('shipment_id', shipment_id)
+
+    const lookupCandidates = []
+
+    if (orderId) {
+      lookupCandidates.push({ field: 'id', value: orderId })
+      if (typeof orderId !== 'string') {
+        lookupCandidates.push({ field: 'id', value: String(orderId) })
+      }
     }
-    
-    const { data: order, error: fetchError } = await query.single()
+
+    if (shipmentId) {
+      lookupCandidates.push({ field: 'shipment_id', value: shipmentId })
+      if (typeof shipmentId !== 'string') {
+        lookupCandidates.push({ field: 'shipment_id', value: String(shipmentId) })
+      }
+    }
+
+    if (awbCode) {
+      lookupCandidates.push({ field: 'awb_code', value: awbCode })
+    }
+
+    let order = null
+    let fetchError = null
+
+    for (const candidate of lookupCandidates) {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq(candidate.field, candidate.value)
+        .maybeSingle()
+
+      if (error) {
+        fetchError = error
+        continue
+      }
+
+      if (data) {
+        order = data
+        break
+      }
+    }
     
     if (fetchError || !order) {
-      console.error('Order not found:', order_id || shipment_id)
+      console.error('Order not found:', { orderId, shipmentId, awbCode, fetchError })
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
     
     console.log('Order found:', order.id)
     
     // Map Shiprocket status to internal order status
-    const statusMapping = mapShiprocketStatus(current_status)
+    const statusMapping = mapShiprocketStatus(currentStatus)
     const { status: newStatus, isRTO, requiresRefund } = statusMapping
     
     console.log('Status mapping:', { 
-      shiprocketStatus: current_status, 
+      shiprocketStatus: currentStatus,
       newStatus, 
       isRTO, 
       requiresRefund 
     })
     
-    const updates = {
-      shipment_status: current_status
+    const updates = {}
+
+    if (currentStatus) {
+      updates.shipment_status = currentStatus
     }
     
     // Update order status if mapping exists
@@ -111,27 +144,29 @@ export async function POST(request) {
       
       // Add RTO notes if applicable
       if (isRTO) {
-        updates.notes = `⚠️ RTO (Return to Origin): Package could not be delivered and is being returned to seller. Reason: ${current_status}. Buyer will be refunded.`
+        updates.notes = `⚠️ RTO (Return to Origin): Package could not be delivered and is being returned to seller. Reason: ${currentStatus}. Buyer will be refunded.`
         console.log('🔄 RTO detected - will process refund')
       } else if (requiresRefund && newStatus === 'cancelled') {
-        updates.notes = `⚠️ Order ${current_status}: Shipment failed. Buyer will be refunded.`
+        updates.notes = `⚠️ Order ${currentStatus}: Shipment failed. Buyer will be refunded.`
         console.log('💸 Cancellation detected - will process refund')
       }
     }
     
-    // Update AWB and courier if provided
-    if (awb_code && !order.awb_code) {
-      updates.awb_code = awb_code
-      updates.tracking_url = `https://shiprocket.co/tracking/${awb_code}`
+    // Update AWB and courier if provided (always update to get latest info)
+    if (awbCode) {
+      updates.awb_code = awbCode
+      updates.tracking_url = `https://shiprocket.co/tracking/${awbCode}`
+      console.log('📦 Updating AWB code:', awbCode)
     }
     
-    if (courier_name && !order.courier_name) {
-      updates.courier_name = courier_name
+    if (courierName) {
+      updates.courier_name = courierName
+      console.log('🚚 Updating courier name:', courierName)
     }
     
     // Update delivery date if delivered
-    if (delivered_date && newStatus === 'delivered') {
-      updates.updated_at = new Date(delivered_date).toISOString()
+    if (deliveredDate && newStatus === 'delivered') {
+      updates.updated_at = new Date(deliveredDate).toISOString()
     }
     
     // Update order
@@ -171,7 +206,7 @@ export async function POST(request) {
               notes: {
                 reason: isRTO ? 'RTO - Return to Origin' : 'Shipment Failed',
                 order_id: order.id,
-                shipment_status: current_status
+                  shipment_status: currentStatus
               }
             })
             
@@ -276,8 +311,8 @@ export async function POST(request) {
             user_model: 'Buyer',
             title: isRTO ? 'Delivery Failed - Refund Initiated' : 'Order Cancelled - Refund Initiated',
             message: isRTO 
-              ? `Your order could not be delivered (${current_status}). ${order.payment_method === 'online' ? 'Refund of ₹' + order.total_amount + ' has been initiated to your payment method.' : 'No payment was collected as this was a COD order.'}`
-              : `Your order was cancelled due to shipment failure (${current_status}). ${order.payment_method === 'online' ? 'Refund of ₹' + order.total_amount + ' has been initiated.' : ''}`,
+              ? `Your order could not be delivered (${currentStatus}). ${order.payment_method === 'online' ? 'Refund of ₹' + order.total_amount + ' has been initiated to your payment method.' : 'No payment was collected as this was a COD order.'}`
+              : `Your order was cancelled due to shipment failure (${currentStatus}). ${order.payment_method === 'online' ? 'Refund of ₹' + order.total_amount + ' has been initiated.' : ''}`,
             type: 'order',
             related_order_id: order.id,
             priority: 'high',
@@ -292,8 +327,8 @@ export async function POST(request) {
             user_model: 'Seller',
             title: isRTO ? 'RTO - Package Returned' : 'Delivery Failed',
             message: isRTO
-              ? `Order was returned to origin (${current_status}). The package will be returned to your pickup location. Buyer has been refunded.`
-              : `Delivery failed for order (${current_status}). Buyer has been refunded. No earnings will be credited.`,
+              ? `Order was returned to origin (${currentStatus}). The package will be returned to your pickup location. Buyer has been refunded.`
+              : `Delivery failed for order (${currentStatus}). Buyer has been refunded. No earnings will be credited.`,
             type: 'order',
             related_order_id: order.id,
             priority: 'high',
@@ -439,7 +474,7 @@ export async function POST(request) {
           user_id: order.buyer_id,
           user_model: 'Buyer',
           title: 'Order Status Updated',
-          message: `Your order status has been updated to: ${current_status}. ${awb_code ? `Track your shipment: ${awb_code}` : ''}`,
+          message: `Your order status has been updated to: ${currentStatus}. ${awbCode ? `Track your shipment: ${awbCode}` : ''}`,
           type: 'delivery',
           related_order_id: order.id,
           priority: 'low',

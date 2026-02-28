@@ -318,15 +318,34 @@ export function verifyWebhookSignature(payload, signature) {
     return false
   }
 
+  if (!signature || typeof signature !== 'string') {
+    return false
+  }
+
   const expectedSignature = crypto
     .createHmac('sha256', secret)
     .update(payload)
     .digest('hex')
 
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  )
+  const expectedSignatureBase64 = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('base64')
+
+  const normalizedSignature = signature.trim().replace(/^sha256=/i, '')
+
+  const safeCompare = (left, right) => {
+    const leftBuffer = Buffer.from(left)
+    const rightBuffer = Buffer.from(right)
+
+    if (leftBuffer.length !== rightBuffer.length) {
+      return false
+    }
+
+    return crypto.timingSafeEqual(leftBuffer, rightBuffer)
+  }
+
+  return safeCompare(normalizedSignature, expectedSignature) || safeCompare(normalizedSignature, expectedSignatureBase64)
 }
 
 /**
@@ -449,30 +468,192 @@ export async function getShipmentDetails(shipmentId) {
   const result = await response.json()
   const shipmentData = result.data || result
 
+  const awbCode = shipmentData.awb_code || shipmentData.awb || null
+  const courierName = shipmentData.courier_name || shipmentData.courier || null
+  const rawStatus = shipmentData.shipment_status || shipmentData.current_status || shipmentData.status
+
+  // Log the full response for debugging
+  console.log('🔍 Full Shiprocket shipment data:', JSON.stringify(shipmentData, null, 2))
+  console.log('🚚 Courier Name:', courierName)
+  console.log('📦 AWB Code:', awbCode)
+  console.log('📊 Status:', rawStatus)
+
+  // Courier is truly assigned only if:
+  // 1. courier_name exists and is not a placeholder
+  // 2. awb_code exists (both are assigned together)
+  const hasCourier = courierName &&
+                     courierName !== 'Pending Assignment' &&
+                     courierName !== '' &&
+                     !!awbCode
+
+  console.log('✅ Courier assigned check:', {
+    hasCourierName: !!shipmentData.courier_name,
+    courierName,
+    hasAwb: !!awbCode,
+    awbCode,
+    finalResult: hasCourier
+  })
+
+  // Try multiple possible label URL field names
+  const labelUrl = shipmentData.label_url || 
+                   shipmentData.label || 
+                   shipmentData.label_link ||
+                   shipmentData.shipment_label ||
+                   null
+
+  console.log('📄 Label URL found:', labelUrl)
+
   return {
     shipmentId: shipmentData.id,
-    awbCode: shipmentData.awb_code,
-    courierName: shipmentData.courier_name,
-    courierAssigned: !!shipmentData.courier_name,
-    status: shipmentData.status,
-    orderId: shipmentData.order_id
+    awbCode,
+    courierName,
+    courierAssigned: hasCourier,
+    status: rawStatus,
+    orderId: shipmentData.order_id,
+    labelUrl: labelUrl,
+    manifest: shipmentData.manifest || null,
+    rawShipmentData: shipmentData // Include raw data for debugging
+  }
+}
+
+/**
+ * Fetch existing shipping label from Shiprocket
+ * This retrieves the label that Shiprocket generated when courier was assigned
+ * @param {number} shipmentId - Shiprocket shipment ID
+ * @returns {Promise<Object>} Label URL and details
+ */
+export async function fetchShippingLabel(shipmentId) {
+  const token = await authenticate()
+  
+  console.log('📦 Fetching existing label for shipment:', shipmentId)
+  
+  // Try to get label using Shiprocket's label endpoint
+  const response = await fetch(`${SHIPROCKET_API_BASE}/courier/generate/label`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      shipment_id: [shipmentId]
+    })
+  })
+
+  console.log('📄 Label endpoint response status:', response.status, response.statusText)
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    console.error('❌ Failed to fetch label. Status:', response.status)
+    console.error('❌ Error response:', JSON.stringify(error, null, 2))
+    throw new Error(error.message || 'Shipping label not available. Please ensure courier is assigned in Shiprocket dashboard.')
+  }
+
+  const result = await response.json()
+  console.log('📄 Label response full data:', JSON.stringify(result, null, 2))
+
+  // Get shipment details for AWB and courier name
+  let shipmentDetails
+  try {
+    shipmentDetails = await getShipmentDetails(shipmentId)
+  } catch (error) {
+    console.warn('Could not fetch shipment details:', error)
+    shipmentDetails = { awbCode: null, courierName: null }
+  }
+
+  if (!result.label_url && !result.label_link) {
+    console.error('❌ No label URL in response. Available fields:', Object.keys(result))
+    throw new Error('Label URL not available. Please try again in a few moments or download from Shiprocket dashboard.')
+  }
+
+  return {
+    labelUrl: result.label_url || result.label_link,
+    isLabelGenerated: result.is_label_generated || true,
+    notGeneratedIds: result.not_generated_ids || [],
+    shipmentId: shipmentId,
+    awbCode: shipmentDetails.awbCode,
+    courierName: shipmentDetails.courierName
+  }
+}
+
+/**
+ * Assign AWB (Air Waybill) and courier to a shipment
+ * @param {number} shipmentId - Shiprocket shipment ID
+ * @returns {Promise<Object>} AWB code and courier name
+ */
+export async function assignCourier(shipmentId) {
+  const token = await authenticate()
+  
+  console.log('🚚 Attempting to assign courier for shipment:', shipmentId)
+  
+  const awbResponse = await fetch(`${SHIPROCKET_API_BASE}/courier/assign/awb`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      shipment_id: shipmentId
+    })
+  })
+
+  if (!awbResponse.ok) {
+    const error = await awbResponse.json().catch(() => ({}))
+    throw new Error(error.message || 'Failed to assign courier. Please assign manually in Shiprocket dashboard.')
+  }
+
+  const awbResult = await awbResponse.json()
+  const awbCode = awbResult.response?.data?.awb_code || awbResult.awb_code
+  const courierName = awbResult.response?.data?.courier_name || awbResult.courier_name
+  
+  if (!awbCode || !courierName) {
+    throw new Error('Courier assignment incomplete. Please assign manually in Shiprocket dashboard.')
+  }
+  
+  console.log('✅ Courier assigned:', { awbCode, courierName })
+
+  // Try to generate pickup request
+  try {
+    const pickupResponse = await fetch(`${SHIPROCKET_API_BASE}/courier/generate/pickup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        shipment_id: [shipmentId]
+      })
+    })
+
+    if (pickupResponse.ok) {
+      console.log('✅ Pickup request generated')
+    }
+  } catch (pickupError) {
+    console.warn('⚠️ Pickup generation error (non-critical):', pickupError.message)
+  }
+
+  return {
+    awbCode,
+    courierName
   }
 }
 
 /**
  * Generate shipping label for a shipment
- * This only works AFTER courier is manually assigned in Shiprocket dashboard
  * @param {number} shipmentId - Shiprocket shipment ID
+ * @param {boolean} skipCourierCheck - Skip checking if courier is assigned (default: false)
  * @returns {Promise<Object>} Label URL and generation status
  */
-export async function generateShippingLabel(shipmentId) {
+export async function generateShippingLabel(shipmentId, skipCourierCheck = false) {
   const token = await authenticate()
   
-  // First check if courier is assigned
-  const shipmentDetails = await getShipmentDetails(shipmentId)
-  
-  if (!shipmentDetails.courierAssigned) {
-    throw new Error('Courier not assigned. Please assign a courier service in Shiprocket dashboard first.')
+  // Check if courier is assigned (unless explicitly skipped)
+  let shipmentDetails
+  if (!skipCourierCheck) {
+    shipmentDetails = await getShipmentDetails(shipmentId)
+    
+    if (!shipmentDetails.courierAssigned) {
+      throw new Error('Courier not assigned. Please assign a courier service in Shiprocket dashboard first.')
+    }
   }
 
   // Generate the shipping label (PDF with QR code)
@@ -494,6 +675,16 @@ export async function generateShippingLabel(shipmentId) {
 
   const result = await response.json()
 
+  // If we skipped the courier check, fetch details now to get AWB and courier name
+  if (!shipmentDetails) {
+    try {
+      shipmentDetails = await getShipmentDetails(shipmentId)
+    } catch (error) {
+      console.warn('Could not fetch shipment details:', error)
+      shipmentDetails = { awbCode: null, courierName: null }
+    }
+  }
+
   return {
     labelUrl: result.label_url, // PDF URL with QR code
     isLabelGenerated: result.is_label_generated || true,
@@ -510,55 +701,117 @@ export async function generateShippingLabel(shipmentId) {
  * @returns {Object} { status: string, isRTO: boolean, requiresRefund: boolean }
  */
 export function mapShiprocketStatus(shiprocketStatus) {
+  if (!shiprocketStatus) {
+    return { status: null, isRTO: false, requiresRefund: false }
+  }
+
+  if (typeof shiprocketStatus === 'number' || /^\d+$/.test(String(shiprocketStatus))) {
+    const statusCode = Number(shiprocketStatus)
+    const statusCodeMap = {
+      1: { status: 'confirmed', isRTO: false, requiresRefund: false },
+      2: { status: 'confirmed', isRTO: false, requiresRefund: false },
+      3: { status: 'dispatched', isRTO: false, requiresRefund: false },
+      4: { status: 'dispatched', isRTO: false, requiresRefund: false },
+      5: { status: 'dispatched', isRTO: false, requiresRefund: false },
+      6: { status: 'dispatched', isRTO: false, requiresRefund: false },
+      7: { status: 'delivered', isRTO: false, requiresRefund: false },
+      8: { status: 'cancelled', isRTO: false, requiresRefund: true },
+      9: { status: 'cancelled', isRTO: true, requiresRefund: true },
+      10: { status: 'cancelled', isRTO: true, requiresRefund: true },
+      11: { status: 'cancelled', isRTO: true, requiresRefund: true },
+      12: { status: 'cancelled', isRTO: false, requiresRefund: true },
+      13: { status: 'cancelled', isRTO: false, requiresRefund: true },
+      14: { status: 'cancelled', isRTO: false, requiresRefund: true }
+    }
+
+    return statusCodeMap[statusCode] || { status: null, isRTO: false, requiresRefund: false }
+  }
+
+  const normalizedStatus = String(shiprocketStatus)
+    .trim()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .toUpperCase()
+
   const statusMap = {
     // Successful delivery
-    'Delivered': { status: 'delivered', isRTO: false, requiresRefund: false },
     'DELIVERED': { status: 'delivered', isRTO: false, requiresRefund: false },
     
     // Pickup pending
-    'Pending Pickup': { status: 'confirmed', isRTO: false, requiresRefund: false },
-    'PENDING_PICKUP': { status: 'confirmed', isRTO: false, requiresRefund: false },
-    'Pickup Scheduled': { status: 'confirmed', isRTO: false, requiresRefund: false },
-    'PICKUP_SCHEDULED': { status: 'confirmed', isRTO: false, requiresRefund: false },
-    'Out for Pickup': { status: 'confirmed', isRTO: false, requiresRefund: false },
-    'OUT_FOR_PICKUP': { status: 'confirmed', isRTO: false, requiresRefund: false },
-    'Pickup Complete': { status: 'dispatched', isRTO: false, requiresRefund: false },
-    'PICKUP_COMPLETE': { status: 'dispatched', isRTO: false, requiresRefund: false },
-    'Pickup Exception': { status: 'confirmed', isRTO: false, requiresRefund: false },
-    'PICKUP_EXCEPTION': { status: 'confirmed', isRTO: false, requiresRefund: false },
+    'PENDING PICKUP': { status: 'confirmed', isRTO: false, requiresRefund: false },
+    'PICKUP SCHEDULED': { status: 'confirmed', isRTO: false, requiresRefund: false },
+    'OUT FOR PICKUP': { status: 'confirmed', isRTO: false, requiresRefund: false },
+    'PICKUP COMPLETE': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'PICKUP EXCEPTION': { status: 'confirmed', isRTO: false, requiresRefund: false },
     
     // In Transit
-    'Shipped': { status: 'dispatched', isRTO: false, requiresRefund: false },
     'SHIPPED': { status: 'dispatched', isRTO: false, requiresRefund: false },
     'IN TRANSIT': { status: 'dispatched', isRTO: false, requiresRefund: false },
-    'In Transit': { status: 'dispatched', isRTO: false, requiresRefund: false },
-    'Out for Delivery': { status: 'dispatched', isRTO: false, requiresRefund: false },
-    'OUT_FOR_DELIVERY': { status: 'dispatched', isRTO: false, requiresRefund: false },
-    'Shipment Delayed': { status: 'dispatched', isRTO: false, requiresRefund: false },
-    'SHIPMENT_DELAYED': { status: 'dispatched', isRTO: false, requiresRefund: false },
-    'Attempted Delivery': { status: 'dispatched', isRTO: false, requiresRefund: false },
-    'ATTEMPTED_DELIVERY': { status: 'dispatched', isRTO: false, requiresRefund: false },
-    'Customer Unavailable': { status: 'dispatched', isRTO: false, requiresRefund: false },
-    'CUSTOMER_UNAVAILABLE': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'OUT FOR DELIVERY': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'SHIPMENT DELAYED': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'ATTEMPTED DELIVERY': { status: 'dispatched', isRTO: false, requiresRefund: false },
+    'CUSTOMER UNAVAILABLE': { status: 'dispatched', isRTO: false, requiresRefund: false },
     
     // RTO (Return to Origin) - customer refused/not available
     'RTO': { status: 'cancelled', isRTO: true, requiresRefund: true },
-    'RTO Initiated': { status: 'cancelled', isRTO: true, requiresRefund: true },
+    'RTO INITIATED': { status: 'cancelled', isRTO: true, requiresRefund: true },
     'RTO IN TRANSIT': { status: 'cancelled', isRTO: true, requiresRefund: true },
-    'RTO Delivered': { status: 'cancelled', isRTO: true, requiresRefund: true },
-    'RTO_DELIVERED': { status: 'cancelled', isRTO: true, requiresRefund: true },
+    'RTO DELIVERED': { status: 'cancelled', isRTO: true, requiresRefund: true },
     
     // Lost/Damaged by courier
-    'Lost': { status: 'cancelled', isRTO: false, requiresRefund: true },
     'LOST': { status: 'cancelled', isRTO: false, requiresRefund: true },
-    'Damaged': { status: 'cancelled', isRTO: false, requiresRefund: true },
+    'DAMAGED': { status: 'cancelled', isRTO: false, requiresRefund: true },
     
     // Cancelled orders
-    'Cancelled': { status: 'cancelled', isRTO: false, requiresRefund: true },
     'CANCELLED': { status: 'cancelled', isRTO: false, requiresRefund: true },
-    'Undelivered': { status: 'cancelled', isRTO: false, requiresRefund: true },
+    'UNDELIVERED': { status: 'cancelled', isRTO: false, requiresRefund: true },
     'NOT SERVICEABLE': { status: 'cancelled', isRTO: false, requiresRefund: true }
   }
 
-  return statusMap[shiprocketStatus] || { status: null, isRTO: false, requiresRefund: false }
+  if (statusMap[normalizedStatus]) {
+    return statusMap[normalizedStatus]
+  }
+
+  if (normalizedStatus.includes('RTO')) {
+    return { status: 'cancelled', isRTO: true, requiresRefund: true }
+  }
+
+  if (
+    normalizedStatus.includes('LOST') ||
+    normalizedStatus.includes('DAMAGED') ||
+    normalizedStatus.includes('CANCEL') ||
+    normalizedStatus.includes('UNDELIVER') ||
+    normalizedStatus.includes('FAILED')
+  ) {
+    return { status: 'cancelled', isRTO: false, requiresRefund: true }
+  }
+
+  if (
+    normalizedStatus.includes('DELIVER') &&
+    !normalizedStatus.includes('UNDELIVER')
+  ) {
+    return { status: 'delivered', isRTO: false, requiresRefund: false }
+  }
+
+  if (
+    normalizedStatus.includes('IN TRANSIT') ||
+    normalizedStatus.includes('SHIPPED') ||
+    normalizedStatus.includes('OUT FOR DELIVERY') ||
+    normalizedStatus.includes('PICKUP COMPLETE') ||
+    normalizedStatus.includes('MANIFEST') ||
+    normalizedStatus.includes('REACHED HUB')
+  ) {
+    return { status: 'dispatched', isRTO: false, requiresRefund: false }
+  }
+
+  if (
+    normalizedStatus.includes('PICKUP') ||
+    normalizedStatus.includes('NEW') ||
+    normalizedStatus.includes('BOOKED') ||
+    normalizedStatus.includes('AWB')
+  ) {
+    return { status: 'confirmed', isRTO: false, requiresRefund: false }
+  }
+
+  return { status: null, isRTO: false, requiresRefund: false }
 }

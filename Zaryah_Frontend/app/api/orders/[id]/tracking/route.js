@@ -4,6 +4,9 @@ import { requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { getShipmentTracking, mapShiprocketStatus } from '@/lib/shiprocket'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET(request, { params }) {
   try {
     const session = await requireAuth(request)
@@ -129,7 +132,13 @@ export async function GET(request, { params }) {
         .catch(err => console.error('❌ Failed to update order status:', err))
     }
 
-    return NextResponse.json(response)
+    return NextResponse.json(response, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0'
+      }
+    })
 
   } catch (error) {
     console.error('Tracking fetch error:', error)
