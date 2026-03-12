@@ -115,19 +115,29 @@ class ApiService {
   }
 
   async updateProduct(id, productData) {
-    const formData = new FormData()
-    Object.keys(productData).forEach(key => {
-      if (productData[key] !== null && productData[key] !== undefined) {
-        if (key === 'images' && Array.isArray(productData[key])) {
-          productData[key].forEach((file) => {
-            formData.append(`images`, file)
-          })
-        } else {
-          formData.append(key, productData[key])
+    const hasBinaryImages = Array.isArray(productData?.images) && productData.images.some(file => file instanceof File || file instanceof Blob)
+
+    if (hasBinaryImages) {
+      const formData = new FormData()
+      Object.keys(productData).forEach(key => {
+        if (productData[key] !== null && productData[key] !== undefined) {
+          if (key === 'images' && Array.isArray(productData[key])) {
+            productData[key].forEach((file) => {
+              formData.append('images', file)
+            })
+          } else {
+            formData.append(key, productData[key])
+          }
         }
-      }
+      })
+
+      return this.request(`/products/${id}`, { method: 'PUT', body: formData })
+    }
+
+    return this.request(`/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(productData),
     })
-    return this.request(`/products/${id}`, { method: 'PUT', body: formData })
   }
 
   async deleteProduct(id) {

@@ -233,7 +233,17 @@ export default function SellerDashboardPage() {
 
       // Process orders
       const paginatedOrdersPayload = ordersData.status === 'fulfilled' ? ordersData.value : { orders: [], pagination: null }
-      const orders = paginatedOrdersPayload?.orders || []
+      const orders = (paginatedOrdersPayload?.orders || []).map((order) => {
+        if (order?.status === 'cancelled' && order?.display_status && order.display_status !== 'cancelled') {
+          return {
+            ...order,
+            original_status: order.status,
+            status: order.display_status
+          }
+        }
+
+        return order
+      })
       const pagination = paginatedOrdersPayload?.pagination
       
       // Debug: Log raw orders data from API

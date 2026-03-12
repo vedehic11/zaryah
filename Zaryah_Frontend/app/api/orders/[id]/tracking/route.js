@@ -7,6 +7,10 @@ import { getShipmentTracking, mapShiprocketStatus } from '@/lib/shiprocket'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+function getPassiveSyncStatus(mappedStatus) {
+  return ['confirmed', 'dispatched'].includes(mappedStatus) ? mappedStatus : null
+}
+
 export async function GET(request, { params }) {
   try {
     const session = await requireAuth(request)
@@ -95,6 +99,9 @@ export async function GET(request, { params }) {
         shipment_id: order.shipment_id,
         current_status: currentStatus,
         mapped_status: statusMapping.status,
+        display_status: order.status === 'cancelled' && statusMapping.status && statusMapping.status !== 'cancelled'
+          ? statusMapping.status
+          : order.status,
         is_rto: statusMapping.isRTO,
         requires_refund: statusMapping.requiresRefund,
         tracking_url: order.tracking_url || `https://shiprocket.co/tracking/${order.awb_code}`,
@@ -118,9 +125,10 @@ export async function GET(request, { params }) {
         shipment_status: currentStatus
       }
       
-      if (statusMapping.status && statusMapping.status !== order.status) {
-        updates.status = statusMapping.status
-        console.log(`Order status updating to: ${statusMapping.status}`)
+      const passiveStatus = getPassiveSyncStatus(statusMapping.status)
+      if (passiveStatus && passiveStatus !== order.status) {
+        updates.status = passiveStatus
+        console.log(`Order status updating to: ${passiveStatus}`)
       }
 
       // Update in background (don't wait)

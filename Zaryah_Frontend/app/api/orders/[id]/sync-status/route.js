@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { getShipmentDetails, getShipmentTracking, mapShiprocketStatus } from '@/lib/shiprocket'
+import { syncShiprocketOrderById } from '@/lib/shiprocket-sync'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -35,77 +35,22 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    let liveStatus = null
-    let liveAwbCode = order.awb_code || null
-    let liveCourierName = order.courier_name || null
-    let deliveredDate = null
+    const syncResult = await syncShiprocketOrderById(id, { source: 'manual' })
 
-    if (order.awb_code) {
-      try {
-        const trackingData = await getShipmentTracking(order.awb_code)
-        const tracking = trackingData?.tracking_data || trackingData || {}
-
-        liveStatus = tracking.shipment_status || tracking.current_status || tracking.status || liveStatus
-        deliveredDate = tracking.delivered_date || tracking.delivery_date || null
-      } catch (trackingError) {
-        console.warn('Tracking sync fallback to shipment_id:', trackingError.message)
-      }
-    }
-
-    if ((!liveStatus || !liveAwbCode) && order.shipment_id) {
-      const shipment = await getShipmentDetails(order.shipment_id)
-      liveStatus = liveStatus || shipment?.status || null
-      liveAwbCode = liveAwbCode || shipment?.awbCode || null
-      liveCourierName = liveCourierName || shipment?.courierName || null
-    }
-
-    if (!liveStatus && !liveAwbCode && !liveCourierName) {
-      return NextResponse.json({
-        success: true,
-        message: 'No live shipment updates available',
-        order
-      })
-    }
-
-    const mapped = mapShiprocketStatus(liveStatus)
-    const updates = {}
-
-    if (liveStatus !== null && liveStatus !== undefined) {
-      updates.shipment_status = String(liveStatus)
-    }
-
-    if (mapped.status) {
-      updates.status = mapped.status
-    }
-
-    if (liveAwbCode) {
-      updates.awb_code = liveAwbCode
-      updates.tracking_url = `https://shiprocket.co/tracking/${liveAwbCode}`
-    }
-
-    if (liveCourierName) {
-      updates.courier_name = liveCourierName
-    }
-
-    if (deliveredDate && mapped.status === 'delivered') {
-      updates.updated_at = new Date(deliveredDate).toISOString()
-    }
-
-    const { data: updatedOrder, error: updateError } = await supabase
+    const { data: updatedOrder, error: updatedOrderError } = await supabase
       .from('orders')
-      .update(updates)
-      .eq('id', id)
       .select('*')
+      .eq('id', id)
       .single()
 
-    if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+    if (updatedOrderError) {
+      return NextResponse.json({ error: updatedOrderError.message }, { status: 500 })
     }
 
     return NextResponse.json({
       success: true,
       message: 'Order shipment status synced successfully',
-      updates,
+      sync: syncResult,
       order: updatedOrder
     })
   } catch (error) {

@@ -7,6 +7,20 @@ import { getShipmentTracking, getShipmentDetails, mapShiprocketStatus } from '@/
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+function getPassiveSyncStatus(mappedStatus) {
+  return ['confirmed', 'dispatched'].includes(mappedStatus) ? mappedStatus : null
+}
+
+function getDisplayStatus(order) {
+  const mappedStatus = mapShiprocketStatus(order?.shipment_status).status
+
+  if (order?.status === 'cancelled' && mappedStatus && mappedStatus !== 'cancelled') {
+    return mappedStatus
+  }
+
+  return order?.status
+}
+
 // GET /api/orders - Get orders (buyer, seller, or admin)
 export async function GET(request) {
   try {
@@ -131,8 +145,9 @@ export async function GET(request) {
               shipment_status: liveStatus
             }
 
-            if (mapped.status && mapped.status !== order.status) {
-              updates.status = mapped.status
+            const passiveStatus = getPassiveSyncStatus(mapped.status)
+            if (passiveStatus && passiveStatus !== order.status) {
+              updates.status = passiveStatus
             }
 
             await supabase
@@ -178,8 +193,9 @@ export async function GET(request) {
               updates.shipment_status = String(shipment.status)
             }
 
-            if (mapped.status && mapped.status !== order.status) {
-              updates.status = mapped.status
+            const passiveStatus = getPassiveSyncStatus(mapped.status)
+            if (passiveStatus && passiveStatus !== order.status) {
+              updates.status = passiveStatus
             }
 
             if (Object.keys(updates).length === 0) {
@@ -220,8 +236,13 @@ export async function GET(request) {
       Expires: '0'
     }
 
+    const normalizedOrders = (orders || []).map(order => ({
+      ...order,
+      display_status: getDisplayStatus(order)
+    }))
+
     if (!paginated) {
-      return NextResponse.json(orders, {
+      return NextResponse.json(normalizedOrders, {
         headers
       })
     }
@@ -263,7 +284,7 @@ export async function GET(request) {
     const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
 
     return NextResponse.json({
-      orders,
+      orders: normalizedOrders,
       pagination: {
         page,
         pageSize,
