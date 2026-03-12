@@ -14,11 +14,16 @@ export async function POST(request) {
     console.warn('⚠️ DEPRECATED WEBHOOK CALLED: /api/webhooks/order-status')
     console.warn('⚠️ Please use /api/webhooks/delivery-updates instead')
     
-    // Verify webhook authenticity (optional but recommended)
+    // Verify webhook authenticity
     const webhookSecret = process.env.WEBHOOK_SECRET
     const signature = request.headers.get('x-webhook-signature')
+
+    if (!webhookSecret) {
+      console.error('WEBHOOK_SECRET is not configured')
+      return NextResponse.json({ error: 'Webhook is not configured' }, { status: 503 })
+    }
     
-    if (webhookSecret && signature !== webhookSecret) {
+    if (!signature || signature !== webhookSecret) {
       console.warn('Invalid webhook signature')
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
@@ -91,10 +96,24 @@ export async function POST(request) {
       // Reverse the pending balance and refund buyer
       try {
         // Deduct from pending balance
+        const { data: wallet, error: walletFetchError } = await supabase
+          .from('wallets')
+          .select('pending_balance')
+          .eq('seller_id', order.seller_id)
+          .maybeSingle()
+
+        if (walletFetchError || !wallet) {
+          throw new Error('Seller wallet not found')
+        }
+
+        const currentPending = parseFloat(wallet.pending_balance || 0)
+        const orderAmount = parseFloat(order.seller_amount || 0)
+        const nextPending = Math.max(0, currentPending - orderAmount)
+
         await supabase
           .from('wallets')
           .update({
-            pending_balance: supabase.raw(`pending_balance - ${order.seller_amount}`)
+            pending_balance: nextPending
           })
           .eq('seller_id', order.seller_id)
 

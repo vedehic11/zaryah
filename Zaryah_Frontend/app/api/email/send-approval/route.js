@@ -1,12 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
+import { requireRole } from '@/lib/auth'
 
 export async function POST(request) {
   try {
+    await requireRole(request, 'Admin')
+
     const { sellerEmail, sellerName, businessName, username } = await request.json()
 
     if (!sellerEmail || !sellerName || !businessName || !username) {

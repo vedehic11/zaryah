@@ -33,11 +33,11 @@ export async function POST(request) {
 
       console.log(`Processing payment: ${razorpayPaymentId} for order: ${razorpayOrderId}`)
 
-      // Find order by razorpay_order_id (stored when creating payment order)
+      // Find order by canonical razorpay_order_id, keep payment_id fallback for legacy records
       const { data: orders } = await supabase
         .from('orders')
         .select('*')
-        .eq('payment_id', razorpayOrderId)
+        .or(`razorpay_order_id.eq.${razorpayOrderId},payment_id.eq.${razorpayOrderId}`)
         .eq('payment_method', 'online')
 
       if (!orders || orders.length === 0) {

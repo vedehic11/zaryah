@@ -2,16 +2,30 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { sendVerificationEmail } from '@/lib/email';
 import crypto from 'crypto';
+import { requireAuth, requireRole } from '@/lib/auth';
 
 export async function POST(request) {
   try {
     const { email, userId, username } = await request.json();
+
+    const session = await requireAuth(request)
 
     if (!email || !userId) {
       return NextResponse.json(
         { error: 'Email and userId are required' },
         { status: 400 }
       );
+    }
+
+    if (session.user.id !== userId) {
+      try {
+        await requireRole(request, 'Admin')
+      } catch (authError) {
+        return NextResponse.json(
+          { error: 'Forbidden' },
+          { status: 403 }
+        )
+      }
     }
 
     // Generate verification token

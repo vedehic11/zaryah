@@ -3,9 +3,6 @@ import { NextResponse } from 'next/server'
 import { requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 
-// Minimum withdrawal amount
-const MIN_WITHDRAWAL_AMOUNT = 500
-
 // POST /api/wallet/withdraw - Create withdrawal request
 export async function POST(request) {
   try {
@@ -23,25 +20,12 @@ export async function POST(request) {
 
     const body = await request.json()
     const { amount, bank_account_number, ifsc_code, account_holder_name, notes } = body
+    const withdrawalAmount = parseFloat(amount)
 
     // Validate input
-    if (!amount || amount < MIN_WITHDRAWAL_AMOUNT) {
+    if (Number.isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
       return NextResponse.json({ 
-        error: `Minimum withdrawal amount is ₹${MIN_WITHDRAWAL_AMOUNT}` 
-      }, { status: 400 })
-    }
-
-    if (!bank_account_number || !ifsc_code || !account_holder_name) {
-      return NextResponse.json({ 
-        error: 'Bank details are required' 
-      }, { status: 400 })
-    }
-
-    // Validate IFSC code format
-    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/
-    if (!ifscRegex.test(ifsc_code)) {
-      return NextResponse.json({ 
-        error: 'Invalid IFSC code format' 
+        error: 'Invalid withdrawal amount' 
       }, { status: 400 })
     }
 
@@ -64,6 +48,24 @@ export async function POST(request) {
       }, { status: 400 })
     }
 
+    const resolvedAccountHolderName = (account_holder_name || seller.account_holder_name || '').toString().trim()
+    const resolvedBankAccountNumber = (bank_account_number || seller.account_number || '').toString().trim()
+    const resolvedIfscCode = (ifsc_code || seller.ifsc_code || '').toString().trim().toUpperCase()
+
+    if (!resolvedBankAccountNumber || !resolvedIfscCode || !resolvedAccountHolderName) {
+      return NextResponse.json({
+        error: 'Bank details are required. Please update them in Profile before withdrawal.'
+      }, { status: 400 })
+    }
+
+    // Validate IFSC code format
+    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/
+    if (!ifscRegex.test(resolvedIfscCode)) {
+      return NextResponse.json({
+        error: 'Invalid IFSC code format in profile bank details'
+      }, { status: 400 })
+    }
+
     // Get wallet
     const { data: wallet, error: walletError } = await supabase
       .from('wallets')
@@ -76,11 +78,11 @@ export async function POST(request) {
     }
 
     // Check if sufficient balance
-    if (wallet.available_balance < amount) {
+    if (wallet.available_balance < withdrawalAmount) {
       return NextResponse.json({ 
         error: 'Insufficient available balance',
         available: wallet.available_balance,
-        requested: amount
+        requested: withdrawalAmount
       }, { status: 400 })
     }
 
@@ -98,15 +100,35 @@ export async function POST(request) {
       }, { status: 400 })
     }
 
+    const duplicateWindowStart = new Date(Date.now() - (2 * 60 * 1000)).toISOString()
+    const { data: recentSimilarRequest } = await supabase
+      .from('withdrawal_requests')
+      .select('id, status, requested_at')
+      .eq('seller_id', user.id)
+      .eq('amount', withdrawalAmount)
+      .eq('bank_account_number', resolvedBankAccountNumber)
+      .eq('ifsc_code', resolvedIfscCode)
+      .gte('requested_at', duplicateWindowStart)
+      .order('requested_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (recentSimilarRequest) {
+      return NextResponse.json({
+        error: 'A similar withdrawal request was already submitted recently. Please wait for processing.',
+        action: 'duplicate_recent_request'
+      }, { status: 400 })
+    }
+
     // Create withdrawal request
     const { data: withdrawal, error: createError } = await supabase
       .from('withdrawal_requests')
       .insert({
         seller_id: user.id,
-        amount: amount,
-        bank_account_number: bank_account_number,
-        ifsc_code: ifsc_code.toUpperCase(),
-        account_holder_name: account_holder_name,
+        amount: withdrawalAmount,
+        bank_account_number: resolvedBankAccountNumber,
+        ifsc_code: resolvedIfscCode,
+        account_holder_name: resolvedAccountHolderName,
         status: 'pending',
         notes: notes || null
       })
@@ -114,6 +136,16 @@ export async function POST(request) {
       .single()
 
     if (createError) {
+      if (
+        createError.code === '23514' ||
+        (typeof createError.message === 'string' && createError.message.includes('withdrawal_requests_amount_check'))
+      ) {
+        return NextResponse.json({
+          error: 'Withdrawal amount does not satisfy current database rules. Please contact support to update withdrawal policy.',
+          action: 'withdrawal_amount_constraint'
+        }, { status: 400 })
+      }
+
       return NextResponse.json({ error: createError.message }, { status: 500 })
     }
 

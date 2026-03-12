@@ -70,15 +70,37 @@ export async function POST(request) {
         .single()
 
       if (order && order.seller_id) {
+          const { data: existingCreditTx, error: existingCreditTxError } = await supabase
+            .from('transactions')
+            .select('id')
+            .eq('order_id', order_id)
+            .eq('type', 'credit_pending')
+            .limit(1)
+            .maybeSingle()
+
+          if (existingCreditTxError) {
+            console.error('Error checking existing payment credit transaction:', existingCreditTxError)
+          }
+
+          if (existingCreditTx) {
+            console.log(`Payment for order ${order_id} was already credited, skipping duplicate wallet/admin updates`)
+            return NextResponse.json({
+              success: true,
+              message: 'Payment already verified',
+              payment_id: razorpay_payment_id,
+              idempotent: true
+            })
+          }
+
         // Use seller_amount from order (includes 97.5% of products + 100% gift packaging fees)
         const sellerAmount = parseFloat(order.seller_amount || 0)
         const productSubtotal = (order.order_items || []).reduce((sum, item) => 
           sum + (parseFloat(item.price) * item.quantity), 0
         )
         const giftPackagingFee = parseFloat(order.gift_packaging_fee || 0)
-        const sellerCommission = parseFloat((productSubtotal * 0.025).toFixed(2))
+        const sellerCommission = parseFloat((productSubtotal * (SELLER_COMMISSION_RATE / 100)).toFixed(2))
         const buyerPlatformFee = parseFloat(order.platform_fee || 0)
-        const deliveryMarkup = 10 // Platform keeps ₹10 markup on delivery (rest goes to Shiprocket)
+        const deliveryMarkup = parseFloat(order.delivery_fee || 0) > 0 ? 10 : 0 // Markup only when delivery fee is charged
         const codFee = order.payment_method === 'cod' ? 10 : 0 // ₹10 COD fee
         const totalAdminEarnings = sellerCommission + buyerPlatformFee + deliveryMarkup + codFee
         
@@ -97,7 +119,7 @@ export async function POST(request) {
           .from('wallets')
           .select('id, pending_balance')
           .eq('seller_id', order.seller_id)
-          .single()
+          .maybeSingle()
 
         if (!existingWallet) {
           await supabase
@@ -141,7 +163,7 @@ export async function POST(request) {
             order_id: order_id,
             seller_id: order.seller_id,
             order_amount: productSubtotal,
-            commission_rate: 2.5, // 2.5% from seller only
+            commission_rate: SELLER_COMMISSION_RATE, // 2.5% from seller only
             commission_amount: sellerCommission, // Only seller commission (2.5%)
             delivery_fee: deliveryMarkup, // Only the ₹10 markup, not full delivery fee
             status: 'earned',

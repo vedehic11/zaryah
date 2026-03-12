@@ -205,6 +205,12 @@ class ApiService {
     })
   }
 
+  async syncOrderShipmentStatus(orderId) {
+    return this.request(`/orders/${orderId}/sync-status`, {
+      method: 'POST'
+    })
+  }
+
   // Address endpoints
   async getUserAddresses(userId = null) {
     // userId is optional - API will use authenticated user
@@ -316,6 +322,25 @@ class ApiService {
     })
   }
 
+  async markAllNotificationsAsRead() {
+    return this.request('/notifications', {
+      method: 'PATCH',
+      body: JSON.stringify({ read: true }),
+    })
+  }
+
+  async deleteNotification(notificationId) {
+    return this.request(`/notifications/${notificationId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async deleteAllNotifications() {
+    return this.request('/notifications', {
+      method: 'DELETE',
+    })
+  }
+
   async getNotificationCount() {
     return this.request('/notifications/count', { method: 'GET' })
   }
@@ -337,8 +362,8 @@ class ApiService {
   }
 
   async verifyPayment(paymentData) {
-    return this.request('/payment/create-order', {
-      method: 'PATCH',
+    return this.request('/payment/verify', {
+      method: 'POST',
       body: JSON.stringify(paymentData),
     })
   }
@@ -365,10 +390,14 @@ class ApiService {
     return this.request(`/admin/withdrawals${params}`, { method: 'GET' })
   }
 
-  async approveWithdrawal(withdrawalId, action, reason = null) {
+  async approveWithdrawal(withdrawalId, action, reason = null, manualTransactionId = null) {
     return this.request(`/admin/withdrawals/${withdrawalId}/approve`, {
       method: 'POST',
-      body: JSON.stringify({ action, rejection_reason: reason }),
+      body: JSON.stringify({
+        action,
+        rejection_reason: reason,
+        manual_transaction_id: manualTransactionId
+      }),
     })
   }
 

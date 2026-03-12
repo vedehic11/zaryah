@@ -50,8 +50,10 @@ export async function GET(request) {
       const productSubtotal = (order.order_items || []).reduce((itemSum, item) => 
         itemSum + (item.quantity * item.price), 0
       )
-      const giftItemsCount = (order.order_items || []).filter(item => item.gift_packaging).length
-      const giftFees = giftItemsCount * 20
+      const giftItemsCount = (order.order_items || []).reduce((count, item) => 
+        count + (item.gift_packaging ? item.quantity : 0), 0
+      )
+      const giftFees = giftItemsCount * 10
       return sum + parseFloat((productSubtotal * 0.975).toFixed(2)) + giftFees
     }, 0)
 
@@ -62,8 +64,10 @@ export async function GET(request) {
       const productSubtotal = (order.order_items || []).reduce((itemSum, item) => 
         itemSum + (item.quantity * item.price), 0
       )
-      const giftItemsCount = (order.order_items || []).filter(item => item.gift_packaging).length
-      const giftFees = giftItemsCount * 20
+      const giftItemsCount = (order.order_items || []).reduce((count, item) => 
+        count + (item.gift_packaging ? item.quantity : 0), 0
+      )
+      const giftFees = giftItemsCount * 10
       return sum + parseFloat((productSubtotal * 0.975).toFixed(2)) + giftFees
     }, 0)
 

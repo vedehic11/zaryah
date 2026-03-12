@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
 
 export async function POST(request) {
   try {
+    await requireAuth(request)
+
     const formData = await request.formData()
     const file = formData.get('file')
-    const folder = formData.get('folder') || 'general'
+    const rawFolder = (formData.get('folder') || 'general').toString()
+    const folder = rawFolder.replace(/[^a-zA-Z0-9/_-]/g, '').replace(/\.{2,}/g, '') || 'general'
     const useSupabase = formData.get('useSupabase') !== 'false'
 
     if (!file) {

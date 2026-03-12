@@ -203,9 +203,9 @@ export const OrderHistoryPage = () => {
   const calculateOrderBreakdown = (order) => {
     const products = order.products || []
     const subtotal = products.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0)
-    // Calculate gift packaging fee by quantity (₹20 per unit)
+    // Calculate gift packaging fee by quantity (₹10 per unit)
     const giftPackagingFee = products.reduce((sum, item) => {
-      return sum + (item.gift_packaging ? 20 * (item.quantity || 1) : 0)
+      return sum + (item.gift_packaging ? 10 * (item.quantity || 1) : 0)
     }, 0)
     // Use delivery_fee from order if available, otherwise calculate (fallback matches Shiprocket API default)
     const deliveryFee = order.delivery_fee !== undefined ? parseFloat(order.delivery_fee) : (subtotal >= 500 ? 0 : 60)
@@ -478,7 +478,7 @@ export const OrderHistoryPage = () => {
                                   {product.gift_packaging && (
                                     <div className="flex items-center space-x-1 mt-1">
                                       <Package className="w-3 h-3 text-pink-600" />
-                                      <span className="text-xs text-pink-600 font-medium">Gift Packaging Added (+₹50)</span>
+                                      <span className="text-xs text-pink-600 font-medium">Gift Packaging Added (+₹10)</span>
                                     </div>
                                   )}
                                   

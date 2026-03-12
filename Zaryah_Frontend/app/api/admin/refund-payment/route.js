@@ -67,7 +67,11 @@ export async function POST(request) {
 
     // Reverse seller wallet credit if it was already credited
     if (order.payment_status === 'paid') {
-      const sellerAmount = order.seller_amount || (order.total_amount * 0.95)
+      const sellerAmount = parseFloat(order.seller_amount || 0)
+
+      if (sellerAmount <= 0) {
+        console.warn(`Skipping wallet reversal for order ${orderId}: invalid seller_amount`, order.seller_amount)
+      }
       
       const { data: wallet } = await supabase
         .from('wallets')
@@ -75,14 +79,29 @@ export async function POST(request) {
         .eq('seller_id', order.seller_id)
         .maybeSingle()
 
-      if (wallet) {
+      if (wallet && sellerAmount > 0) {
+        const currentPending = parseFloat(wallet.pending_balance || 0)
+        const currentAvailable = parseFloat(wallet.available_balance || 0)
+        const currentTotalEarned = parseFloat(wallet.total_earned || 0)
+
+        const nextPending = order.wallet_credited ? currentPending : Math.max(0, currentPending - sellerAmount)
+        const nextAvailable = order.wallet_credited ? Math.max(0, currentAvailable - sellerAmount) : currentAvailable
+
         await supabase
           .from('wallets')
           .update({
-            pending_balance: Math.max(0, parseFloat(wallet.pending_balance) - sellerAmount),
-            total_earned: Math.max(0, parseFloat(wallet.total_earned) - sellerAmount)
+            pending_balance: nextPending,
+            available_balance: nextAvailable,
+            total_earned: Math.max(0, currentTotalEarned - sellerAmount)
           })
           .eq('seller_id', order.seller_id)
+
+        if (order.wallet_credited) {
+          await supabase
+            .from('orders')
+            .update({ wallet_credited: false })
+            .eq('id', orderId)
+        }
 
         // Create debit transaction
         await supabase

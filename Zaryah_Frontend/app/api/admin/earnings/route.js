@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { requireRole } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 
+const SELLER_COMMISSION_RATE = 2.5
+
 // GET /api/admin/earnings - Get platform commission earnings
 export async function GET(request) {
   try {
@@ -69,28 +71,54 @@ export async function GET(request) {
         totalRevenue: 0,
         totalOrders: 0,
         avgPerOrder: 0,
-        commissionRate: 2.5
+        commissionRate: SELLER_COMMISSION_RATE
       })
     }
 
     console.log(`\n========== ADMIN EARNINGS CALCULATION (${period}) ==========`)
     console.log(`Total orders fetched: ${orders.length}`)
 
+    // Include only monetized orders for earnings calculations:
+    // - online orders only when paid
+    // - all COD orders
+    const eligibleOrders = orders.filter(order =>
+      order.payment_method === 'cod' || order.payment_status === 'paid'
+    )
+
+    if (eligibleOrders.length === 0) {
+      return NextResponse.json({
+        recentEarnings: [],
+        totalCommission: 0,
+        totalPlatformFees: 0,
+        totalDeliveryFees: 0,
+        totalCODFees: 0,
+        totalRevenue: 0,
+        totalOrders: 0,
+        paidOrders: 0,
+        codPendingOrders: 0,
+        avgPerOrder: 0,
+        commissionRate: SELLER_COMMISSION_RATE
+      })
+    }
+
+    console.log(`Eligible monetized orders: ${eligibleOrders.length}`)
+
     // Calculate earnings for each order
-    const earnings = orders.map(order => {
+    const earnings = eligibleOrders.map(order => {
       // Calculate product subtotal
       const productSubtotal = order.order_items?.reduce((sum, item) => 
         sum + (item.quantity * item.price), 0
       ) || 0
 
-      // Calculate commission (2.5% of product amount)
-      const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
+        // Calculate commission (2.5% of product amount)
+        const commission = parseFloat((productSubtotal * (SELLER_COMMISSION_RATE / 100)).toFixed(2))
       
       // Platform fee (₹10 or ₹20 from buyer)
       const platformFee = parseFloat(order.platform_fee || 0)
       
       // Delivery markup (only ₹10 markup goes to admin, rest to Shiprocket)
-      const deliveryMarkup = 10
+        // Delivery markup (only when delivery fee is charged)
+        const deliveryMarkup = parseFloat(order.delivery_fee || 0) > 0 ? 10 : 0
       
       // COD fee (₹10 if payment method is COD, otherwise 0)
       const codFee = order.payment_method === 'cod' ? 10 : 0
@@ -119,7 +147,7 @@ export async function GET(request) {
         payment_method: order.payment_method,
         payment_status: order.payment_status,
         order_status: order.status,
-        earned_at: order.created_at,
+          earned_at: order.created_at,
         product_amount: productSubtotal
       }
     })
@@ -158,8 +186,8 @@ export async function GET(request) {
       totalOrders: totalOrders,
       paidOrders: paidOrders.length,
       codPendingOrders: codPendingOrders.length,
-      avgPerOrder: parseFloat(avgPerOrder.toFixed(2)),
-      commissionRate: 2.5
+        avgPerOrder: parseFloat(avgPerOrder.toFixed(2)),
+        commissionRate: SELLER_COMMISSION_RATE
     })
 
   } catch (error) {

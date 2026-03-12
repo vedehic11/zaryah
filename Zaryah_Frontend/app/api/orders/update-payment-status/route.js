@@ -1,9 +1,12 @@
 // Utility endpoint to update payment_status for existing orders
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { requireRole } from '@/lib/auth'
 
 export async function POST(request) {
   try {
+    await requireRole(request, 'Admin')
+
     // Update all existing orders to set payment_status based on payment_method
     // COD orders: payment_status = 'pending' (will be paid on delivery)
     // Online orders without payment_status or with null: payment_status = 'pending' (unpaid)
@@ -76,6 +79,10 @@ export async function POST(request) {
     })
     
   } catch (error) {
+    if (error.message === 'Unauthorized' || error.message.includes('Forbidden')) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
+
     console.error('Error updating payment status:', error)
     return NextResponse.json({ 
       error: 'Failed to update payment status',

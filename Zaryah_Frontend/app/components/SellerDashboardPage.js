@@ -44,6 +44,7 @@ export default function SellerDashboardPage() {
   const [transactions, setTransactions] = useState([])
   const [withdrawals, setWithdrawals] = useState([])
   const [showWithdrawalForm, setShowWithdrawalForm] = useState(false)
+  const [isSubmittingWithdrawal, setIsSubmittingWithdrawal] = useState(false)
   const [showPendingBreakdown, setShowPendingBreakdown] = useState(false)
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false)
   const [showAvailableBreakdown, setShowAvailableBreakdown] = useState(false)
@@ -78,7 +79,7 @@ export default function SellerDashboardPage() {
           sum + (item.quantity * item.price), 0
         ) || 0
         const giftFees = order.order_items?.reduce((sum, item) => 
-          sum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+          sum + (item.gift_packaging ? 10 * item.quantity : 0), 0
         ) || 0
         const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
         const totalForOrder = sellerShare + giftFees
@@ -138,6 +139,14 @@ export default function SellerDashboardPage() {
     id_type: '',
     id_number: ''
   })
+
+  const hasValue = (value) => {
+    if (!value) return false
+    const normalized = String(value).trim().toLowerCase()
+    return normalized !== '' && normalized !== 'pending' && normalized !== 'null'
+  }
+
+  const isKycMissing = !(hasValue(profileData.account_holder_name) && hasValue(profileData.account_number) && hasValue(profileData.ifsc_code))
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -311,7 +320,7 @@ export default function SellerDashboardPage() {
           itemSum + (parseFloat(item.price || 0) * (item.quantity || 1)), 0
         )
         const giftFees = (order.order_items || []).reduce((giftSum, item) => 
-          giftSum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+          giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
         )
         const giftItemsCount = (order.order_items || []).reduce((count, item) => 
           count + (item.gift_packaging ? item.quantity : 0), 0
@@ -516,7 +525,12 @@ export default function SellerDashboardPage() {
           instagram: profileData.instagram,
           facebook: profileData.facebook,
           x: profileData.x,
-          linkedin: profileData.linkedin
+          linkedin: profileData.linkedin,
+          account_holder_name: profileData.account_holder_name,
+          account_number: profileData.account_number,
+          ifsc_code: profileData.ifsc_code,
+          id_type: profileData.id_type,
+          id_number: profileData.id_number
         })
       })
       
@@ -1045,6 +1059,25 @@ export default function SellerDashboardPage() {
                                         Print Label
                                       </button>
                                     )}
+
+                                    {order.shipment_id && (
+                                      <button
+                                        onClick={async (e) => {
+                                          e.stopPropagation()
+                                          try {
+                                            const response = await apiService.syncOrderShipmentStatus(order.id)
+                                            toast.success(response?.message || 'Order synced')
+                                            fetchDashboardData({ reason: 'manual' })
+                                          } catch (error) {
+                                            toast.error(error.message || 'Failed to sync status')
+                                          }
+                                        }}
+                                        className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1"
+                                      >
+                                        <Clock className="w-3 h-3" />
+                                        Sync
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -1091,7 +1124,7 @@ export default function SellerDashboardPage() {
                                               {item.gift_packaging && (
                                                 <div className="flex items-center mt-1">
                                                   <Package className="w-3 h-3 text-purple-600 mr-1" />
-                                                  <span className="text-xs text-purple-600 font-medium">Gift Packaging (+₹50)</span>
+                                                  <span className="text-xs text-purple-600 font-medium">Gift Packaging (+₹10)</span>
                                                 </div>
                                               )}
                                               
@@ -1572,10 +1605,37 @@ export default function SellerDashboardPage() {
                 </div>
 
                 {/* Withdrawal Button */}
+                {isKycMissing && (
+                  <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-yellow-900">KYC incomplete: add bank details before withdrawing.</p>
+                    <p className="text-xs text-yellow-800 mt-1">Required: Account Holder Name, Account Number, IFSC Code.</p>
+                    <button
+                      onClick={() => {
+                        setActiveTab('profile')
+                        setShowEditProfile(true)
+                        fetchSellerProfile()
+                      }}
+                      className="mt-3 inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-semibold"
+                    >
+                      Complete KYC in Profile
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex justify-end">
                   <button
-                    onClick={() => setShowWithdrawalForm(!showWithdrawalForm)}
-                    disabled={!wallet || parseFloat(wallet.available_balance) < 500}
+                    onClick={() => {
+                      if (!showWithdrawalForm) {
+                        setWithdrawalData(prev => ({
+                          ...prev,
+                          account_holder_name: profileData.account_holder_name || prev.account_holder_name || '',
+                          bank_account_number: profileData.account_number || prev.bank_account_number || '',
+                          ifsc_code: profileData.ifsc_code || prev.ifsc_code || ''
+                        }))
+                      }
+                      setShowWithdrawalForm(!showWithdrawalForm)
+                    }}
+                    disabled={!wallet || parseFloat(wallet.available_balance) <= 0 || isKycMissing}
                     className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-semibold transition-colors"
                   >
                     <ArrowUpCircle className="w-5 h-5" />
@@ -1593,14 +1653,14 @@ export default function SellerDashboardPage() {
                     <h3 className="text-lg font-semibold mb-4">Withdrawal Request</h3>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Amount (Min ₹500)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
                         <div className="relative">
                           <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                           <input
                             type="number"
                             value={withdrawalData.amount}
                             onChange={(e) => setWithdrawalData({...withdrawalData, amount: e.target.value})}
-                            min="500"
+                            min="1"
                             max={wallet?.available_balance || 0}
                             className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                             placeholder="Enter amount"
@@ -1608,58 +1668,37 @@ export default function SellerDashboardPage() {
                         </div>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Account Holder Name</label>
-                        <input
-                          type="text"
-                          value={withdrawalData.account_holder_name}
-                          onChange={(e) => setWithdrawalData({...withdrawalData, account_holder_name: e.target.value})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                          placeholder="As per bank records"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Bank Account Number</label>
-                        <input
-                          type="text"
-                          value={withdrawalData.bank_account_number}
-                          onChange={(e) => setWithdrawalData({...withdrawalData, bank_account_number: e.target.value})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                          placeholder="Enter account number"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">IFSC Code</label>
-                        <input
-                          type="text"
-                          value={withdrawalData.ifsc_code}
-                          onChange={(e) => setWithdrawalData({...withdrawalData, ifsc_code: e.target.value.toUpperCase()})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                          placeholder="e.g., SBIN0001234"
-                        />
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Payout Bank Details (from Profile)</p>
+                        <div className="space-y-1 text-sm text-gray-700">
+                          <p><span className="font-medium">Account Holder:</span> {profileData.account_holder_name || 'Not set'}</p>
+                          <p><span className="font-medium">Account Number:</span> {profileData.account_number || 'Not set'}</p>
+                          <p><span className="font-medium">IFSC:</span> {profileData.ifsc_code || 'Not set'}</p>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">To change these details, update them in Profile.</p>
                       </div>
 
                       <div className="flex space-x-3 pt-4">
                         <button
                           onClick={async () => {
+                            if (isSubmittingWithdrawal) {
+                              return
+                            }
+
+                            setIsSubmittingWithdrawal(true)
                             try {
                               const amount = parseFloat(withdrawalData.amount)
-                              if (amount < 500) {
-                                toast.error('Minimum withdrawal amount is ₹500')
+                              if (!amount || amount <= 0) {
+                                toast.error('Please enter a valid withdrawal amount')
                                 return
                               }
                               if (amount > parseFloat(wallet?.available_balance || 0)) {
                                 toast.error('Insufficient available balance')
                                 return
                               }
-                              if (!withdrawalData.account_holder_name || !withdrawalData.bank_account_number || !withdrawalData.ifsc_code) {
-                                toast.error('Please fill all bank details')
-                                return
-                              }
-
-                              await apiService.requestWithdrawal(withdrawalData)
+                              await apiService.requestWithdrawal({
+                                amount: withdrawalData.amount
+                              })
                               toast.success('Withdrawal request submitted! Admin will review shortly.')
                               setShowWithdrawalForm(false)
                               setWithdrawalData({ amount: '', bank_account_number: '', ifsc_code: '', account_holder_name: '' })
@@ -1668,12 +1707,30 @@ export default function SellerDashboardPage() {
                               setWallet(walletData.wallet)
                               setWithdrawals(walletData.withdrawals || [])
                             } catch (error) {
+                              if (error?.message?.toLowerCase()?.includes('complete kyc')) {
+                                setActiveTab('profile')
+                                setShowEditProfile(true)
+                                fetchSellerProfile()
+                                toast.error('Please complete KYC in Profile before withdrawal')
+                                return
+                              }
+                              if (
+                                error?.message?.toLowerCase()?.includes('withdrawal_requests_amount_check') ||
+                                error?.message?.toLowerCase()?.includes('withdrawal amount does not satisfy current database rules') ||
+                                error?.message?.toLowerCase()?.includes('withdrawal policy')
+                              ) {
+                                toast.error('Withdrawal policy is restricted at database level. Please contact support.')
+                                return
+                              }
                               toast.error(error.message || 'Failed to submit withdrawal request')
+                            } finally {
+                              setIsSubmittingWithdrawal(false)
                             }
                           }}
-                          className="flex-1 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                          disabled={isSubmittingWithdrawal}
+                          className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-semibold transition-colors"
                         >
-                          Submit Request
+                          {isSubmittingWithdrawal ? 'Submitting...' : 'Submit Request'}
                         </button>
                         <button
                           onClick={() => setShowWithdrawalForm(false)}
@@ -1707,6 +1764,16 @@ export default function SellerDashboardPage() {
                               }`}>
                                 {withdrawal.status}
                               </span>
+                              {withdrawal.status === 'completed' && (
+                                <div className="text-xs text-gray-600 mt-1 space-y-1">
+                                  <p>
+                                    Internal Transaction ID: {withdrawal.transaction_id || 'N/A'}
+                                  </p>
+                                  <p>
+                                    Manual Transaction ID / UTR: {withdrawal.manual_transaction_id || 'Not provided yet'}
+                                  </p>
+                                </div>
+                              )}
                               {withdrawal.failure_reason && (
                                 <p className="text-xs text-red-600 mt-1">{withdrawal.failure_reason}</p>
                               )}
@@ -1727,8 +1794,8 @@ export default function SellerDashboardPage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Transaction History</h3>
                   <div className="space-y-2">
-                    {transactions && transactions.length > 0 ? (
-                      transactions.map((txn) => (
+                    {(transactions || []).filter((txn) => txn.type !== 'debit_withdrawal').length > 0 ? (
+                      (transactions || []).filter((txn) => txn.type !== 'debit_withdrawal').map((txn) => (
                         <div key={txn.id} className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <div className={`p-2 rounded-full ${
@@ -1756,7 +1823,7 @@ export default function SellerDashboardPage() {
                     ) : (
                       <div className="text-center py-8 text-gray-500">
                         <FileText className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                        <p>No transactions yet</p>
+                        <p>No non-withdrawal transactions yet</p>
                       </div>
                     )}
                   </div>
@@ -2218,6 +2285,73 @@ export default function SellerDashboardPage() {
                       </div>
                     </div>
 
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold mb-4">Banking & KYC</h3>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Account Holder Name</label>
+                          <input
+                            type="text"
+                            value={profileData.account_holder_name}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, account_holder_name: e.target.value }))}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="As per bank records"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
+                          <input
+                            type="text"
+                            value={profileData.account_number}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, account_number: e.target.value }))}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="Enter bank account number"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">IFSC Code</label>
+                          <input
+                            type="text"
+                            value={profileData.ifsc_code}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, ifsc_code: e.target.value.toUpperCase() }))}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="e.g., SBIN0001234"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">ID Type</label>
+                            <select
+                              value={profileData.id_type}
+                              onChange={(e) => setProfileData(prev => ({ ...prev, id_type: e.target.value }))}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            >
+                              <option value="">Select ID type</option>
+                              <option value="Aadhar Card">Aadhar Card</option>
+                              <option value="PAN Card">PAN Card</option>
+                              <option value="Driving License">Driving License</option>
+                              <option value="Passport">Passport</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">ID Number</label>
+                            <input
+                              type="text"
+                              value={profileData.id_number}
+                              onChange={(e) => setProfileData(prev => ({ ...prev, id_number: e.target.value }))}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              placeholder="Enter ID number"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Action Buttons */}
                     <div className="flex gap-3">
                       <button
@@ -2292,7 +2426,7 @@ export default function SellerDashboardPage() {
                               sum + (item.quantity * item.price), 0
                             ) || 0
                             const giftFees = order.order_items?.reduce((sum, item) => 
-                              sum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                              sum + (item.gift_packaging ? 10 * item.quantity : 0), 0
                             ) || 0
                             const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
                             const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
@@ -2348,7 +2482,7 @@ export default function SellerDashboardPage() {
                                   itemSum + (item.quantity * item.price), 0
                                 ) || 0
                                 const giftFees = order.order_items?.reduce((giftSum, item) => 
-                                  giftSum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                                  giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
                                 ) || 0
                                 const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
                                 return sum + sellerShare + giftFees
@@ -2402,7 +2536,7 @@ export default function SellerDashboardPage() {
                       itemSum + (item.quantity * item.price), 0
                     ) || 0
                     const giftFees = order.order_items?.reduce((giftSum, item) => 
-                      giftSum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                      giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
                     ) || 0
                     const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
                     return sum + sellerShare + giftFees
@@ -2432,19 +2566,6 @@ export default function SellerDashboardPage() {
                   return null
                 })()}
 
-                {/* How it's calculated - Moved to bottom */}
-                <div className="bg-white border border-secondary-200 rounded p-4 text-xs space-y-1 mt-6">
-                  <p className="font-semibold text-secondary-900 mb-2">💡 How it's calculated:</p>
-                  <p className="text-secondary-700">• For each <span className="font-semibold">Pending/Confirmed/Dispatched</span> order</p>
-                  <p className="text-secondary-700">• Includes: Online orders (paid) + COD orders</p>
-                  <p className="text-secondary-700">• Sum of all product prices = Product Amount</p>
-                  <p className="text-secondary-700">• Your share = Product Amount × 97.5%</p>
-                  <p className="text-secondary-700">• Gift packaging fees = ₹20 per gift item (100% to you)</p>
-                  <p className="text-secondary-700">• Platform keeps 2.5% commission from seller + delivery fees + platform fee from buyer</p>
-                  <p className="text-secondary-700 mt-2 pt-2 border-t border-secondary-200">
-                    <span className="font-semibold">Example:</span> Product Amount ₹1,000 + 2 gift items → You get ₹975 + ₹40 = ₹1,015
-                  </p>
-                </div>
               </div>
 
               <div className="bg-gray-50 px-6 py-4 flex justify-end border-t">
@@ -2504,7 +2625,7 @@ export default function SellerDashboardPage() {
                               sum + (item.quantity * item.price), 0
                             ) || 0
                             const giftFees = order.order_items?.reduce((sum, item) => 
-                              sum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                              sum + (item.gift_packaging ? 10 * item.quantity : 0), 0
                             ) || 0
                             const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
                             const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
@@ -2553,7 +2674,7 @@ export default function SellerDashboardPage() {
                                   itemSum + (item.quantity * item.price), 0
                                 ) || 0
                                 const giftFees = order.order_items?.reduce((giftSum, item) => 
-                                  giftSum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                                  giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
                                 ) || 0
                                 const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
                                 return sum + sellerShare + giftFees
@@ -2581,18 +2702,6 @@ export default function SellerDashboardPage() {
                   <p className="text-sm text-primary-700 mb-3">
                     This is money you can withdraw right now. It comes from delivered orders minus any withdrawals you've made.
                   </p>
-                  <div className="bg-white border border-primary-200 rounded p-3 text-xs space-y-1">
-                    <p className="font-semibold text-primary-900">💡 How it's calculated:</p>
-                    <p className="text-primary-700">• For each <span className="font-semibold">Delivered</span> order</p>
-                    <p className="text-primary-700">• Sum of all product prices = Product Amount</p>
-                    <p className="text-primary-700">• Your share = Product Amount × 97.5%</p>
-                    <p className="text-primary-700">• Gift packaging fees = ₹20 per gift item (100% to you)</p>
-                    <p className="text-primary-700">• Platform keeps 2.5% from seller + delivery fees + platform fee from buyer</p>
-                    <p className="text-primary-700">• Available = Total Earned - Total Withdrawn</p>
-                    <p className="text-primary-700 mt-2 pt-2 border-t border-primary-200">
-                      <span className="font-semibold">Example:</span> Product Amount ₹1,000 + 2 gift items → You get ₹975 + ₹40 = ₹1,015
-                    </p>
-                  </div>
                 </div>
               </div>
 
@@ -2652,7 +2761,7 @@ export default function SellerDashboardPage() {
                               sum + (item.quantity * item.price), 0
                             ) || 0
                             const giftFees = order.order_items?.reduce((sum, item) => 
-                              sum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                              sum + (item.gift_packaging ? 10 * item.quantity : 0), 0
                             ) || 0
                             const earnings = parseFloat((productSubtotal * 0.975).toFixed(2))
                             const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
@@ -2696,7 +2805,7 @@ export default function SellerDashboardPage() {
                                   itemSum + (item.quantity * item.price), 0
                                 ) || 0
                                 const giftFees = order.order_items?.reduce((giftSum, item) => 
-                                  giftSum + (item.gift_packaging ? 20 * item.quantity : 0), 0
+                                  giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
                                 ) || 0
                                 const earnings = parseFloat((productSubtotal * 0.975).toFixed(2))
                                 return sum + earnings + giftFees
@@ -2724,17 +2833,6 @@ export default function SellerDashboardPage() {
                   <p className="text-sm text-gray-700 mb-3">
                     This includes all delivered orders. You receive 97.5% of the product amount (2.5% platform commission).
                   </p>
-                  <div className="bg-white border border-gray-200 rounded p-3 text-xs space-y-1">
-                    <p className="font-semibold text-gray-900">💡 How it's calculated:</p>
-                    <p className="text-gray-700">• For each <span className="font-semibold">Delivered</span> order</p>
-                    <p className="text-gray-700">• Sum of all product prices = Product Amount</p>
-                    <p className="text-gray-700">• Your share = Product Amount × 97.5%</p>
-                    <p className="text-gray-700">• Gift packaging fees = ₹20 per gift item (100% to you)</p>
-                    <p className="text-gray-700">• Platform keeps 2.5% from seller + delivery fees + platform fee from buyer</p>
-                    <p className="text-gray-700 mt-2 pt-2 border-t border-gray-200">
-                      <span className="font-semibold">Example:</span> Product Amount ₹1,000 + 2 gift items → You get ₹975 + ₹40 = ₹1,015
-                    </p>
-                  </div>
                 </div>
               </div>
 

@@ -189,6 +189,12 @@ export async function PUT(request, context) {
       }
     }
 
+    if (status === 'delivered' && order.payment_method === 'online' && order.payment_status !== 'paid') {
+      return NextResponse.json({
+        error: 'Online payment is not completed for this order. Cannot mark as delivered.'
+      }, { status: 400 })
+    }
+
     // Update order status
     console.log('Updating order status...')
     const { data: updatedOrder, error: updateError } = await supabase
@@ -480,69 +486,53 @@ export async function PUT(request, context) {
       console.log('Processing order delivery...')
       
       try {
+        if (order.wallet_credited) {
+          console.log(`Order ${id} wallet release already processed, skipping duplicate credit`)
+          return NextResponse.json(updatedOrder)
+        }
+
         // When order is delivered, wallet balances update automatically
         // because they're calculated from order status
         if (order.seller_id) {
           console.log(`Order delivered for seller ${order.seller_id}`)
-          
-          // Calculate seller earnings from product subtotal only
-          const { data: orderItems } = await supabase
-            .from('order_items')
-            .select('quantity, price')
-            .eq('order_id', id)
-          
-          const productSubtotal = (orderItems || []).reduce((sum, item) => 
-            sum + (parseFloat(item.price) * item.quantity), 0
-          )
-          
-          const sellerEarnings = parseFloat((productSubtotal * 0.975).toFixed(2))
-          const platformCommission = parseFloat((productSubtotal * 0.025).toFixed(2))
-          
-          console.log('Delivery - Revenue calculation:', {
-            productSubtotal,
-            sellerEarnings: `${sellerEarnings} (97.5%)`,
-            platformCommission: `${platformCommission} (2.5%)`
-          })
+
+          const sellerEarnings = parseFloat(order.seller_amount || 0)
+
+          if (sellerEarnings <= 0) {
+            console.warn(`Skipping wallet release for order ${id} because seller_amount is invalid:`, order.seller_amount)
+            return NextResponse.json(updatedOrder)
+          }
           
           console.log(`✅ Order delivered - ₹${sellerEarnings} moving from pending to available`)
           
-          // Fetch current wallet balances
-          // NOTE: RACE CONDITION RISK - If multiple deliveries happen simultaneously,
-          // wallet updates could overwrite each other. This should be wrapped in a
-          // database transaction with row-level locking for production use.
-          const { data: wallet } = await supabase
-            .from('wallets')
-            .select('pending_balance, available_balance, total_earned')
-            .eq('seller_id', order.seller_id)
-            .single()
-          
-          if (wallet) {
-            // Update wallet balances directly (no RPC calls)
-            // Move funds from pending to available balance
-            await supabase
-              .from('wallets')
-              .update({
-                pending_balance: parseFloat(wallet.pending_balance || 0) - sellerEarnings,
-                available_balance: parseFloat(wallet.available_balance || 0) + sellerEarnings,
-                total_earned: parseFloat(wallet.total_earned || 0) + sellerEarnings,
-                updated_at: new Date().toISOString()
-              })
-              .eq('seller_id', order.seller_id)
-          }
-          
-          // Create transaction record for wallet movement
-          await supabase
-            .from('transactions')
-            .insert({
-              seller_id: order.seller_id,
-              order_id: id,
-              amount: sellerEarnings,
-              type: 'credit_available',
-              status: 'completed',
-              description: `Order delivered - Funds released to available balance`
+          const { error: releaseError } = await supabase
+            .rpc('move_pending_to_available', {
+              p_seller_id: order.seller_id,
+              p_order_id: id,
+              p_amount: sellerEarnings
             })
-          
-          console.log('✅ Wallet updated: ₹' + sellerEarnings + ' released to available balance')
+
+          if (releaseError) {
+            console.error('Wallet fund release failed:', releaseError)
+          } else {
+            await supabase
+              .from('orders')
+              .update({ wallet_credited: true })
+              .eq('id', id)
+
+            await supabase
+              .from('transactions')
+              .insert({
+                seller_id: order.seller_id,
+                order_id: id,
+                amount: sellerEarnings,
+                type: 'credit_available',
+                status: 'completed',
+                description: `Order delivered - Funds released to available balance`
+              })
+
+            console.log('✅ Wallet updated: ₹' + sellerEarnings + ' released to available balance')
+          }
           
           // Note: admin_earnings already recorded in payment/verify - no duplicate insertion needed
         }

@@ -583,7 +583,8 @@ export async function PUT(request) {
     
     const allowedSellerFields = [
       'cover_photo', 'business_description', 'story', 'featured_story', 'instagram', 'facebook', 'x', 'linkedin',
-      'primary_mobile', 'business_address', 'city', 'alternate_mobile'
+      'primary_mobile', 'business_address', 'city', 'alternate_mobile',
+      'account_holder_name', 'account_number', 'ifsc_code', 'id_type', 'id_number'
     ]
     
     const allowedUserFields = ['profile_photo']

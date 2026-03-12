@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p $PORT",
-    "lint": "next lint",
+    "lint": "eslint . --ext .js,.jsx",
     "test:env": "node test-env.js",
     "test:supabase": "node test-supabase.js",
     "test:all": "npm run test:env && npm run test:supabase"
@@ -31,6 +31,7 @@
     "tailwindcss": "3.3.3"
   },
   "devDependencies": {
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "eslint": "^9.38.0"
   }
 }

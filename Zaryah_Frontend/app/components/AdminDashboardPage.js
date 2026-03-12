@@ -104,8 +104,14 @@ export const AdminDashboardPage = () => {
 
   const handleApproveWithdrawal = async (withdrawalId) => {
     try {
-      await apiService.approveWithdrawal(withdrawalId, 'approve')
-      toast.success('Withdrawal approved! Payment will be processed.')
+      const manualTransactionId = prompt('Enter manual bank transaction ID / UTR:')
+      if (!manualTransactionId || !manualTransactionId.trim()) {
+        toast.error('Manual transaction ID is required')
+        return
+      }
+
+      await apiService.approveWithdrawal(withdrawalId, 'approve', null, manualTransactionId.trim())
+      toast.success('Withdrawal approved and marked as paid manually.')
       fetchWithdrawals() // Refresh list
     } catch (error) {
       toast.error(error.message || 'Failed to approve withdrawal')
@@ -324,6 +330,13 @@ export const AdminDashboardPage = () => {
                         </div>
                       </div>
 
+                      {withdrawal.manual_transaction_id && (
+                        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-xs text-blue-700">Manual Transaction ID / UTR</p>
+                          <p className="font-mono text-sm font-semibold text-blue-900 mt-1">{withdrawal.manual_transaction_id}</p>
+                        </div>
+                      )}
+
                       {withdrawal.status === 'pending' && (
                         <div className="flex space-x-3">
                           <button
@@ -331,7 +344,7 @@ export const AdminDashboardPage = () => {
                             className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2"
                           >
                             <CheckCircle className="w-5 h-5" />
-                            <span>Approve & Process Payout</span>
+                            <span>Approve & Mark Paid</span>
                           </button>
                           <button
                             onClick={() => {
@@ -514,17 +527,6 @@ export const AdminDashboardPage = () => {
                         </table>
                       </div>
                       
-                      {/* How it's calculated */}
-                      <div className="bg-blue-50 border border-blue-200 rounded p-4 text-xs space-y-1 mt-6">
-                        <p className="font-semibold text-blue-900 mb-2">💡 Revenue Breakdown:</p>
-                        <p className="text-blue-700">• <span className="font-semibold">Seller Commission:</span> 2.5% from product amount (sellers keep 97.5%)</p>
-                        <p className="text-blue-700">• <span className="font-semibold">Platform Fee:</span> ₹10 (if order &lt;₹500) or ₹20 (if order &ge;₹500) paid by buyer</p>
-                        <p className="text-blue-700">• <span className="font-semibold">Delivery Fee:</span> 100% to platform (includes ₹10 markup on Shiprocket charges)</p>
-                        <p className="text-blue-700">• <span className="font-semibold">COD Fee:</span> ₹10 per COD order, paid by buyer</p>
-                        <p className="text-blue-700 mt-2 pt-2 border-t border-blue-300">
-                          <span className="font-semibold">Note:</span> Gift packaging fees (₹20/item) go 100% to seller
-                        </p>
-                      </div>
                     </div>
                   )}
                 </>

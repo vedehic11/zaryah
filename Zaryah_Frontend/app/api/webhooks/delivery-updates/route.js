@@ -248,13 +248,17 @@ export async function POST(request) {
             .single()
           
           if (wallet) {
+            const currentPending = parseFloat(wallet.pending_balance || 0)
+            const currentAvailable = parseFloat(wallet.available_balance || 0)
+            const currentTotalEarned = parseFloat(wallet.total_earned || 0)
+
             // Reverse wallet balances (deduct from both pending and available)
             await supabase
               .from('wallets')
               .update({
-                available_balance: Math.max(0, parseFloat(wallet.available_balance || 0) - sellerAmount),
-                pending_balance: Math.max(0, parseFloat(wallet.pending_balance || 0) - sellerAmount),
-                total_earned: Math.max(0, parseFloat(wallet.total_earned || 0) - sellerAmount),
+                available_balance: Math.max(0, currentAvailable - sellerAmount),
+                pending_balance: currentPending,
+                total_earned: Math.max(0, currentTotalEarned - sellerAmount),
                 updated_at: new Date().toISOString()
               })
               .eq('seller_id', order.seller_id)
@@ -372,39 +376,21 @@ export async function POST(request) {
           const sellerEarnings = parseFloat(order.seller_amount || 0)
           
           if (sellerEarnings > 0) {
-            // Fetch current wallet balances
-            // NOTE: RACE CONDITION RISK - If multiple deliveries happen simultaneously,
-            // wallet updates could overwrite each other. This should be wrapped in a
-            // database transaction with row-level locking for production use.
-            // Example: SELECT ... FOR UPDATE followed by UPDATE in same transaction
-            const { data: wallet } = await supabase
-              .from('wallets')
-              .select('pending_balance, available_balance, total_earned')
-              .eq('seller_id', order.seller_id)
-              .single()
-            
-            if (wallet) {
-              // Update wallet balances directly (move from pending to available)
-              const { error: walletError } = await supabase
-                .from('wallets')
-                .update({
-                  pending_balance: parseFloat(wallet.pending_balance || 0) - sellerEarnings,
-                  available_balance: parseFloat(wallet.available_balance || 0) + sellerEarnings,
-                  total_earned: parseFloat(wallet.total_earned || 0) + sellerEarnings,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('seller_id', order.seller_id)
-            
+            const { error: walletError } = await supabase
+              .rpc('move_pending_to_available', {
+                p_seller_id: order.seller_id,
+                p_order_id: order.id,
+                p_amount: sellerEarnings
+              })
+
             if (walletError) {
               console.error('Wallet fund release failed:', walletError)
             } else {
-              // Mark order as wallet credited
               await supabase
                 .from('orders')
                 .update({ wallet_credited: true })
                 .eq('id', order.id)
-              
-              // Create transaction record
+
               await supabase
                 .from('transactions')
                 .insert({
@@ -415,11 +401,8 @@ export async function POST(request) {
                   status: 'completed',
                   description: `Order delivered - Funds released to available balance`
                 })
-              
-                console.log('✅ Seller funds released to available balance: ₹' + sellerEarnings)
-              }
-            } else {
-              console.error('Wallet not found for seller:', order.seller_id)
+
+              console.log('✅ Seller funds released to available balance: ₹' + sellerEarnings)
             }
           }
         }

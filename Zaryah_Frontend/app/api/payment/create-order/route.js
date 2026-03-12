@@ -10,7 +10,6 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 })
 
-// Commission: 2.5% from seller + Platform fee (₹10 or ₹20) from buyer
 const SELLER_COMMISSION_RATE = 2.5
 
 // POST /api/payment/create-order - Create Razorpay order for checkout
@@ -31,11 +30,13 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
     }
 
+    let orderFinancials = null
+
     // SECURITY: Validate amount matches order total if orderId provided
     if (orderId) {
       const { data: order, error: orderError } = await supabase
         .from('orders')
-        .select('total_amount')
+        .select('total_amount, commission_amount, seller_amount')
         .eq('id', orderId)
         .single()
 
@@ -61,6 +62,11 @@ export async function POST(request) {
           message: 'Payment amount does not match order total'
         }, { status: 400 })
       }
+
+      orderFinancials = {
+        commissionAmount: parseFloat(order.commission_amount || 0),
+        sellerAmount: parseFloat(order.seller_amount || 0)
+      }
     }
 
     // Check if Razorpay is configured
@@ -76,11 +82,15 @@ export async function POST(request) {
 
     console.log('Creating Razorpay order with amount (paise):', amount, 'for order:', orderId)
 
-    // Amount is already in paise from frontend (total * 100)
-    // Calculate commission (platform takes 5%) in rupees
+    // Amount is in paise from frontend (total * 100)
+    // Keep order creation as source of truth for commission/seller amounts
     const orderAmountInRupees = parseFloat(amount) / 100
-    const commissionAmount = Math.round((orderAmountInRupees * COMMISSION_RATE) / 100 * 100) / 100
-    const sellerAmount = Math.round((orderAmountInRupees - commissionAmount) * 100) / 100
+    const commissionAmount = orderFinancials
+      ? orderFinancials.commissionAmount
+      : parseFloat((orderAmountInRupees * 0.025).toFixed(2))
+    const sellerAmount = orderFinancials
+      ? orderFinancials.sellerAmount
+      : parseFloat((orderAmountInRupees - commissionAmount).toFixed(2))
 
     // Create Razorpay order (amount already in paise)
     // Receipt must be max 40 chars - use short format
@@ -110,10 +120,9 @@ export async function POST(request) {
       await supabase
         .from('orders')
         .update({
+          payment_id: razorpayOrder.id,
           razorpay_order_id: razorpayOrder.id,
-          payment_status: 'pending',
-          commission_amount: commissionAmount,
-          seller_amount: sellerAmount
+          payment_status: 'pending'
         })
         .eq('id', orderId)
     }
@@ -211,11 +220,14 @@ export async function PATCH(request) {
         .single()
 
       if (order && order.seller_id) {
+        const fallbackCommissionAmount = parseFloat((order.total_amount * (SELLER_COMMISSION_RATE / 100)).toFixed(2))
+        const fallbackSellerAmount = parseFloat((order.total_amount - fallbackCommissionAmount).toFixed(2))
+
         // Credit seller wallet (PENDING balance until delivery)
         await supabase.rpc('credit_seller_wallet_pending', {
           p_seller_id: order.seller_id,
           p_order_id: order_id,
-          p_amount: order.seller_amount || (order.total_amount * 0.95),
+          p_amount: order.seller_amount || fallbackSellerAmount,
           p_description: `Payment received for order - pending delivery confirmation`
         })
 
@@ -226,9 +238,9 @@ export async function PATCH(request) {
             order_id: order_id,
             seller_id: order.seller_id,
             order_amount: order.total_amount,
-            commission_rate: COMMISSION_RATE,
-            commission_amount: order.commission_amount || (order.total_amount * 0.05),
-            seller_amount: order.seller_amount || (order.total_amount * 0.95),
+            commission_rate: SELLER_COMMISSION_RATE,
+            commission_amount: order.commission_amount || fallbackCommissionAmount,
+            seller_amount: order.seller_amount || fallbackSellerAmount,
             status: 'earned'
           })
 

@@ -115,7 +115,7 @@ export default function CheckoutPage() {
   // Calculate totals
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   const giftPackagingFee = cart.reduce((sum, item) => {
-    return sum + (item.giftPackaging ? 20 * item.quantity : 0)
+    return sum + (item.giftPackaging ? 10 * item.quantity : 0)
   }, 0)
   const deliveryFee = dynamicDeliveryCharge !== null ? dynamicDeliveryCharge : (subtotal >= 500 ? 0 : 60)
   // Note: deliveryFee already includes ₹10 markup from Shiprocket API (getCheapestShippingRate)
@@ -197,14 +197,6 @@ export default function CheckoutPage() {
 
         console.log('Step 5: Payment order created:', paymentData)
         const { order_id: razorpayOrderId } = paymentData
-
-        // Update order with razorpay_order_id for webhook tracking
-        await apiService.request(`/orders/${order.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            payment_id: razorpayOrderId
-          })
-        })
 
         const options = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,

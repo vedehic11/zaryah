@@ -192,7 +192,7 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       // Create Razorpay order
       const paymentOrder = await apiService.createPaymentOrder({
-        amount: total,
+        amount: total * 100,
         orderId: order.id
       })
 

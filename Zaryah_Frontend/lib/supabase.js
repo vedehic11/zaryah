@@ -6,9 +6,11 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-console.log('🔧 Initializing Supabase client...')
-console.log('📍 Supabase URL:', supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING')
-console.log('🔑 Service Key:', supabaseServiceKey ? `${supabaseServiceKey.substring(0, 20)}...` : 'MISSING')
+const isDevelopment = process.env.NODE_ENV !== 'production'
+
+if (isDevelopment) {
+  console.log('🔧 Initializing Supabase client...')
+}
 
 if (!supabaseUrl || !supabaseServiceKey) {
   const errorMsg = 'Missing Supabase environment variables. Please check your .env file.'
@@ -29,7 +31,9 @@ try {
       persistSession: false
     }
   })
-  console.log('✅ Supabase client initialized successfully')
+  if (isDevelopment) {
+    console.log('✅ Supabase client initialized successfully')
+  }
 } catch (error) {
   console.error('❌ Failed to create Supabase client:', error)
   throw error

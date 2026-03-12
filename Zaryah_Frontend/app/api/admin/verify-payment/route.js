@@ -31,6 +31,22 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
+    const { data: existingCreditTx } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('order_id', orderId)
+      .eq('type', 'credit_pending')
+      .limit(1)
+      .maybeSingle()
+
+    if (existingCreditTx) {
+      return NextResponse.json({
+        success: true,
+        message: `Order ${orderId} payment already verified` ,
+        idempotent: true
+      })
+    }
+
     // Update order to paid status
     await supabase
       .from('orders')
@@ -44,8 +60,9 @@ export async function POST(request) {
     console.log(`✅ Order ${orderId} manually marked as paid and reset to pending`)
 
     // Calculate and update seller wallet
-    const sellerAmount = order.seller_amount || (order.total_amount * 0.95)
-    const commissionAmount = order.commission_amount || (order.total_amount * 0.05)
+    const totalAmount = parseFloat(order.total_amount || 0)
+    const sellerAmount = parseFloat(order.seller_amount || (totalAmount * 0.975).toFixed(2))
+    const commissionAmount = parseFloat(order.commission_amount || (totalAmount - sellerAmount).toFixed(2))
 
     // Get or create seller wallet
     let { data: wallet, error: walletError } = await supabase

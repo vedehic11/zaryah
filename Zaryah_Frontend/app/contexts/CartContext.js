@@ -474,7 +474,7 @@ export const CartProvider = ({ children }) => {
   const totalItems = allCartItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const totalPrice = allCartItems.reduce((sum, item) => {
     const itemPrice = (item.price || 0) * (item.quantity || 0);
-    const giftPrice = item.giftPackaging ? 20 * (item.quantity || 0) : 0;
+    const giftPrice = item.giftPackaging ? 10 * (item.quantity || 0) : 0;
     return sum + itemPrice + giftPrice;
   }, 0);
 

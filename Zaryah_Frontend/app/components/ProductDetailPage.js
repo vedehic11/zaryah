@@ -508,7 +508,7 @@ export const ProductDetailPage = ({ productId }) => {
                   className="w-full flex items-center justify-center space-x-2 px-6 py-3 border-2 border-primary-300 text-primary-700 rounded-lg hover:bg-primary-50 transition-colors"
                 >
                   <Gift className="w-5 h-5" />
-                  <span>Add to Cart with Gift Packaging (+₹50)</span>
+                  <span>Add to Cart with Gift Packaging (+₹10)</span>
                 </button>
 
                 {/* Features */}
