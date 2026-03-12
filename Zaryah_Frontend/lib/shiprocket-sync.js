@@ -416,3 +416,38 @@ export async function syncRecentShiprocketOrders({ limit = 25, lookbackDays = 30
 
   return results
 }
+
+export async function syncShiprocketOrdersBySeller({ sellerId, limit = 100, lookbackDays = 30 } = {}) {
+  if (!sellerId) {
+    throw new Error('sellerId is required')
+  }
+
+  const cutoffDate = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000).toISOString()
+
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('seller_id', sellerId)
+    .or('awb_code.not.is.null,shipment_id.not.is.null')
+    .gte('created_at', cutoffDate)
+    .order('updated_at', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    throw error
+  }
+
+  const results = []
+  for (const order of orders || []) {
+    try {
+      results.push(await syncShiprocketOrder(order, { source: 'seller-bulk' }))
+    } catch (syncError) {
+      results.push({
+        orderId: order.id,
+        error: syncError.message
+      })
+    }
+  }
+
+  return results
+}

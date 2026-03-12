@@ -221,6 +221,13 @@ class ApiService {
     })
   }
 
+  async syncAllOrderShipmentStatuses(payload = {}) {
+    return this.request('/orders/sync-all', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
   // Address endpoints
   async getUserAddresses(userId = null) {
     // userId is optional - API will use authenticated user

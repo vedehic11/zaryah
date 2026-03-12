@@ -8,7 +8,7 @@ import {
   Plus, Clock, CheckCircle, XCircle, AlertTriangle, Users, Star,
   BarChart3, Settings, Upload, Image as ImageIcon, FileText, MessageCircle,
   Wallet, ArrowUpCircle, ArrowDownCircle, CreditCard, IndianRupee, Truck, ExternalLink, User,
-  Instagram, Facebook, Twitter, Linkedin, MapPin, Building, Sparkles, X, ChevronDown, ChevronUp, Filter, Printer
+  Instagram, Facebook, Twitter, Linkedin, MapPin, Building, Sparkles, X, ChevronDown, ChevronUp, Filter, Printer, RefreshCw
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
@@ -38,6 +38,7 @@ export default function SellerDashboardPage() {
   const [ordersPageSize] = useState(20)
   const [ordersTotalPages, setOrdersTotalPages] = useState(1)
   const [ordersTotalCount, setOrdersTotalCount] = useState(0)
+  const [syncingAllOrders, setSyncingAllOrders] = useState(false)
   
   // Wallet state
   const [wallet, setWallet] = useState(null)
@@ -59,6 +60,29 @@ export default function SellerDashboardPage() {
   const [updatingOrders, setUpdatingOrders] = useState(new Set())
   const dashboardFetchInProgress = useRef(false)
   const dashboardLastFetchAt = useRef(0)
+
+  const handleSyncAllOrders = async () => {
+    try {
+      setSyncingAllOrders(true)
+      const response = await apiService.syncAllOrderShipmentStatuses({
+        limit: 100,
+        lookbackDays: 30
+      })
+
+      const updated = response?.totals?.updated || 0
+      const failed = response?.totals?.failed || 0
+      const message = failed > 0
+        ? `Synced ${updated} orders. ${failed} failed.`
+        : response?.message || `Synced ${updated} orders`
+
+      toast.success(message)
+      await fetchDashboardData({ reason: 'manual' })
+    } catch (error) {
+      toast.error(error.message || 'Failed to sync order statuses')
+    } finally {
+      setSyncingAllOrders(false)
+    }
+  }
 
   // Log pending breakdown when modal opens
   useEffect(() => {
@@ -826,9 +850,19 @@ export default function SellerDashboardPage() {
                     {/* Filters */}
                     {/* Filter Dropdown */}
                     <div className="mb-6 bg-white border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Filter className="w-5 h-5 text-gray-600" />
-                        <h3 className="font-semibold text-gray-900">Filter Orders</h3>
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Filter className="w-5 h-5 text-gray-600" />
+                          <h3 className="font-semibold text-gray-900">Filter Orders</h3>
+                        </div>
+                        <button
+                          onClick={handleSyncAllOrders}
+                          disabled={syncingAllOrders}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <RefreshCw className={`w-4 h-4 ${syncingAllOrders ? 'animate-spin' : ''}`} />
+                          {syncingAllOrders ? 'Syncing all...' : 'Sync all'}
+                        </button>
                       </div>
                       <select
                         value={orderFilter}
@@ -1070,24 +1104,6 @@ export default function SellerDashboardPage() {
                                       </button>
                                     )}
 
-                                    {order.shipment_id && (
-                                      <button
-                                        onClick={async (e) => {
-                                          e.stopPropagation()
-                                          try {
-                                            const response = await apiService.syncOrderShipmentStatus(order.id)
-                                            toast.success(response?.message || 'Order synced')
-                                            fetchDashboardData({ reason: 'manual' })
-                                          } catch (error) {
-                                            toast.error(error.message || 'Failed to sync status')
-                                          }
-                                        }}
-                                        className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1"
-                                      >
-                                        <Clock className="w-3 h-3" />
-                                        Sync
-                                      </button>
-                                    )}
                                   </div>
                                 </div>
                               </div>
