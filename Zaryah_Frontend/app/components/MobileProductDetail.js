@@ -356,7 +356,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
               <Package className="w-5 h-5 text-secondary-700 mt-0.5" strokeWidth={1.5} />
               <div className="flex-1">
                 <div className="font-semibold text-sm text-charcoal-900">Pay on Delivery is available</div>
-                <div className="text-xs text-charcoal-600 mt-0.5">₹10 additional fee applicable</div>
+                <div className="text-xs text-charcoal-600 mt-0.5">No extra COD fee</div>
               </div>
             </div>
           )}

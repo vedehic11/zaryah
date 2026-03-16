@@ -22,6 +22,11 @@ export const AuthProvider = ({ children }) => {
   const [pendingVerification, setPendingVerification] = useState(null)
   const router = useRouter()
 
+  const isResetPasswordRoute = () => {
+    if (typeof window === 'undefined') return false
+    return window.location.pathname === '/reset-password'
+  }
+
   // Sync Supabase Auth user with our users table
   useEffect(() => {
     let isMounted = true
@@ -48,6 +53,12 @@ export const AuthProvider = ({ children }) => {
       if (loadingTimeout) clearTimeout(loadingTimeout)
       
       if (session) {
+        if (isResetPasswordRoute()) {
+          setSupabaseUser(session.user)
+          setUser(null)
+          setIsLoading(false)
+          return
+        }
         syncUser(session.user)
       } else {
         setUser(null)
@@ -76,6 +87,12 @@ export const AuthProvider = ({ children }) => {
       // Only sync on specific events to avoid redundant calls
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session?.user) {
+          if (isResetPasswordRoute()) {
+            setSupabaseUser(session.user)
+            setUser(null)
+            setIsLoading(false)
+            return
+          }
           await syncUser(session.user)
         }
       } else if (event === 'SIGNED_OUT') {
@@ -615,24 +632,38 @@ export const AuthProvider = ({ children }) => {
 
   // Logout function
   const logout = async () => {
+    let signOutError = null
+
     try {
       const { error } = await supabaseClient.auth.signOut()
-      
-      if (error) {
-        toast.error('Logout failed')
-        return
-      }
-
-      // Clear local state and cache
+      signOutError = error || null
+    } catch (error) {
+      signOutError = error
+    } finally {
       setUser(null)
       setSupabaseUser(null)
+      setIsLoading(false)
       sessionStorage.removeItem('zaryah_user_cache')
-      
-      toast.success('Logged out successfully')
-        } catch (error) {
-      console.error('Logout error:', error)
-      toast.error('Logout failed')
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('zaryah-auth-token')
+      }
     }
+
+    if (signOutError) {
+      console.error('Logout error:', signOutError)
+
+      const errorMessage = String(signOutError.message || signOutError)
+      const isSafeToIgnore = errorMessage.toLowerCase().includes('session') || errorMessage.toLowerCase().includes('jwt')
+
+      if (!isSafeToIgnore) {
+        toast.error('Logout failed on server, but you have been signed out on this device')
+        return false
+      }
+    }
+
+    toast.success('Logged out successfully')
+    return true
   }
 
   // Verify OTP - for email confirmation

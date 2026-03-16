@@ -112,8 +112,8 @@ export const Layout = ({ children }) => {
   //   }
   // }, [user, syncGuestCartToBackend]);
 
-  const handleLogout = useCallback(() => {
-    logout()
+  const handleLogout = useCallback(async () => {
+    await logout()
     router.push('/')
   }, [logout, router])
 

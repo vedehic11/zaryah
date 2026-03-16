@@ -131,6 +131,8 @@ export async function PUT(request, context) {
       console.error('Order not found')
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
+
+    const shipmentFailed = typeof order.notes === 'string' && order.notes.includes('SHIPMENT ERROR')
     
     console.log('Order found - current status:', order.status, '- requested:', status)
 
@@ -166,8 +168,35 @@ export async function PUT(request, context) {
     }
 
     if (user.user_type === 'Buyer') {
-      console.error('Permission denied - buyers cannot update')
-      return NextResponse.json({ error: 'Forbidden - Buyers cannot update order status' }, { status: 403 })
+      if (order.buyer_id !== user.id) {
+        console.error('Permission denied - buyer_id mismatch')
+        return NextResponse.json({ error: 'Forbidden - You can only update your own orders' }, { status: 403 })
+      }
+
+      if (status !== 'cancelled') {
+        console.error('Permission denied - buyers can only cancel orders')
+        return NextResponse.json({ error: 'Forbidden - Buyers can only cancel orders' }, { status: 403 })
+      }
+
+      if (!['pending', 'confirmed'].includes(order.status) && order.status !== 'cancelled') {
+        return NextResponse.json({
+          error: 'Order already shipped. Cancellation is not allowed now. Please deny delivery if needed.'
+        }, { status: 400 })
+      }
+
+      const shipmentStatusText = String(order.shipment_status || '').toUpperCase()
+      const isLikelyShipped =
+        !!order.awb_code ||
+        order.status === 'dispatched' ||
+        shipmentStatusText.includes('SHIP') ||
+        shipmentStatusText.includes('TRANSIT') ||
+        shipmentStatusText.includes('OUT FOR DELIVERY')
+
+      if (status === 'cancelled' && isLikelyShipped) {
+        return NextResponse.json({
+          error: 'Order already shipped. Cancellation is not allowed now. Please deny delivery if needed.'
+        }, { status: 400 })
+      }
     }
     
     // Sellers can only confirm orders and mark COD orders as delivered
@@ -193,6 +222,20 @@ export async function PUT(request, context) {
       return NextResponse.json({
         error: 'Online payment is not completed for this order. Cannot mark as delivered.'
       }, { status: 400 })
+    }
+
+    if (status === 'dispatched') {
+      if (shipmentFailed) {
+        return NextResponse.json({
+          error: 'Cannot mark as dispatched because shipment creation failed. Please resolve shipment first.'
+        }, { status: 400 })
+      }
+
+      if (!order.shipment_id || !order.awb_code) {
+        return NextResponse.json({
+          error: 'Cannot mark as dispatched before shipment and AWB are available.'
+        }, { status: 400 })
+      }
     }
 
     // Update order status
@@ -246,8 +289,186 @@ export async function PUT(request, context) {
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
-    // Create Shiprocket shipment when order is confirmed
-    if (status === 'confirmed' && !order.shipment_id) {
+    if (status === 'cancelled') {
+      let notesAccumulator = order.notes || ''
+
+      const notifyAdmins = async (title, message) => {
+        try {
+          const { data: adminUsers, error: adminFetchError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('user_type', 'Admin')
+
+          if (adminFetchError) {
+            console.error('Failed to fetch admin users for notification:', adminFetchError)
+            return
+          }
+
+          if (!adminUsers?.length) return
+
+          const adminNotifications = adminUsers.map((admin) => ({
+            user_id: admin.id,
+            user_model: 'Admin',
+            title,
+            message,
+            type: 'order',
+            related_order_id: id,
+            priority: 'high',
+            action_url: '/admin/dashboard?tab=payments'
+          }))
+
+          const { error: adminNotifError } = await supabase
+            .from('notifications')
+            .insert(adminNotifications)
+
+          if (adminNotifError) {
+            console.error('Failed to notify admins:', adminNotifError)
+          }
+        } catch (adminNotifyError) {
+          console.error('Admin notification error:', adminNotifyError)
+        }
+      }
+
+      if (order.payment_method === 'online' && order.payment_status !== 'refunded') {
+        try {
+          let razorpayPaymentId = order.razorpay_payment_id || null
+
+          // Legacy fallback: some rows have payment_id populated with Razorpay payment id
+          if (!razorpayPaymentId && typeof order.payment_id === 'string' && order.payment_id.startsWith('pay_')) {
+            razorpayPaymentId = order.payment_id
+          }
+
+          // Last fallback: resolve from payments table
+          if (!razorpayPaymentId) {
+            const { data: paymentRow } = await supabase
+              .from('payments')
+              .select('payment_id')
+              .eq('order_id', id)
+              .eq('status', 'completed')
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle()
+
+            if (paymentRow?.payment_id && String(paymentRow.payment_id).startsWith('pay_')) {
+              razorpayPaymentId = paymentRow.payment_id
+            }
+          }
+
+          if (!razorpayPaymentId) {
+            const noPaymentIdNote = '⚠️ Refund skipped: Razorpay payment id not found. Admin needs to process manually.'
+            notesAccumulator = notesAccumulator ? `${notesAccumulator}\n${noPaymentIdNote}` : noPaymentIdNote
+
+            await supabase
+              .from('orders')
+              .update({ notes: notesAccumulator })
+              .eq('id', id)
+
+            updatedOrder.notes = notesAccumulator
+
+            await notifyAdmins(
+              'Buyer Cancellation Refund Pending',
+              `Order #${id.slice(0, 8)} was cancelled, but Razorpay payment id was missing. Please process refund manually.`
+            )
+
+            throw new Error('Missing Razorpay payment id for refund')
+          }
+
+          const { default: Razorpay } = await import('razorpay')
+          const razorpay = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET
+          })
+
+          const refundAmount = Math.round(parseFloat(order.total_amount || 0) * 100)
+          const refund = await razorpay.payments.refund(razorpayPaymentId, {
+            amount: refundAmount,
+            notes: {
+              reason: 'Buyer cancellation before shipment',
+              order_id: id
+            }
+          })
+
+          const refundNote = `💰 Refund initiated: ₹${(refundAmount / 100).toFixed(2)} (ID: ${refund.id})`
+          notesAccumulator = notesAccumulator ? `${notesAccumulator}\n${refundNote}` : refundNote
+
+          await supabase
+            .from('orders')
+            .update({
+              payment_status: 'refunded',
+              notes: notesAccumulator
+            })
+            .eq('id', id)
+
+          updatedOrder.payment_status = 'refunded'
+          updatedOrder.notes = notesAccumulator
+        } catch (refundError) {
+          if (refundError.message === 'Missing Razorpay payment id for refund') {
+            // Already handled with notes + admin notification
+          } else {
+            console.error('Auto refund failed on buyer cancellation:', refundError)
+            const refundFailNote = `⚠️ Auto-refund failed: ${refundError.message}. Admin needs to process manually.`
+            notesAccumulator = notesAccumulator ? `${notesAccumulator}\n${refundFailNote}` : refundFailNote
+
+            await supabase
+              .from('orders')
+              .update({ notes: notesAccumulator })
+              .eq('id', id)
+
+            updatedOrder.notes = notesAccumulator
+
+            await notifyAdmins(
+              'Buyer Cancellation Refund Failed',
+              `Order #${id.slice(0, 8)} was cancelled by buyer, but Razorpay refund failed: ${refundError.message}`
+            )
+          }
+        }
+      }
+
+      if (order.shipment_id) {
+        try {
+          const { cancelShiprocketOrder } = await import('@/lib/shiprocket')
+          const cancelResult = await cancelShiprocketOrder({
+            orderId: id,
+            shipmentId: order.shipment_id
+          })
+
+          const shiprocketCancelNote = `✅ Shiprocket cancellation requested (${cancelResult.method}) at ${new Date().toISOString()}`
+          notesAccumulator = notesAccumulator ? `${notesAccumulator}\n${shiprocketCancelNote}` : shiprocketCancelNote
+
+          await supabase
+            .from('orders')
+            .update({
+              shipment_status: 'CANCELLED',
+              notes: notesAccumulator
+            })
+            .eq('id', id)
+
+          updatedOrder.shipment_status = 'CANCELLED'
+          updatedOrder.notes = notesAccumulator
+        } catch (shiprocketCancelError) {
+          console.error('Shiprocket cancellation failed:', shiprocketCancelError)
+
+          const shiprocketFailNote = `⚠️ Shiprocket cancel failed: ${shiprocketCancelError.message}. Please cancel manually in Shiprocket dashboard.`
+          notesAccumulator = notesAccumulator ? `${notesAccumulator}\n${shiprocketFailNote}` : shiprocketFailNote
+
+          await supabase
+            .from('orders')
+            .update({ notes: notesAccumulator })
+            .eq('id', id)
+
+          updatedOrder.notes = notesAccumulator
+
+          await notifyAdmins(
+            'Shiprocket Cancellation Failed',
+            `Order #${id.slice(0, 8)} was cancelled locally, but Shiprocket cancellation failed: ${shiprocketCancelError.message}`
+          )
+        }
+      }
+    }
+
+    // Create Shiprocket shipment when order is confirmed (disabled by default; manual flow preferred)
+    const autoCreateShipmentEnabled = process.env.AUTO_CREATE_SHIPMENT === 'true'
+    if (status === 'confirmed' && !order.shipment_id && autoCreateShipmentEnabled) {
       console.log('Creating Shiprocket shipment...')
       try {
         const { createShipment } = await import('@/lib/shiprocket')

@@ -148,3 +148,54 @@ export async function sendSellerApprovalEmail({ to, businessName, username, appr
 
   return transporter.sendMail(mailOptions);
 }
+
+/**
+ * Send password reset email
+ */
+export async function sendPasswordResetEmail({ to, resetUrl }) {
+  const transporter = createEmailTransporter();
+
+  const mailOptions = {
+    from: `"Zaryah" <${process.env.GMAIL_USER}>`,
+    to,
+    subject: 'Reset Your Password - Zaryah',
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Reset Your Password</h1>
+            </div>
+            <div class="content">
+              <p>We received a request to reset your password for your Zaryah account.</p>
+              <div style="text-align: center;">
+                <a href="${resetUrl}" class="button">Reset Password</a>
+              </div>
+              <p>Or copy and paste this link into your browser:</p>
+              <p style="word-break: break-all; color: #667eea;">${resetUrl}</p>
+              <p><strong>This link will expire automatically.</strong></p>
+              <p>If you didn't request this, you can safely ignore this email.</p>
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} Zaryah. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `Reset your Zaryah password using this link:\n\n${resetUrl}\n\nIf you didn't request this, you can ignore this email.`,
+  };
+
+  return transporter.sendMail(mailOptions);
+}

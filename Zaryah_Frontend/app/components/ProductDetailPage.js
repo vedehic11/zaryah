@@ -451,17 +451,29 @@ export const ProductDetailPage = ({ productId }) => {
                     )}
                     
                     {/* Return/Exchange Info */}
-                    {(product.returnAvailable || product.exchangeAvailable) && (
-                      <div className="bg-gradient-to-br from-primary-50 to-cream-50 border border-primary-200 rounded-lg p-4">
-                        <div className="flex items-center space-x-2 mb-2">
+                    <div className="bg-gradient-to-br from-primary-50 to-cream-50 border border-primary-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        {product.returnAvailable || product.exchangeAvailable ? (
                           <RotateCcw className="w-5 h-5 text-primary-600" />
-                          <h3 className="text-sm font-bold text-charcoal-900">
-                            {product.returnAvailable && product.exchangeAvailable ? 'Return & Exchange' : product.exchangeAvailable ? 'Exchange Available' : 'Return Available'}
-                          </h3>
-                        </div>
-                        <p className="text-sm text-charcoal-700">Within {product.returnDays || 7} days of delivery</p>
+                        ) : (
+                          <AlertCircle className="w-5 h-5 text-gray-500" />
+                        )}
+                        <h3 className="text-sm font-bold text-charcoal-900">
+                          {product.returnAvailable && product.exchangeAvailable
+                            ? 'Return & Exchange'
+                            : product.exchangeAvailable
+                            ? 'Exchange Available'
+                            : product.returnAvailable
+                            ? 'Return Available'
+                            : 'No Return or Exchange'}
+                        </h3>
                       </div>
-                    )}
+                      <p className="text-sm text-charcoal-700">
+                        {product.returnAvailable || product.exchangeAvailable
+                          ? `Within ${product.returnDays || 7} days of delivery`
+                          : 'This product is not eligible for return or exchange.'}
+                      </p>
+                    </div>
                   </div>
 
                 {/* Quantity */}
@@ -536,25 +548,33 @@ export const ProductDetailPage = ({ productId }) => {
                       <Package className="w-5 h-5 text-secondary-700" />
                       <div>
                         <p className="font-medium text-charcoal-900">Pay on Delivery</p>
-                        <p className="text-sm text-charcoal-600">₹10 additional fee</p>
+                        <p className="text-sm text-charcoal-600">No extra COD fee</p>
                       </div>
                     </div>
                   )}
-                  {(product.returnAvailable || product.exchangeAvailable) && (
-                    <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3">
+                    {product.returnAvailable || product.exchangeAvailable ? (
                       <RotateCcw className="w-5 h-5 text-mint-600" />
-                      <div>
-                        <p className="font-medium text-charcoal-900">
-                          {product.returnAvailable && product.exchangeAvailable
-                            ? 'Return & Exchange'
-                            : product.exchangeAvailable
-                            ? 'Exchange Available'
-                            : 'Return Available'}
-                        </p>
-                        <p className="text-sm text-charcoal-600">Within {product.returnDays || 7} days</p>
-                      </div>
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-gray-500" />
+                    )}
+                    <div>
+                      <p className="font-medium text-charcoal-900">
+                        {product.returnAvailable && product.exchangeAvailable
+                          ? 'Return & Exchange'
+                          : product.exchangeAvailable
+                          ? 'Exchange Available'
+                          : product.returnAvailable
+                          ? 'Return Available'
+                          : 'No Return or Exchange'}
+                      </p>
+                      <p className="text-sm text-charcoal-600">
+                        {product.returnAvailable || product.exchangeAvailable
+                          ? `Within ${product.returnDays || 7} days`
+                          : 'Not eligible for return or exchange'}
+                      </p>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -802,37 +822,49 @@ export const ProductDetailPage = ({ productId }) => {
                       </div>
                     )}
                     
-                    {(product.returnAvailable || product.exchangeAvailable) && (
-                      <div className="bg-gradient-to-br from-mint-50 to-green-50 border border-mint-200 rounded-xl p-6">
-                        <div className="flex items-start space-x-3 mb-4">
-                          <div className="w-10 h-10 bg-mint-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="bg-gradient-to-br from-mint-50 to-green-50 border border-mint-200 rounded-xl p-6">
+                      <div className="flex items-start space-x-3 mb-4">
+                        <div className="w-10 h-10 bg-mint-600 rounded-full flex items-center justify-center flex-shrink-0">
+                          {product.returnAvailable || product.exchangeAvailable ? (
                             <RotateCcw className="w-5 h-5 text-white" strokeWidth={2} />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-bold text-lg text-mint-800 mb-3">Return & Exchange Policy</h4>
-                          </div>
+                          ) : (
+                            <AlertCircle className="w-5 h-5 text-white" strokeWidth={2} />
+                          )}
                         </div>
-                        
-                        <div className="bg-white rounded-lg p-4 border border-mint-200 mb-4">
-                          <div className="flex items-center space-x-2 mb-2">
+                        <div className="flex-1">
+                          <h4 className="font-bold text-lg text-mint-800 mb-3">Return & Exchange Policy</h4>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white rounded-lg p-4 border border-mint-200 mb-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          {product.returnAvailable || product.exchangeAvailable ? (
                             <CheckCircle className="w-5 h-5 text-mint-600" strokeWidth={2} />
-                            <span className="text-base font-semibold text-charcoal-900">
-                              {product.returnAvailable && product.exchangeAvailable
-                                ? 'Return & Exchange Available'
-                                : product.exchangeAvailable
-                                ? 'Only Exchange Available'
-                                : 'Only Return Available'}
-                            </span>
-                          </div>
-                          <p className="text-charcoal-700">
+                          ) : (
+                            <AlertCircle className="w-5 h-5 text-gray-500" strokeWidth={2} />
+                          )}
+                          <span className="text-base font-semibold text-charcoal-900">
                             {product.returnAvailable && product.exchangeAvailable
-                              ? `You can return or exchange this product within ${product.returnDays || 7} days of delivery.`
+                              ? 'Return & Exchange Available'
                               : product.exchangeAvailable
-                              ? `You can exchange this product within ${product.returnDays || 7} days of delivery. Returns are not accepted.`
-                              : `You can return this product within ${product.returnDays || 7} days of delivery.`}
-                          </p>
+                              ? 'Only Exchange Available'
+                              : product.returnAvailable
+                              ? 'Only Return Available'
+                              : 'No Return or Exchange'}
+                          </span>
                         </div>
-                        
+                        <p className="text-charcoal-700">
+                          {product.returnAvailable && product.exchangeAvailable
+                            ? `You can return or exchange this product within ${product.returnDays || 7} days of delivery.`
+                            : product.exchangeAvailable
+                            ? `You can exchange this product within ${product.returnDays || 7} days of delivery. Returns are not accepted.`
+                            : product.returnAvailable
+                            ? `You can return this product within ${product.returnDays || 7} days of delivery.`
+                            : 'This product is not eligible for return or exchange.'}
+                        </p>
+                      </div>
+                      
+                      {(product.returnAvailable || product.exchangeAvailable) && (
                         <div className="text-sm text-mint-700 space-y-2">
                           <p className="flex items-start">
                             <span className="mr-2">•</span>
@@ -847,8 +879,8 @@ export const ProductDetailPage = ({ productId }) => {
                             <span>Proof of purchase required</span>
                           </p>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                     
                     {!product.material && !product.careInstructions && (
                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">

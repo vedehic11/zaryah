@@ -383,7 +383,7 @@ export const AdminDashboardPage = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-xl font-bold">Platform Revenue</h2>
-                  <p className="text-sm text-gray-600">2.5% Seller Commission + Platform Fees (₹10/₹20) + Delivery Fees (includes ₹10 markup on Shiprocket rate) + COD Fees</p>
+                  <p className="text-sm text-gray-600">2.5% Seller Commission + Platform Fees (₹10/₹20) + Delivery Fees (includes ₹10 markup on Shiprocket rate)</p>
                 </div>
                 <select
                   onChange={(e) => fetchEarnings(e.target.value)}
@@ -400,7 +400,7 @@ export const AdminDashboardPage = () => {
               {earnings ? (
                 <>
                   {/* Earnings Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
                       <div className="flex items-center justify-between mb-2">
                         <DollarSign className="w-8 h-8" />
@@ -434,13 +434,6 @@ export const AdminDashboardPage = () => {
                       <p className="text-3xl font-bold">₹{earnings.totalDeliveryFees?.toLocaleString() || '0.00'}</p>
                     </div>
 
-                    <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-6 text-white">
-                      <div className="flex items-center justify-between mb-2">
-                        <DollarSign className="w-8 h-8" />
-                      </div>
-                      <p className="text-teal-100 text-sm mb-1">COD Fees</p>
-                      <p className="text-3xl font-bold">₹{earnings.totalCODFees?.toLocaleString() || '0.00'}</p>
-                    </div>
                   </div>
 
                   {/* Recent Earnings - Detailed Table */}
@@ -457,7 +450,6 @@ export const AdminDashboardPage = () => {
                               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Commission (2.5%)</th>
                               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Platform Fee</th>
                               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Delivery Fee</th>
-                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">COD Fee</th>
                               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Total</th>
                             </tr>
                           </thead>
@@ -466,8 +458,7 @@ export const AdminDashboardPage = () => {
                               const commission = parseFloat(earning.commission_amount || 0)
                               const platformFee = parseFloat(earning.platform_fee || 0)
                               const deliveryFee = parseFloat(earning.delivery_fee || 0)
-                              const codFee = parseFloat(earning.cod_fee || 0)
-                              const total = commission + platformFee + deliveryFee + codFee
+                              const total = commission + platformFee + deliveryFee
 
                               return (
                                 <tr key={earning.id} className="hover:bg-gray-50 transition-colors">
@@ -492,9 +483,6 @@ export const AdminDashboardPage = () => {
                                   <td className="px-4 py-3 text-sm text-right font-semibold text-orange-600">
                                     {deliveryFee > 0 ? `₹${deliveryFee}` : '-'}
                                   </td>
-                                  <td className="px-4 py-3 text-sm text-right font-semibold text-teal-600">
-                                    {codFee > 0 ? `₹${codFee}` : '-'}
-                                  </td>
                                   <td className="px-4 py-3 text-sm text-right font-bold text-purple-600">
                                     ₹{total.toLocaleString()}
                                   </td>
@@ -515,9 +503,6 @@ export const AdminDashboardPage = () => {
                               </td>
                               <td className="px-4 py-3 text-right text-sm font-bold text-orange-600">
                                 ₹{earnings.totalDeliveryFees?.toLocaleString()}
-                              </td>
-                              <td className="px-4 py-3 text-right text-sm font-bold text-teal-600">
-                                ₹{earnings.totalCODFees?.toLocaleString()}
                               </td>
                               <td className="px-4 py-3 text-right text-lg font-bold text-purple-600">
                                 ₹{earnings.totalRevenue?.toLocaleString()}

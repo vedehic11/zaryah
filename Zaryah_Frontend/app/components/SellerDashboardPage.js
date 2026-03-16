@@ -1022,7 +1022,7 @@ export default function SellerDashboardPage() {
 
                                     {order.status === 'confirmed' && (
                                       <>
-                                        {order.shipment_id && (
+                                        {order.shipment_id && order.awb_code ? (
                                           <button
                                             onClick={async (e) => {
                                               e.stopPropagation()
@@ -1034,6 +1034,8 @@ export default function SellerDashboardPage() {
                                                 if (response.labelUrl) {
                                                   window.open(response.labelUrl, '_blank')
                                                   toast.success('Label opened!')
+                                                } else {
+                                                  toast.error('Shipment is yet to be created.')
                                                 }
                                               } catch (error) {
                                                 toast.error(error.message || 'Failed to get label')
@@ -1044,43 +1046,18 @@ export default function SellerDashboardPage() {
                                             <Printer className="w-3 h-3" />
                                             Print Label
                                           </button>
+                                        ) : (
+                                          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 text-center">
+                                            Shipment is yet to be created.
+                                          </p>
                                         )}
-
-                                        <button
-                                          onClick={async (e) => {
-                                            e.stopPropagation()
-                                            if (updatingOrders.has(order.id)) {
-                                              toast.error('Already updating...')
-                                              return
-                                            }
-                                            setUpdatingOrders(prev => new Set(prev).add(order.id))
-                                            try {
-                                              await apiService.request(`/orders/${order.id}`, {
-                                                method: 'PUT',
-                                                body: JSON.stringify({ status: 'dispatched' })
-                                              })
-                                              toast.success('Order dispatched')
-                                              fetchDashboardData()
-                                            } catch (error) {
-                                              toast.error(error.message || 'Failed to dispatch')
-                                            } finally {
-                                              setUpdatingOrders(prev => {
-                                                const newSet = new Set(prev)
-                                                newSet.delete(order.id)
-                                                return newSet
-                                              })
-                                            }
-                                          }}
-                                          disabled={updatingOrders.has(order.id)}
-                                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1"
-                                        >
-                                          <Package className="w-3 h-3" />
-                                          {updatingOrders.has(order.id) ? 'Updating...' : 'Dispatch'}
-                                        </button>
+                                        <p className="text-[11px] text-gray-600 text-center">
+                                          Status moves to dispatched automatically after AWB assignment.
+                                        </p>
                                       </>
                                     )}
 
-                                    {order.status === 'dispatched' && order.shipment_id && (
+                                    {order.status === 'dispatched' && order.shipment_id && order.awb_code && (
                                       <button
                                         onClick={async (e) => {
                                           e.stopPropagation()
@@ -1092,6 +1069,8 @@ export default function SellerDashboardPage() {
                                             if (response.labelUrl) {
                                               window.open(response.labelUrl, '_blank')
                                               toast.success('Label opened')
+                                            } else {
+                                              toast.error('Shipment is yet to be created.')
                                             }
                                           } catch (error) {
                                             toast.error(error.message || 'Failed to get label')
@@ -1286,7 +1265,7 @@ export default function SellerDashboardPage() {
                                     
                                     {order.status === 'confirmed' && (
                                       <div className="space-y-2">
-                                        {order.shipment_id && (
+                                        {order.shipment_id && order.awb_code ? (
                                           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
                                             <p className="text-xs font-semibold text-blue-900">📦 Shipping Label</p>
                                             <div className="flex gap-2">
@@ -1301,6 +1280,8 @@ export default function SellerDashboardPage() {
                                                       window.open(response.labelUrl, '_blank')
                                                       toast.success('Label opened!')
                                                       fetchDashboardData()
+                                                    } else {
+                                                      toast.error('Shipment is yet to be created.')
                                                     }
                                                   } catch (error) {
                                                     toast.error(error.message || 'Failed to get label')
@@ -1319,41 +1300,18 @@ export default function SellerDashboardPage() {
                                               </button>
                                             </div>
                                           </div>
+                                        ) : (
+                                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                            <p className="text-xs font-semibold text-amber-900">Shipment is yet to be created.</p>
+                                          </div>
                                         )}
-                                        <button
-                                          onClick={async () => {
-                                            if (updatingOrders.has(order.id)) {
-                                              toast.error('Already updating...')
-                                              return
-                                            }
-                                            setUpdatingOrders(prev => new Set(prev).add(order.id))
-                                            try {
-                                              await apiService.request(`/orders/${order.id}`, {
-                                                method: 'PUT',
-                                                body: JSON.stringify({ status: 'dispatched' })
-                                              })
-                                              toast.success('Order dispatched')
-                                              fetchDashboardData()
-                                            } catch (error) {
-                                              toast.error(error.message || 'Failed to dispatch')
-                                            } finally {
-                                              setUpdatingOrders(prev => {
-                                                const newSet = new Set(prev)
-                                                newSet.delete(order.id)
-                                                return newSet
-                                              })
-                                            }
-                                          }}
-                                          disabled={updatingOrders.has(order.id)}
-                                          className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                                        >
-                                          <Package className="w-5 h-5" />
-                                          <span>{updatingOrders.has(order.id) ? 'Updating...' : 'Mark as Dispatched'}</span>
-                                        </button>
+                                        <p className="text-xs text-gray-600 px-1">
+                                          Status moves to dispatched automatically after AWB assignment.
+                                        </p>
                                       </div>
                                     )}
                                     
-                                    {order.status === 'dispatched' && order.shipment_id && (
+                                    {order.status === 'dispatched' && order.shipment_id && order.awb_code && (
                                       <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
                                         <p className="text-sm font-semibold text-green-900">✓ Order Dispatched</p>
                                         <div className="flex gap-2">
@@ -1367,6 +1325,8 @@ export default function SellerDashboardPage() {
                                                 if (response.labelUrl) {
                                                   window.open(response.labelUrl, '_blank')
                                                   toast.success('Label opened')
+                                                } else {
+                                                  toast.error('Shipment is yet to be created.')
                                                 }
                                               } catch (error) {
                                                 toast.error(error.message || 'Failed to get label')

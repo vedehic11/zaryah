@@ -1,15 +1,41 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 
+function isUnauthorizedError(error) {
+  return String(error?.message || '').toLowerCase().includes('unauthorized')
+}
+
+function isAllowedPublicFolder(folder) {
+  return folder.startsWith('seller-documents') || folder.startsWith('seller-covers')
+}
+
 export async function POST(request) {
   try {
-    await requireAuth(request)
+    let isAuthenticated = false
+    try {
+      await requireAuth(request)
+      isAuthenticated = true
+    } catch (authError) {
+      if (!isUnauthorizedError(authError)) {
+        throw authError
+      }
+    }
 
     const formData = await request.formData()
     const file = formData.get('file')
     const rawFolder = (formData.get('folder') || 'general').toString()
     const folder = rawFolder.replace(/[^a-zA-Z0-9/_-]/g, '').replace(/\.{2,}/g, '') || 'general'
     const useSupabase = formData.get('useSupabase') !== 'false'
+
+    if (!isAuthenticated) {
+      if (!isAllowedPublicFolder(folder)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+
+      if (useSupabase) {
+        return NextResponse.json({ error: 'Unauthorized upload target' }, { status: 401 })
+      }
+    }
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
@@ -51,6 +77,11 @@ export async function POST(request) {
     return NextResponse.json({ url })
   } catch (error) {
     console.error('Error uploading file:', error)
+
+    if (isUnauthorizedError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

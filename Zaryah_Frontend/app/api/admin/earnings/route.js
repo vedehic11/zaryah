@@ -117,21 +117,17 @@ export async function GET(request) {
       const platformFee = parseFloat(order.platform_fee || 0)
       
       // Delivery markup (only ₹10 markup goes to admin, rest to Shiprocket)
-        // Delivery markup (only when delivery fee is charged)
-        const deliveryMarkup = parseFloat(order.delivery_fee || 0) > 0 ? 10 : 0
-      
-      // COD fee (₹10 if payment method is COD, otherwise 0)
-      const codFee = order.payment_method === 'cod' ? 10 : 0
-      
+      // Delivery markup (only when delivery fee is charged)
+      const deliveryMarkup = parseFloat(order.delivery_fee || 0) > 0 ? 10 : 0
+
       // Total admin revenue from this order
-      const totalRevenue = commission + platformFee + deliveryMarkup + codFee
+      const totalRevenue = commission + platformFee + deliveryMarkup
 
       console.log(`\nOrder #${order.id.slice(0, 8)} (${order.payment_method.toUpperCase()}, ${order.payment_status}):`)
       console.log(`  Product Amount: ₹${productSubtotal.toFixed(2)}`)
       console.log(`  Commission (2.5%): ₹${commission}`)
       console.log(`  Platform Fee: ₹${platformFee}`)
       console.log(`  Delivery Markup: ₹${deliveryMarkup}`)
-      console.log(`  COD Fee: ₹${codFee}`)
       console.log(`  Total Admin Revenue: ₹${totalRevenue.toFixed(2)}`)
 
       return {
@@ -142,7 +138,7 @@ export async function GET(request) {
         commission_amount: commission,
         platform_fee: platformFee,
         delivery_fee: deliveryMarkup, // Only the ₹10 markup
-        cod_fee: codFee,
+        cod_fee: 0,
         total_revenue: totalRevenue,
         payment_method: order.payment_method,
         payment_status: order.payment_status,
@@ -156,8 +152,8 @@ export async function GET(request) {
     const totalCommission = earnings.reduce((sum, e) => sum + e.commission_amount, 0)
     const totalPlatformFees = earnings.reduce((sum, e) => sum + e.platform_fee, 0)
     const totalDeliveryFees = earnings.reduce((sum, e) => sum + e.delivery_fee, 0)
-    const totalCODFees = earnings.reduce((sum, e) => sum + e.cod_fee, 0)
-    const totalRevenue = totalCommission + totalPlatformFees + totalDeliveryFees + totalCODFees
+    const totalCODFees = 0
+    const totalRevenue = totalCommission + totalPlatformFees + totalDeliveryFees
     const totalOrders = earnings.length
     const avgPerOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0
 
@@ -169,7 +165,6 @@ export async function GET(request) {
     console.log(`Total Commission: ₹${totalCommission.toFixed(2)}`)
     console.log(`Total Platform Fees: ₹${totalPlatformFees.toFixed(2)}`)
     console.log(`Total Delivery Fees: ₹${totalDeliveryFees.toFixed(2)}`)
-    console.log(`Total COD Fees: ₹${totalCODFees.toFixed(2)}`)
     console.log(`Total Admin Revenue: ₹${totalRevenue.toFixed(2)}`)
     console.log(`Total Orders: ${totalOrders}`)
     console.log(`  - Paid: ${paidOrders.length}`)

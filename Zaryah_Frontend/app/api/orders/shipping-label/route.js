@@ -78,7 +78,7 @@ export async function POST(request) {
     if (!order.shipment_id) {
       return NextResponse.json(
         { 
-          error: 'No shipment found for this order. Please confirm the order first to create a shipment.',
+          error: 'Shipment is yet to be created.',
           courierAssigned: false
         },
         { status: 400 }
@@ -119,64 +119,20 @@ export async function POST(request) {
         hasAwbCode: !!shipmentDetails.awbCode,
         awbCode: shipmentDetails.awbCode
       })
-      
-      // Try to fetch label anyway as a fallback - maybe it exists even if AWB isn't showing
-      console.log('🔄 Attempting to fetch label as fallback...')
-      try {
-        const labelData = await fetchShippingLabel(order.shipment_id)
-        console.log('✅ Label found via fallback!', labelData.labelUrl)
-        
-        // Update order with any info we got
-        if (labelData.awbCode || labelData.courierName) {
-          console.log('📝 Updating order (fallback) with courier info:', {
-            orderId,
-            awb_code: labelData.awbCode || shipmentDetails.awbCode,
-            courier_name: labelData.courierName || shipmentDetails.courierName
-          })
-          
-          const { data: updateData, error: updateError } = await supabase
-            .from('orders')
-            .update({
-              awb_code: labelData.awbCode || shipmentDetails.awbCode,
-              courier_name: labelData.courierName || shipmentDetails.courierName,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', orderId)
-            .select()
-          
-          if (updateError) {
-            console.error('❌ Failed to update order (fallback):', updateError)
-          } else {
-            console.log('✅ Order updated (fallback) successfully:', updateData)
-          }
-        }
-        
-        return NextResponse.json({
-          success: true,
-          labelUrl: labelData.labelUrl,
-          awbCode: labelData.awbCode || shipmentDetails.awbCode,
-          courierName: labelData.courierName || shipmentDetails.courierName,
-          courierAssigned: true,
+      return NextResponse.json(
+        {
+          error: 'Shipment is yet to be created.',
+          courierAssigned: false,
+          shiprocketDashboardUrl: 'https://app.shiprocket.in/seller',
           shipmentId: order.shipment_id,
-          note: 'Label retrieved via fallback method'
-        })
-      } catch (fallbackError) {
-        console.error('❌ Fallback label fetch also failed:', fallbackError)
-        return NextResponse.json(
-          { 
-            error: 'Courier not assigned yet. Please go to Shiprocket dashboard and assign a courier service first.',
-            courierAssigned: false,
-            shiprocketDashboardUrl: 'https://app.shiprocket.in/seller',
-            shipmentId: order.shipment_id,
-            debugInfo: {
-              courierName: shipmentDetails.courierName,
-              awbCode: shipmentDetails.awbCode,
-              status: shipmentDetails.status
-            }
-          },
-          { status: 400 }
-        )
-      }
+          debugInfo: {
+            courierName: shipmentDetails.courierName,
+            awbCode: shipmentDetails.awbCode,
+            status: shipmentDetails.status
+          }
+        },
+        { status: 400 }
+      )
     }
 
     console.log('✅ Courier assigned:', shipmentDetails.courierName)
@@ -248,6 +204,17 @@ export async function POST(request) {
       }
     } else {
       console.log('✅ Label URL found in shipment details:', labelUrl)
+    }
+
+    if (!labelUrl) {
+      return NextResponse.json(
+        {
+          error: 'Shipment is yet to be created.',
+          courierAssigned: false,
+          shipmentId: order.shipment_id
+        },
+        { status: 400 }
+      )
     }
 
     return NextResponse.json({

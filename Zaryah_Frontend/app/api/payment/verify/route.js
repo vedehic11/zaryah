@@ -101,8 +101,7 @@ export async function POST(request) {
         const sellerCommission = parseFloat((productSubtotal * (SELLER_COMMISSION_RATE / 100)).toFixed(2))
         const buyerPlatformFee = parseFloat(order.platform_fee || 0)
         const deliveryMarkup = parseFloat(order.delivery_fee || 0) > 0 ? 10 : 0 // Markup only when delivery fee is charged
-        const codFee = order.payment_method === 'cod' ? 10 : 0 // ₹10 COD fee
-        const totalAdminEarnings = sellerCommission + buyerPlatformFee + deliveryMarkup + codFee
+        const totalAdminEarnings = sellerCommission + buyerPlatformFee + deliveryMarkup
         
         console.log('💰 SELLER EARNINGS CALCULATED (from payment verification):')
         console.log('  Product subtotal:', `₹${productSubtotal}`)
@@ -111,7 +110,6 @@ export async function POST(request) {
         console.log('  Seller commission (2.5% from seller):', `₹${sellerCommission}`)
         console.log('  Buyer platform fee (₹10 or ₹20):', `₹${buyerPlatformFee}`)
         console.log('  Delivery markup (₹10 to admin):', `₹${deliveryMarkup}`)
-        console.log('  COD fee:', `₹${codFee}`)
         console.log('  Total admin earnings:', `₹${totalAdminEarnings}`)
 
         // Ensure wallet exists and add to pending balance
@@ -173,7 +171,7 @@ export async function POST(request) {
         if (commissionError) {
           console.error('Commission record error:', commissionError)
         } else {
-          console.log(`💰 Admin earnings recorded: ₹${totalAdminEarnings} (₹${sellerCommission} seller commission + ₹${buyerPlatformFee} platform fee + ₹${deliveryMarkup} delivery markup + ₹${codFee} COD fee)`)
+          console.log(`💰 Admin earnings recorded: ₹${totalAdminEarnings} (₹${sellerCommission} seller commission + ₹${buyerPlatformFee} platform fee + ₹${deliveryMarkup} delivery markup)`)
         }
       }
     }

@@ -39,17 +39,81 @@ async function createNotification(payload) {
   }
 }
 
-async function processCancellation(order, currentStatus, isRTO, notes) {
-  if (order.payment_status === 'paid' && order.payment_method === 'online' && order.razorpay_payment_id) {
+async function processCancellation(order, currentStatus, isRTO, notes, options = {}) {
+  const refundOnly = options.refundOnly === true
+  let notesAccumulator = notes || order.notes || ''
+
+  const notifyAdminsRefundIssue = async (message) => {
+    const { data: adminUsers } = await supabase
+      .from('users')
+      .select('id')
+      .eq('user_type', 'Admin')
+
+    if (!adminUsers?.length) return
+
+    await Promise.all(
+      adminUsers.map((admin) =>
+        createNotification({
+          user_id: admin.id,
+          user_model: 'Admin',
+          title: 'Shipment Cancellation Refund Pending',
+          message,
+          type: 'order',
+          related_order_id: order.id,
+          priority: 'high',
+          action_url: '/admin/dashboard?tab=payments'
+        })
+      )
+    )
+  }
+
+  if (order.payment_method === 'online' && order.payment_status !== 'refunded') {
     try {
+      let razorpayPaymentId = order.razorpay_payment_id || null
+
+      if (!razorpayPaymentId && typeof order.payment_id === 'string' && order.payment_id.startsWith('pay_')) {
+        razorpayPaymentId = order.payment_id
+      }
+
+      if (!razorpayPaymentId) {
+        const { data: paymentRow } = await supabase
+          .from('payments')
+          .select('payment_id')
+          .eq('order_id', order.id)
+          .eq('status', 'completed')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (paymentRow?.payment_id && String(paymentRow.payment_id).startsWith('pay_')) {
+          razorpayPaymentId = paymentRow.payment_id
+        }
+      }
+
+      if (!razorpayPaymentId) {
+        const missingPaymentNote = '⚠️ Auto-refund skipped: Razorpay payment id not found. Admin needs to process manually.'
+        notesAccumulator = notesAccumulator ? `${notesAccumulator}\n${missingPaymentNote}` : missingPaymentNote
+
+        await supabase
+          .from('orders')
+          .update({ notes: notesAccumulator })
+          .eq('id', order.id)
+
+        await notifyAdminsRefundIssue(
+          `Order #${order.id.slice(0, 8)} was cancelled from shipment updates, but payment id was missing. Please refund manually.`
+        )
+
+        throw new Error('Missing Razorpay payment id for refund')
+      }
+
       const { default: Razorpay } = await import('razorpay')
       const razorpay = new Razorpay({
-        key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key_id: process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         key_secret: process.env.RAZORPAY_KEY_SECRET
       })
 
       const refundAmount = Math.round(parseFloat(order.total_amount || 0) * 100)
-      const refund = await razorpay.payments.refund(order.razorpay_payment_id, {
+      const refund = await razorpay.payments.refund(razorpayPaymentId, {
         amount: refundAmount,
         notes: {
           reason: isRTO ? 'RTO - Return to Origin' : 'Shipment Failed',
@@ -58,22 +122,42 @@ async function processCancellation(order, currentStatus, isRTO, notes) {
         }
       })
 
+      const refundNote = `💰 Refund initiated: ₹${(refundAmount / 100).toFixed(2)} (ID: ${refund.id})`
+      notesAccumulator = notesAccumulator ? `${notesAccumulator}\n${refundNote}` : refundNote
+
       await supabase
         .from('orders')
         .update({
           payment_status: 'refunded',
-          notes: `${notes}\n💰 Refund initiated: ₹${(refundAmount / 100).toFixed(2)} (ID: ${refund.id})`
+          notes: notesAccumulator
         })
         .eq('id', order.id)
     } catch (refundError) {
-      console.error('Auto refund failed:', refundError)
-      await supabase
-        .from('orders')
-        .update({
-          notes: `${notes}\n⚠️ Auto-refund failed: ${refundError.message}. Admin needs to process manually.`
-        })
-        .eq('id', order.id)
+      const refundErrorMessage =
+        refundError?.error?.description ||
+        refundError?.description ||
+        refundError?.message ||
+        'Unknown Razorpay refund error'
+
+      if (refundErrorMessage !== 'Missing Razorpay payment id for refund') {
+        console.error('Auto refund failed:', refundError)
+        const refundFailNote = `⚠️ Auto-refund failed: ${refundErrorMessage}. Admin needs to process manually.`
+        notesAccumulator = notesAccumulator ? `${notesAccumulator}\n${refundFailNote}` : refundFailNote
+
+        await supabase
+          .from('orders')
+          .update({ notes: notesAccumulator })
+          .eq('id', order.id)
+
+        await notifyAdminsRefundIssue(
+          `Order #${order.id.slice(0, 8)} cancellation refund failed from shipment updates: ${refundErrorMessage}`
+        )
+      }
     }
+  }
+
+  if (refundOnly) {
+    return
   }
 
   if (order.wallet_credited && parseFloat(order.seller_amount || 0) > 0) {
@@ -289,6 +373,13 @@ export async function applyShiprocketOrderUpdate(order, liveUpdate, options = {}
 
   if (nextStatus === 'cancelled' && previousStatus !== 'cancelled') {
     await processCancellation(order, currentStatus, statusMapping.isRTO, notes)
+  } else if (
+    nextStatus === 'cancelled' &&
+    previousStatus === 'cancelled' &&
+    order.payment_method === 'online' &&
+    order.payment_status !== 'refunded'
+  ) {
+    await processCancellation(order, currentStatus, statusMapping.isRTO, notes, { refundOnly: true })
   }
 
   if (nextStatus === 'delivered' && previousStatus !== 'delivered') {

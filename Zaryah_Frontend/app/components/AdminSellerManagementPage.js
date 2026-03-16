@@ -43,6 +43,8 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
   const [sortOrder, setSortOrder] = useState('desc')
   const [selectedDocument, setSelectedDocument] = useState(null)
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false)
+  const [documentOptions, setDocumentOptions] = useState([])
+  const [isDocumentSelectorOpen, setIsDocumentSelectorOpen] = useState(false)
 
   // Update statusFilter when initialView prop changes
   useEffect(() => {
@@ -229,6 +231,14 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
         url: seller.businessDocument
       })
     }
+
+    if (seller.business_document && seller.business_document !== seller.businessDocument) {
+      documents.push({
+        title: 'Business Document',
+        description: `Business registration for ${seller.businessName}`,
+        url: seller.business_document
+      })
+    }
     
     if (seller.coverPhoto) {
       documents.push({
@@ -237,10 +247,25 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
         url: seller.coverPhoto
       })
     }
+
+    if (seller.cover_photo && seller.cover_photo !== seller.coverPhoto) {
+      documents.push({
+        title: 'Cover Photo',
+        description: `Cover image for ${seller.businessName}`,
+        url: seller.cover_photo
+      })
+    }
+
+    const uniqueDocuments = documents.filter((doc, index, array) =>
+      array.findIndex(item => item.url === doc.url) === index
+    )
     
-    if (documents.length > 0) {
-      setSelectedDocument(documents[0]) // Show first document
+    if (uniqueDocuments.length === 1) {
+      setSelectedDocument(uniqueDocuments[0])
       setIsDocumentViewerOpen(true)
+    } else if (uniqueDocuments.length > 1) {
+      setDocumentOptions(uniqueDocuments)
+      setIsDocumentSelectorOpen(true)
     } else {
       toast.error('No documents available for this seller')
     }
@@ -441,15 +466,7 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                              const documentUrl = seller.id_document || seller.idDocument
-                              if (documentUrl && documentUrl !== 'pending') {
-                                setSelectedDocument(documentUrl)
-                                setIsDocumentViewerOpen(true)
-                              } else {
-                                toast.error('No document available to view')
-                              }
-                            }}
+                            onClick={() => handleViewDocuments(seller)}
                             className="p-1.5 text-gray-500 hover:text-blue-600 transition-colors"
                             title="View documents"
                           >
@@ -466,10 +483,66 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
         </div>
       </div>
 
+      {/* Document Selector Modal */}
+      {isDocumentSelectorOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div
+            className="fixed inset-0 bg-black bg-opacity-60"
+            onClick={() => {
+              setIsDocumentSelectorOpen(false)
+              setDocumentOptions([])
+            }}
+          />
+          <div className="flex min-h-full items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Select a document</h3>
+                <p className="text-sm text-gray-600 mt-1">Choose which seller document you want to view.</p>
+              </div>
+
+              <div className="p-6 space-y-3 bg-gray-50 max-h-[60vh] overflow-auto">
+                {documentOptions.map((doc, index) => (
+                  <button
+                    key={`${doc.url}-${index}`}
+                    onClick={() => {
+                      setSelectedDocument(doc)
+                      setIsDocumentSelectorOpen(false)
+                      setDocumentOptions([])
+                      setIsDocumentViewerOpen(true)
+                    }}
+                    className="w-full text-left bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-200 rounded-xl p-4 transition-colors"
+                  >
+                    <p className="font-semibold text-gray-900">{doc.title}</p>
+                    <p className="text-sm text-gray-600 mt-1">{doc.description}</p>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex justify-end p-6 border-t border-gray-200 bg-white">
+                <button
+                  onClick={() => {
+                    setIsDocumentSelectorOpen(false)
+                    setDocumentOptions([])
+                  }}
+                  className="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      )}
+
       {/* Document Viewer Modal */}
       {isDocumentViewerOpen && (
         <DocumentViewerModal
-          documentUrl={selectedDocument}
+          isOpen={isDocumentViewerOpen}
+          document={selectedDocument}
           onClose={() => {
             setIsDocumentViewerOpen(false)
             setSelectedDocument(null)

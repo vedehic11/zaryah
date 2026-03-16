@@ -638,6 +638,77 @@ export async function assignCourier(shipmentId) {
 }
 
 /**
+ * Cancel an order/shipment in Shiprocket
+ * @param {Object} params
+ * @param {string|number} params.orderId - Order ID used during Shiprocket order creation
+ * @param {string|number} params.shipmentId - Shiprocket shipment ID
+ * @returns {Promise<Object>} Cancellation response metadata
+ */
+export async function cancelShiprocketOrder({ orderId, shipmentId }) {
+  const token = await authenticate()
+
+  const attempts = [
+    {
+      endpoint: '/orders/cancel',
+      payload: {
+        ids: orderId ? [String(orderId)] : []
+      },
+      label: 'order-cancel-by-order-id'
+    },
+    {
+      endpoint: '/orders/cancel/shipment',
+      payload: {
+        shipment_id: shipmentId ? [Number(shipmentId)] : []
+      },
+      label: 'order-cancel-by-shipment-id'
+    }
+  ]
+
+  const validAttempts = attempts.filter(attempt => {
+    if (attempt.label === 'order-cancel-by-order-id') return !!orderId
+    if (attempt.label === 'order-cancel-by-shipment-id') return !!shipmentId
+    return false
+  })
+
+  if (validAttempts.length === 0) {
+    throw new Error('Missing orderId/shipmentId for Shiprocket cancellation')
+  }
+
+  let lastError = null
+
+  for (const attempt of validAttempts) {
+    try {
+      const response = await fetch(`${SHIPROCKET_API_BASE}${attempt.endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(attempt.payload)
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        return {
+          success: true,
+          method: attempt.label,
+          endpoint: attempt.endpoint,
+          response: result
+        }
+      }
+
+      const message = result?.message || result?.error || response.statusText
+      lastError = new Error(`Shiprocket cancel failed via ${attempt.label}: ${message}`)
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  throw lastError || new Error('Shiprocket cancellation failed')
+}
+
+/**
  * Generate shipping label for a shipment
  * @param {number} shipmentId - Shiprocket shipment ID
  * @param {boolean} skipCourierCheck - Skip checking if courier is assigned (default: false)

@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const { id } = params
+    const { id } = await params
 
     // Get order with AWB code
     const { data: order, error: orderError } = await supabase

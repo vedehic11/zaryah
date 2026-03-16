@@ -2,11 +2,80 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { Mail, Lock, Eye, EyeOff, Sparkles, User } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Mail, Lock, Eye, EyeOff, Sparkles, User, KeyRound, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
+// ─── Forgot Password Sub-Component ─────────────────────────────────────────
+const ForgotPassword = ({ onBack }) => {
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const sendEmailResetLink = async () => {
+    const trimmedEmail = email.trim()
+    if (!trimmedEmail || !/\S+@\S+\.\S+/.test(trimmedEmail)) {
+      toast.error('Enter a valid email address')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await fetch('/api/auth/send-reset-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmedEmail })
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        toast.error(data.error || 'Failed to send reset link')
+        return
+      }
+
+      toast.success('Password reset link sent to your email')
+    } catch (error) {
+      console.error('sendEmailResetLink error:', error)
+      toast.error('Failed to send reset link')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">Reset via Email Link</label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Mail className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="Enter your account email"
+            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={sendEmailResetLink}
+          disabled={loading}
+          className="w-full border border-primary-300 text-primary-700 hover:bg-primary-50 py-3 px-4 rounded-xl font-semibold transition-colors disabled:opacity-50"
+        >
+          {loading ? 'Sending link...' : 'Send Reset Link'}
+        </button>
+      </div>
+
+      <button type="button" onClick={onBack} className="w-full text-sm text-gray-500 hover:text-gray-700 flex items-center justify-center gap-1">
+        <ArrowLeft className="w-4 h-4" /> Back to Sign In
+      </button>
+    </div>
+  )
+}
+
+// ─── LoginPage ───────────────────────────────────────────────────────────────
 export const LoginPage = () => {
   const [formData, setFormData] = useState({
     email: '',
@@ -15,6 +84,7 @@ export const LoginPage = () => {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
   const { login, isLoading } = useAuth()
   const router = useRouter()
 
@@ -85,14 +155,42 @@ export const LoginPage = () => {
             </div>
             <span className="text-3xl font-bold text-primary-700 font-serif">Zaryah</span>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">Welcome back</h2>
-          <p className="mt-2 text-gray-600">Sign in to your account to continue your journey</p>
+          {showForgotPassword ? (
+            <>
+              <h2 className="text-3xl font-bold text-gray-900">Reset Password</h2>
+              <p className="mt-2 text-gray-600">Get a secure email link to reset your password</p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-3xl font-bold text-gray-900">Welcome back</h2>
+              <p className="mt-2 text-gray-600">Sign in to your account to continue your journey</p>
+            </>
+          )}
         </div>
 
-        {/* Form */}
+        {/* Forgot Password panel */}
+        <AnimatePresence mode="wait">
+          {showForgotPassword && (
+            <motion.div
+              key="forgot"
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -40 }}
+              className="bg-white p-8 rounded-2xl shadow-xl"
+            >
+              <ForgotPassword onBack={() => setShowForgotPassword(false)} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Login Form */}
+        <AnimatePresence mode="wait">
+        {!showForgotPassword && (
         <motion.form
+          key="login"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           transition={{ delay: 0.1 }}
           className="mt-8 space-y-6 bg-white p-8 rounded-2xl shadow-xl"
           onSubmit={handleSubmit}
@@ -206,6 +304,13 @@ export const LoginPage = () => {
 
           {/* Links */}
           <div className="text-center space-y-2 mt-6">
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 mx-auto"
+            >
+              <KeyRound className="w-3.5 h-3.5" /> Forgot Password?
+            </button>
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
               <Link href="/register" className="text-primary-600 hover:text-primary-700 font-medium">
@@ -214,6 +319,8 @@ export const LoginPage = () => {
             </p>
           </div>
         </motion.form>
+        )}
+        </AnimatePresence>
       </motion.div>
     </div>
   )

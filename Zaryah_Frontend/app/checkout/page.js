@@ -119,9 +119,8 @@ export default function CheckoutPage() {
   }, 0)
   const deliveryFee = dynamicDeliveryCharge !== null ? dynamicDeliveryCharge : (subtotal >= 500 ? 0 : 60)
   // Note: deliveryFee already includes ₹10 markup from Shiprocket API (getCheapestShippingRate)
-  const codFee = paymentMethod === 'cod' ? 10 : 0
   const platformFee = subtotal < 500 ? 10 : 20 // Flat platform fee based on order value
-  const total = subtotal + giftPackagingFee + deliveryFee + codFee + platformFee
+  const total = subtotal + giftPackagingFee + deliveryFee + platformFee
 
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
@@ -150,7 +149,7 @@ export default function CheckoutPage() {
         totalAmount: total,
         deliveryFee: deliveryFee,
         giftPackagingFee: giftPackagingFee,
-        codFee: codFee,
+        codFee: 0,
         platformFee: platformFee
       }
 
@@ -159,7 +158,6 @@ export default function CheckoutPage() {
         subtotal,
         giftPackagingFee,
         deliveryFee,
-        codFee,
         platformFee,
         total
       })
@@ -717,12 +715,6 @@ export default function CheckoutPage() {
                   </span>
                   <span>{deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`}</span>
                 </div>
-                {codFee > 0 && (
-                  <div className="flex justify-between text-charcoal-700">
-                    <span>COD Fee</span>
-                    <span>₹{codFee}</span>
-                  </div>
-                )}
                 <div className="flex justify-between text-charcoal-700">
                   <span className="flex items-center gap-1">
                     Platform Fee

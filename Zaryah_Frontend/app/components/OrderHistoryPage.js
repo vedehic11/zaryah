@@ -40,6 +40,7 @@ export const OrderHistoryPage = () => {
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [filter, setFilter] = useState('all') // all, pending, confirmed, dispatched, delivered, cancelled
+  const [cancellingOrderIds, setCancellingOrderIds] = useState(new Set())
 
   useEffect(() => {
     if (!user) return
@@ -79,7 +80,7 @@ export const OrderHistoryPage = () => {
           if (ordersNeedingLiveSync.length > 0) {
             const trackingResults = await Promise.allSettled(
               ordersNeedingLiveSync.map(order =>
-                apiService.request(`/orders/${order.id}/tracking`, { method: 'GET' })
+                apiService.request(`/orders/${order.id}/tracking`, { method: 'GET', silentErrors: true })
               )
             )
 
@@ -199,6 +200,72 @@ export const OrderHistoryPage = () => {
     setShowReviewModal(true)
   }
 
+  const canBuyerCancelOrder = (order) => {
+    const displayStatus = getDisplayStatus(order)
+    const shipmentStatusText = String(order?.shipment_status || '').toUpperCase()
+    const shippedLikeStatuses = [
+      'SHIPPED',
+      'IN TRANSIT',
+      'OUT FOR DELIVERY',
+      'PICKUP COMPLETE',
+      'DELIVERED'
+    ]
+    const isLikelyShipped =
+      !!order?.awb_code ||
+      displayStatus === 'dispatched' ||
+      shippedLikeStatuses.some((statusValue) => shipmentStatusText.includes(statusValue))
+
+    if (isLikelyShipped) return false
+
+    return displayStatus === 'pending' || displayStatus === 'confirmed'
+  }
+
+  const handleCancelOrder = async (order) => {
+    if (!order?.id) return
+
+    const confirmCancel = window.confirm('Are you sure you want to cancel this order?')
+    if (!confirmCancel) return
+
+    setCancellingOrderIds(prev => new Set(prev).add(order.id))
+
+    try {
+      const updatedOrder = await apiService.request(`/orders/${order.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'cancelled' })
+      })
+
+      setOrders(prev => prev.map(item =>
+        item.id === order.id
+          ? {
+              ...item,
+              status: updatedOrder?.status || 'cancelled',
+              shipment_status: updatedOrder?.shipment_status || item.shipment_status,
+              notes: updatedOrder?.notes || item.notes
+            }
+          : item
+      ))
+
+      if (selectedOrder?.id === order.id) {
+        setSelectedOrder(prev => prev ? {
+          ...prev,
+          status: updatedOrder?.status || 'cancelled',
+          shipment_status: updatedOrder?.shipment_status || prev.shipment_status,
+          notes: updatedOrder?.notes || prev.notes
+        } : prev)
+      }
+
+      toast.success('Order cancelled successfully')
+    } catch (error) {
+      toast.error(error.message || 'Failed to cancel order')
+    } finally {
+      setCancellingOrderIds(prev => {
+        const next = new Set(prev)
+        next.delete(order.id)
+        return next
+      })
+    }
+  }
+
   // Calculate order breakdown
   const calculateOrderBreakdown = (order) => {
     const products = order.products || []
@@ -209,16 +276,14 @@ export const OrderHistoryPage = () => {
     }, 0)
     // Use delivery_fee from order if available, otherwise calculate (fallback matches Shiprocket API default)
     const deliveryFee = order.delivery_fee !== undefined ? parseFloat(order.delivery_fee) : (subtotal >= 500 ? 0 : 60)
-    const codFee = order.payment_method === 'cod' ? 10 : 0
     // Use platform_fee from order if available, otherwise calculate based on subtotal
     const platformFee = order.platform_fee !== undefined ? parseFloat(order.platform_fee) : (subtotal < 500 ? 10 : 20)
-    const total = subtotal + giftPackagingFee + deliveryFee + codFee + platformFee
+    const total = subtotal + giftPackagingFee + deliveryFee + platformFee
     
     return {
       subtotal,
       giftPackagingFee,
       deliveryFee,
-      codFee,
       platformFee,
       total
     }
@@ -361,6 +426,18 @@ export const OrderHistoryPage = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
+                        {canBuyerCancelOrder(order) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleCancelOrder(order)
+                            }}
+                            disabled={cancellingOrderIds.has(order.id)}
+                            className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            {cancellingOrderIds.has(order.id) ? 'Cancelling...' : 'Cancel Order'}
+                          </button>
+                        )}
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(getDisplayStatus(order))}`}>
                         {getDisplayStatus(order) === 'payment_failed' ? 'Payment Failed' : getDisplayStatus(order).charAt(0).toUpperCase() + getDisplayStatus(order).slice(1)}
                       </span>
@@ -375,6 +452,12 @@ export const OrderHistoryPage = () => {
                       </button>
                     </div>
                   </div>
+
+                  {!canBuyerCancelOrder(order) && ['dispatched', 'delivered'].includes(getDisplayStatus(order)) && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-4">
+                      Cancellation is not available after dispatch. Please deny delivery if you do not want this order.
+                    </p>
+                  )}
 
                   {/* Order Progress */}
                   <div className="mb-4">
@@ -586,12 +669,6 @@ export const OrderHistoryPage = () => {
                                 )}
                               </span>
                             </div>
-                            {order.payment_method === 'cod' && (
-                              <div className="flex justify-between">
-                                <span className="text-charcoal-600">COD Charges:</span>
-                                <span className="font-medium">{formatCurrency(calculateOrderBreakdown(order).codFee)}</span>
-                              </div>
-                            )}
                             <div className="flex justify-between">
                               <span className="text-charcoal-600 flex items-center gap-1">
                                 Platform Fee
@@ -639,6 +716,23 @@ export const OrderHistoryPage = () => {
                           <Phone className="w-4 h-4" />
                           <span>Contact Seller</span>
                         </button>
+
+                        {canBuyerCancelOrder(order) && (
+                          <button
+                            onClick={() => handleCancelOrder(order)}
+                            disabled={cancellingOrderIds.has(order.id)}
+                            className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            <span>{cancellingOrderIds.has(order.id) ? 'Cancelling...' : 'Cancel Order'}</span>
+                          </button>
+                        )}
+
+                        {!canBuyerCancelOrder(order) && ['dispatched', 'delivered'].includes(getDisplayStatus(order)) && (
+                          <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                            Cancellation closed after dispatch.
+                          </span>
+                        )}
                       </div>
                     </div>
                   </motion.div>

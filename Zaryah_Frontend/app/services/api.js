@@ -19,6 +19,7 @@ class ApiService {
   // Supabase Auth: send token in Authorization header
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`
+    const { silentErrors = false, ...requestOptions } = options
     
     // Get auth token
     const token = await this.getAuthToken()
@@ -27,9 +28,9 @@ class ApiService {
       credentials: 'include', // Include cookies
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...requestOptions.headers,
       },
-      ...options,
+      ...requestOptions,
     }
 
     // Always fetch fresh data for GET requests (critical for live order status updates)
@@ -46,12 +47,14 @@ class ApiService {
     }
     
     // Remove Content-Type for FormData (browser sets it automatically)
-    if (options.body instanceof FormData) {
+    if (requestOptions.body instanceof FormData) {
       delete config.headers['Content-Type']
     }
 
     try {
-      console.log(`API Request: ${options.method || 'GET'} ${url}`)
+      if (!silentErrors) {
+        console.log(`API Request: ${requestOptions.method || 'GET'} ${url}`)
+      }
       const response = await fetch(url, config)
       
       // Check if response has content before parsing JSON
@@ -67,19 +70,27 @@ class ApiService {
 
       if (!response.ok) {
         const errorMsg = data?.error || data?.message || `HTTP ${response.status}: ${response.statusText}`
-        console.error(`API Error [${url}]:`, errorMsg)
+        if (!silentErrors) {
+          console.error(`API Error [${url}]:`, errorMsg)
+        }
         throw new Error(errorMsg)
       }
 
-      console.log(`API Success [${url}]:`, data?.length ? `${data.length} items` : 'OK')
+      if (!silentErrors) {
+        console.log(`API Success [${url}]:`, data?.length ? `${data.length} items` : 'OK')
+      }
       return data
     } catch (error) {
       // Check if it's a network error
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        console.error('Network Error: Cannot connect to API server. Is the dev server running on port 3000?')
+        if (!silentErrors) {
+          console.error('Network Error: Cannot connect to API server. Is the dev server running on port 3000?')
+        }
         throw new Error('Cannot connect to server. Please check if the application is running.')
       }
-      console.error('API Error:', error)
+      if (!silentErrors) {
+        console.error('API Error:', error)
+      }
       throw error
     }
   }
