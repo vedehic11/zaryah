@@ -8,6 +8,7 @@ import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import toast from 'react-hot-toast'
 
 export const WishlistPage = () => {
@@ -175,11 +176,13 @@ export const WishlistPage = () => {
               >
                 {/* Product Image */}
                 <div className="relative overflow-hidden">
-                  <Link href={`/product/${item.product_id}`}>
-                    <img
+                  <Link href={`/product/${item.product_id}`} className="block relative w-full h-32 sm:h-48 lg:h-64">
+                    <Image
                       src={item.product?.images?.[0] || '/placeholder.jpg'}
                       alt={item.product?.name}
-                      className="w-full h-32 sm:h-48 lg:h-64 object-cover group-hover:scale-105 transition-transform duration-700 rounded-lg"
+                      fill
+                      className="object-cover rounded-lg"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     />
                   </Link>
 

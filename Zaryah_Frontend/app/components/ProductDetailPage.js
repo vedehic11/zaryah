@@ -30,6 +30,7 @@ import { apiService } from '../services/api'
 import { useRouter } from 'next/navigation'
 import { Reviews } from './Reviews'
 import { ReviewModal } from './ReviewModal'
+import Image from 'next/image'
 import toast from 'react-hot-toast'
 
 export const ProductDetailPage = ({ productId }) => {
@@ -225,18 +226,21 @@ export const ProductDetailPage = ({ productId }) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
               {/* Product Images */}
               <div className="space-y-4">
-                <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden">
+                <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden relative">
                   {product.images && product.images.length > 0 ? (
-                    <img
+                    <Image
                       src={product.images[0]}
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      priority
                     />
                   ) : product.image ? (
-                    <img
+                    <Image
                       src={product.image}
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -249,11 +253,12 @@ export const ProductDetailPage = ({ productId }) => {
                 {product.images && product.images.length > 1 && (
                   <div className="grid grid-cols-4 gap-2">
                     {product.images.slice(1, 5).map((image, index) => (
-                      <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                        <img
+                      <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
+                        <Image
                           src={image}
                           alt={`${product.name} ${index + 2}`}
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
                         />
                       </div>
                     ))}

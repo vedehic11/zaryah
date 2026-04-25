@@ -6,6 +6,7 @@ import { Heart, Truck, Users, Award, ArrowRight, Package, Gift, Sparkles } from 
 import { VideoCarousel } from './VideoCarousel'
 import { ProductCard } from './ProductCard'
 import Link from 'next/link'
+import Image from 'next/image'
 import { apiService } from '../services/api'
 
 export const HomePage = () => {
@@ -115,14 +116,11 @@ export const HomePage = () => {
                 className="min-w-[160px] sm:min-w-[180px] lg:min-w-[200px] flex-shrink-0 group block rounded-2xl overflow-hidden bg-white border border-cream-200 shadow-subtle hover:shadow-lg transition-all"
               >
                 <div className="relative w-full h-32 overflow-hidden bg-gradient-to-br from-primary-100 to-cream-100">
-                  <img 
+                  <Image 
                     src={cat.img} 
                     alt={cat.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    onError={(e) => {
-                      e.target.style.display = 'none'
-                      e.target.parentElement.classList.add('flex', 'items-center', 'justify-center')
-                    }}
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                   <span className="text-2xl font-bold text-primary-600 absolute inset-0 hidden items-center justify-center">{cat.title.charAt(0)}</span>
                 </div>
@@ -219,10 +217,11 @@ export const HomePage = () => {
                         />
                       )}
                       {coverPhoto && !hasVideo && (
-                        <img 
+                        <Image 
                           src={coverPhoto} 
                           alt={seller.business_name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       )}
                       {!coverPhoto && (
@@ -232,10 +231,11 @@ export const HomePage = () => {
                       )}
                       <div className="absolute -bottom-8 left-6 w-16 h-16 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
                         {user.profile_photo ? (
-                          <img 
+                          <Image 
                             src={user.profile_photo} 
                             alt={seller.business_name}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center">

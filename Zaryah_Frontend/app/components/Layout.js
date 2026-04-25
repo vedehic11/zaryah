@@ -86,7 +86,7 @@ export const Layout = ({ children }) => {
 
   // Load unread notification count
   useEffect(() => {
-    if (user && user.token) {
+    if (user) {
       loadUnreadCount()
     }
   }, [user])
@@ -484,10 +484,10 @@ export const Layout = ({ children }) => {
             <div>
               <h3 className="font-semibold text-neutral-800 mb-4 lg:mb-6 text-lg lg:text-2xl">Support</h3>
               <ul className="space-y-3">
-                <li><a href="#" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Help Center</a></li>
-                <li><a href="#" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Delivery Guide</a></li>
-                <li><a href="#" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Care & Returns</a></li>
-                <li><a href="#" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Connect With Us</a></li>
+                <li><Link href="/support" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Help Center</Link></li>
+                <li><Link href="/support" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Delivery Guide</Link></li>
+                <li><Link href="/support" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Care & Returns</Link></li>
+                <li><Link href="/support" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Connect With Us</Link></li>
               </ul>
             </div>
           </div>
@@ -497,8 +497,8 @@ export const Layout = ({ children }) => {
               © 2024 Zaryah. Guiding paths to meaningful connections.
             </p>
             <div className="flex items-center space-x-4 lg:space-x-6 text-sm lg:text-lg text-neutral-600">
-              <a href="#" className="hover:text-neutral-800 transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-neutral-800 transition-colors">Terms of Service</a>
+              <Link href="#" className="hover:text-neutral-800 transition-colors">Privacy Policy</Link>
+              <Link href="#" className="hover:text-neutral-800 transition-colors">Terms of Service</Link>
             </div>
           </div>
         </div>

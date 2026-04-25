@@ -42,8 +42,17 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
-    // TODO: Send real-time notification to seller
-
+    try {
+      await supabase.from('notifications').insert({
+        user_id: product.seller_id,
+        user_model: 'seller',
+        title: isApproved ? 'Product Approved' : 'Product Rejected',
+        message: isApproved ? `Your product "${product.name || 'Unknown'}" has been approved and is now live.` : `Your product "${product.name || 'Unknown'}" has been rejected.`,
+        is_read: false
+      })
+    } catch (notifError) {
+      console.error('Error sending notification:', notifError)
+    }
     return NextResponse.json({
       success: true,
       message: isApproved ? 'Product approved successfully' : 'Product rejected',

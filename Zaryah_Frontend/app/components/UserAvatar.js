@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { User } from 'lucide-react'
+import Image from 'next/image'
 
 export const UserAvatar = ({ 
   user, 
@@ -53,11 +54,12 @@ export const UserAvatar = ({
   if (user?.profilePhoto && !imageError) {
     return (
       <div className={`flex items-center space-x-2 ${className}`}>
-        <div className={`${avatarSize} rounded-full overflow-hidden flex-shrink-0`}>
-          <img
+        <div className={`${avatarSize} rounded-full overflow-hidden flex-shrink-0 relative`}>
+          <Image
             src={user.profilePhoto}
             alt={user.fullName || user.name || user.businessName || 'User'}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
             onError={() => setImageError(true)}
           />
         </div>

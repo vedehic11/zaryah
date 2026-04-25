@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function SellerDashboardPage() {
   const { user, isLoading: authLoading } = useAuth()
@@ -775,10 +776,11 @@ export default function SellerDashboardPage() {
                       <div key={product.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                         <div className="aspect-square bg-gray-100 relative">
                           {product.images && product.images.length > 0 ? (
-                            <img
+                            <Image
                               src={product.images[0]}
                               alt={product.name}
-                              className="w-full h-full object-cover"
+                              fill
+                              className="object-cover"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
@@ -1836,10 +1838,11 @@ export default function SellerDashboardPage() {
                               muted
                             />
                           ) : (
-                            <img
+                            <Image
                               src={profileData.cover_photo}
                               alt="Cover"
-                              className="w-full h-full object-cover"
+                              fill
+                              className="object-cover"
                             />
                           )
                         ) : (
@@ -1851,17 +1854,16 @@ export default function SellerDashboardPage() {
                       {/* Profile Photo */}
                       <div className="relative px-6 pb-6">
                         <div className="flex items-end justify-between -mt-16">
-                          <div className="relative">
+                          <div className="relative w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-gray-200 flex items-center justify-center">
                             {profileData?.profile_photo ? (
-                              <img
+                              <Image
                                 src={profileData.profile_photo}
                                 alt={profileData?.business_name || 'Profile'}
-                                className="w-32 h-32 rounded-full border-4 border-white shadow-xl object-cover"
+                                fill
+                                className="object-cover"
                               />
                             ) : (
-                              <div className="w-32 h-32 rounded-full border-4 border-white shadow-xl bg-gray-200 flex items-center justify-center">
-                                <User className="w-16 h-16 text-gray-400" />
-                              </div>
+                              <User className="w-16 h-16 text-gray-400" />
                             )}
                           </div>
                         </div>
@@ -2085,10 +2087,11 @@ export default function SellerDashboardPage() {
                                 controls
                               />
                             ) : (
-                              <img
+                              <Image
                                 src={profileData.cover_photo}
                                 alt="Cover"
-                                className="w-full h-full object-cover"
+                                fill
+                                className="object-cover"
                               />
                             )}
                           </div>
@@ -2134,10 +2137,11 @@ export default function SellerDashboardPage() {
                       <div className="space-y-4">
                         {user?.profile_photo && (
                           <div className="relative w-32 h-32 rounded-full overflow-hidden bg-gray-100 mx-auto">
-                            <img
+                            <Image
                               src={user.profile_photo}
                               alt="Profile"
-                              className="w-full h-full object-cover"
+                              fill
+                              className="object-cover"
                             />
                           </div>
                         )}

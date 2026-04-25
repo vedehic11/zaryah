@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Star, User, Calendar, ThumbsUp, MessageSquare } from 'lucide-react'
 import { apiService } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
+import Image from 'next/image'
 
 export const Reviews = ({ productId, showWriteReview = false, onWriteReview }) => {
   const [reviews, setReviews] = useState([])
@@ -227,11 +228,12 @@ export const Reviews = ({ productId, showWriteReview = false, onWriteReview }) =
                 {review.images && review.images.length > 0 && (
                   <div className="flex space-x-2 mb-3">
                     {review.images.map((image, index) => (
-                      <div key={index} className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200">
-                        <img
+                      <div key={index} className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-200">
+                        <Image
                           src={image}
                           alt={`Review image ${index + 1}`}
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
                         />
                       </div>
                     ))}

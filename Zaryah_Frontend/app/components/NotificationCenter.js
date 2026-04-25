@@ -15,7 +15,7 @@ export const NotificationCenter = () => {
 
   // Load notifications
   useEffect(() => {
-    if (user && user.token) {
+    if (user) {
       loadNotifications()
     }
   }, [user])
@@ -41,7 +41,7 @@ export const NotificationCenter = () => {
       await apiService.markNotificationAsRead(notificationId)
       setNotifications(prev => 
         prev.map(n => 
-          n._id === notificationId ? { ...n, isRead: true } : n
+          n.id === notificationId ? { ...n, isRead: true } : n
         )
       )
       setUnreadCount(prev => Math.max(0, prev - 1))
@@ -66,8 +66,8 @@ export const NotificationCenter = () => {
   const deleteNotification = async (notificationId) => {
     try {
       await apiService.deleteNotification(notificationId)
-      setNotifications(prev => prev.filter(n => n._id !== notificationId))
-      if (!notifications.find(n => n._id === notificationId)?.isRead) {
+      setNotifications(prev => prev.filter(n => n.id !== notificationId))
+      if (!notifications.find(n => n.id === notificationId)?.isRead) {
         setUnreadCount(prev => Math.max(0, prev - 1))
       }
       toast.success('Notification deleted')
@@ -197,7 +197,7 @@ export const NotificationCenter = () => {
         <div className="space-y-3">
           {notifications.map((notification) => (
             <div
-              key={notification._id}
+              key={notification.id}
               className={`bg-white rounded-xl shadow-md p-4 border transition-all ${
                 notification.isRead 
                   ? 'border-gray-200 opacity-75' 
@@ -237,7 +237,7 @@ export const NotificationCenter = () => {
                     <div className="flex items-center gap-1">
                       {!notification.isRead && (
                         <button
-                          onClick={() => markAsRead(notification._id)}
+                          onClick={() => markAsRead(notification.id)}
                           className="p-1 text-green-600 hover:text-green-700 hover:bg-green-100 rounded transition-colors"
                           title="Mark as read"
                         >
@@ -245,7 +245,7 @@ export const NotificationCenter = () => {
                         </button>
                       )}
                       <button
-                        onClick={() => deleteNotification(notification._id)}
+                        onClick={() => deleteNotification(notification.id)}
                         className="p-1 text-red-600 hover:text-red-700 hover:bg-red-100 rounded transition-colors"
                         title="Delete notification"
                       >

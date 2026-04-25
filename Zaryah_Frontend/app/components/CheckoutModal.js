@@ -12,11 +12,12 @@ import { useCart } from '../contexts/CartContext'
 import { apiService } from '../services/api'
 import toast from 'react-hot-toast'
 import Script from 'next/script'
+import Image from 'next/image'
 
 export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
   const { user } = useAuth()
   const { addresses, selectedAddress, setSelectedAddress, addAddress } = useAddress()
-  const { cart, clearCart, cartTotal } = useCart()
+  const { cart, clearCart, totalPrice } = useCart()
 
   const [step, setStep] = useState(1) // 1: Address, 2: Payment
   const [loading, setLoading] = useState(false)
@@ -37,7 +38,7 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
   })
 
   // Calculate totals with dynamic delivery charge
-  const subtotal = cartTotal || 0
+  const subtotal = totalPrice || 0
   const deliveryCharge = dynamicDeliveryCharge !== null ? dynamicDeliveryCharge : (subtotal > 500 ? 0 : 60)
   const total = subtotal + deliveryCharge
 
@@ -511,11 +512,14 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
                     <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
                       {cart.map((item, index) => (
                         <div key={index} className="flex gap-3">
-                          <img 
-                            src={item.product.images?.[0] || '/placeholder.jpg'} 
-                            alt={item.product.name}
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
+                          <div className="relative w-16 h-16 flex-shrink-0">
+                            <Image 
+                              src={item.product.images?.[0] || '/placeholder.jpg'} 
+                              alt={item.product.name}
+                              fill
+                              className="object-cover rounded-lg"
+                            />
+                          </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium text-gray-900">{item.product.name}</p>
                             <p className="text-xs text-gray-600">Qty: {item.quantity}</p>

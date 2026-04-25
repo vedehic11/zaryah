@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useCart } from '../contexts/CartContext'
 import { toast } from 'react-hot-toast'
 import { Reviews } from './Reviews'
+import Image from 'next/image'
 
 export default function MobileProductDetail({ product, similarProducts = [] }) {
   const router = useRouter()
@@ -132,11 +133,13 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
 
       {/* Image Carousel */}
       <div className="relative bg-white">
-        <div className="aspect-square overflow-hidden">
-          <img
+        <div className="aspect-square overflow-hidden relative">
+          <Image
             src={product.images?.[currentImageIndex] || '/placeholder-product.png'}
             alt={product.name}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            priority
           />
         </div>
         
@@ -622,12 +625,12 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                   onClick={() => router.push(`/product/${item.id}`)}
                   className="flex-shrink-0 w-36 group"
                 >
-                  <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-2">
-                    <img
+                  <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-2 relative">
+                    <Image
                       src={item.images?.[0] || '/placeholder-product.png'}
                       alt={item.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
+                      fill
+                      className="object-cover"
                     />
                   </div>
                   <p className="text-xs text-gray-700 font-medium line-clamp-2 mb-1">

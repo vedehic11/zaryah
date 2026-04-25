@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Loader2, Save } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -319,7 +320,9 @@ export default function EditSellerProductPage() {
               <h2 className="text-sm font-medium text-gray-700 mb-2">Current images</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {product.images.map((image, index) => (
-                  <img key={`${image}-${index}`} src={image} alt={`Product image ${index + 1}`} className="h-28 w-full rounded-lg object-cover border border-gray-200" />
+                  <div key={`${image}-${index}`} className="relative h-28 w-full rounded-lg overflow-hidden border border-gray-200">
+                    <Image src={image} alt={`Product image ${index + 1}`} fill className="object-cover" />
+                  </div>
                 ))}
               </div>
               <p className="text-xs text-gray-500 mt-2">Image replacement is not enabled on this screen yet, but existing images are preserved.</p>

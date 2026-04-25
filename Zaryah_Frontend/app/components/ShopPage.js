@@ -7,6 +7,7 @@ import { ProductCard } from './ProductCard'
 import { apiService } from '../services/api'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export const ShopPage = () => {
   const router = useRouter()
@@ -22,11 +23,16 @@ export const ShopPage = () => {
   const [artisans, setArtisans] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Check for search query in URL params
+  // Check for search query and category in URL params
   useEffect(() => {
     const searchQuery = searchParams.get('search')
+    const categoryParam = searchParams.get('category')
     if (searchQuery) {
       setSearchTerm(searchQuery)
+      setSearchType('products') // Ensure search from header searches products
+    }
+    if (categoryParam) {
+      setSelectedCategory(categoryParam)
     }
   }, [searchParams])
 
@@ -101,7 +107,7 @@ export const ShopPage = () => {
   ]
 
   const filteredArtisans = useMemo(() => {
-    let filtered = artisans.filter(a => a.users?.is_approved)
+    let filtered = [...artisans.filter(a => a.users?.is_approved)] // Clone array
 
     // Search filter for artisans
     if (searchTerm && searchType === 'artisans') {
@@ -126,14 +132,16 @@ export const ShopPage = () => {
   }, [artisans, searchTerm, selectedCategory, searchType])
 
   const filteredProducts = useMemo(() => {
-    let filtered = products
+    let filtered = [...products] // Clone to avoid mutating original array
 
     // Search filter
     if (searchTerm && searchType === 'products') {
+      const lowerSearch = searchTerm.toLowerCase()
       filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (product.sellerName && product.sellerName.toLowerCase().includes(searchTerm.toLowerCase()))
+        product.name?.toLowerCase().includes(lowerSearch) ||
+        product.description?.toLowerCase().includes(lowerSearch) ||
+        product.category?.toLowerCase().includes(lowerSearch) ||
+        (product.seller?.businessName && product.seller.businessName.toLowerCase().includes(lowerSearch))
       )
     }
 
@@ -159,7 +167,7 @@ export const ShopPage = () => {
       })
     }
 
-    // Sort
+    // Sort (already working on a clone, so sort is safe)
     switch (sortBy) {
       case 'price-asc':
         filtered.sort((a, b) => a.price - b.price)
@@ -168,17 +176,17 @@ export const ShopPage = () => {
         filtered.sort((a, b) => b.price - a.price)
         break
       case 'popular':
-        // Mock popularity sort
-        filtered.sort(() => Math.random() - 0.5)
+        // Sort by rating count and average rating instead of random
+        filtered.sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0) || (b.averageRating || 0) - (a.averageRating || 0))
         break
       case 'newest':
       default:
-        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        filtered.sort((a, b) => new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at))
         break
     }
 
     return filtered
-  }, [products, searchTerm, selectedCategory, priceRange, sortBy])
+  }, [products, searchTerm, selectedCategory, priceRange, sortBy, searchType])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream-50 to-primary-50 py-4">
@@ -339,11 +347,14 @@ export const ShopPage = () => {
                       {/* Profile Photo */}
                       <div className="flex-shrink-0">
                         {artisan.users?.profile_photo || artisan.cover_photo ? (
-                          <img
-                            src={artisan.users?.profile_photo || artisan.cover_photo}
-                            alt={artisan.business_name}
-                            className="w-14 h-14 rounded-full object-cover border-2 border-primary-200"
-                          />
+                          <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-primary-200">
+                            <Image
+                              src={artisan.users?.profile_photo || artisan.cover_photo}
+                              alt={artisan.business_name}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
                         ) : (
                           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center">
                             <User className="w-7 h-7 text-white" />

@@ -21,13 +21,14 @@ import {
   Star,
   Phone,
   Mail,
-  Image,
+  Image as ImageIcon,
   ThumbsUp,
   ChevronLeft
 } from 'lucide-react'
 import { CreateSupportTicket } from './CreateSupportTicket'
 import { ReviewModal } from './ReviewModal'
 import toast from 'react-hot-toast'
+import Image from 'next/image'
 
 export const OrderHistoryPage = () => {
   const router = useRouter()
@@ -320,6 +321,18 @@ export const OrderHistoryPage = () => {
     }).format(amount)
   }
 
+  const getRefundBadge = (order) => {
+    if (String(order?.payment_status || '').toLowerCase() !== 'refunded') {
+      return null
+    }
+
+    return (
+      <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
+        Refunded
+      </span>
+    )
+  }
+
   const getProductImage = (product) => {
     // Check if product has images array and first image
     if (product.images && product.images.length > 0) {
@@ -438,6 +451,7 @@ export const OrderHistoryPage = () => {
                             {cancellingOrderIds.has(order.id) ? 'Cancelling...' : 'Cancel Order'}
                           </button>
                         )}
+                      {getRefundBadge(order)}
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(getDisplayStatus(order))}`}>
                         {getDisplayStatus(order) === 'payment_failed' ? 'Payment Failed' : getDisplayStatus(order).charAt(0).toUpperCase() + getDisplayStatus(order).slice(1)}
                       </span>
@@ -533,20 +547,17 @@ export const OrderHistoryPage = () => {
                             return (
                               <div key={product.id || productIndex} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
                                 {/* Product Image */}
-                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center">
+                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center relative">
                                   {productImage ? (
-                                    <img 
+                                    <Image 
                                       src={productImage} 
                                       alt={product.name}
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        e.target.style.display = 'none'
-                                        e.target.nextSibling.style.display = 'flex'
-                                      }}
+                                      fill
+                                      className="object-cover"
                                     />
                                   ) : null}
-                                  <div className="w-full h-full flex items-center justify-center text-gray-400" style={{ display: productImage ? 'none' : 'flex' }}>
-                                    <Image className="w-6 h-6" />
+                                  <div className="w-full h-full flex items-center justify-center text-gray-400 absolute inset-0" style={{ display: productImage ? 'none' : 'flex' }}>
+                                    <ImageIcon className="w-6 h-6" />
                                   </div>
                                 </div>
                                 
@@ -636,6 +647,12 @@ export const OrderHistoryPage = () => {
                             <div className="flex justify-between">
                               <span className="text-charcoal-600">Payment Method:</span>
                               <span className="font-medium">{(order.payment_method || order.paymentMethod) === 'cod' ? 'Cash on Delivery' : 'Online Payment'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-charcoal-600">Refund Status:</span>
+                              <span className={`font-medium ${String(order.payment_status || '').toLowerCase() === 'refunded' ? 'text-green-600' : 'text-charcoal-800'}`}>
+                                {String(order.payment_status || '').toLowerCase() === 'refunded' ? 'Refunded' : 'Not Refunded'}
+                              </span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-charcoal-600">Delivery Address:</span>

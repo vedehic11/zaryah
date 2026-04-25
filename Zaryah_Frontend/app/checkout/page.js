@@ -11,6 +11,7 @@ import {
   MapPin, Phone, User, CreditCard, Wallet, Package, 
   ArrowLeft, CheckCircle, AlertCircle, Truck, Home 
 } from 'lucide-react'
+import Image from 'next/image'
 import toast from 'react-hot-toast'
 
 export default function CheckoutPage() {
@@ -675,11 +676,14 @@ export default function CheckoutPage() {
               <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
                 {cart.map((item) => (
                   <div key={item.cartItemId} className="flex items-center space-x-3">
-                    <img
-                      src={item.images?.[0] || '/placeholder.jpg'}
-                      alt={item.name}
-                      className="w-16 h-16 object-cover rounded-lg"
-                    />
+                    <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                      <Image
+                        src={item.images?.[0] || '/placeholder.jpg'}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
                     <div className="flex-1">
                       <p className="font-medium text-charcoal-900 text-sm line-clamp-1">
                         {item.name}

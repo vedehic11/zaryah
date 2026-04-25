@@ -7,6 +7,7 @@ import { ProductCard } from './ProductCard'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import toast from 'react-hot-toast'
 
 export const HamperBuilderPage = () => {
@@ -230,11 +231,14 @@ export const HamperBuilderPage = () => {
                 ) : (
                   selectedProducts.map((item) => (
                     <div key={item.product.id} className="flex items-center space-x-3 p-3 bg-cream-50 rounded-lg border border-cream-200">
-                      <img
-                        src={item.product.image}
-                        alt={item.product.name}
-                        className="w-12 h-12 object-cover rounded-lg"
-                      />
+                      <div className="relative w-12 h-12 flex-shrink-0">
+                        <Image
+                          src={item.product.image}
+                          alt={item.product.name}
+                          fill
+                          className="object-cover rounded-lg"
+                        />
+                      </div>
                       <div className="flex-1">
                         <h4 className="font-medium text-charcoal-900">{item.product.name}</h4>
                         <p className="text-sm text-charcoal-600">₹{item.product.price}</p>

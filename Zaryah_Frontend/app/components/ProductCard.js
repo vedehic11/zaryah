@@ -8,6 +8,7 @@ import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useWishlist } from '../contexts/WishlistContext'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
@@ -72,12 +73,14 @@ export const ProductCard = ({ product }) => {
         <div className="relative overflow-hidden">
           <Link 
             href={productId ? `/product/${productId}` : '#'}
-            className="block"
+            className="block relative w-full h-32 sm:h-48 lg:h-64"
           >
-            <img
+            <Image
               src={product.images && product.images.length > 0 ? product.images[0] : '/placeholder.jpg'}
-              alt={product.name}
-              className="w-full h-32 sm:h-48 lg:h-64 object-cover group-hover:scale-105 transition-transform duration-700 rounded-lg"
+              alt={product.name || 'Product Image'}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-700 rounded-lg"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
           </Link>
           

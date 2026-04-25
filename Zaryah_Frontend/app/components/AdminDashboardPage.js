@@ -25,6 +25,7 @@ import toast from 'react-hot-toast'
 import { AdminSellerManagementPage } from './AdminSellerManagementPage'
 import { AdminSupportPage } from './AdminSupportPage'
 import { AdminPaymentManagement } from './AdminPaymentManagement'
+import { AdminCancelledOrdersPage } from './AdminCancelledOrdersPage'
 
 export const AdminDashboardPage = () => {
   const { user, isLoading } = useAuth()
@@ -213,6 +214,7 @@ export const AdminDashboardPage = () => {
             <nav className="flex space-x-8 px-6" aria-label="Tabs">
               {[
                 { id: 'sellers', label: 'Seller Management', icon: Users },
+                { id: 'cancelled-orders', label: 'Cancelled Orders', icon: XCircle },
                 { id: 'payments', label: 'Payment Issues', icon: AlertCircle },
                 { id: 'withdrawals', label: 'Withdrawals', icon: Wallet },
                 { id: 'earnings', label: 'Commission Earnings', icon: DollarSign },
@@ -272,6 +274,13 @@ export const AdminDashboardPage = () => {
           {activeTab === 'payments' && (
             <div className="p-6">
               <AdminPaymentManagement />
+            </div>
+          )}
+
+          {/* Cancelled Orders Tab */}
+          {activeTab === 'cancelled-orders' && (
+            <div className="p-6">
+              <AdminCancelledOrdersPage />
             </div>
           )}
 
@@ -535,3 +544,4 @@ export const AdminDashboardPage = () => {
     </div>
   )
 }
+

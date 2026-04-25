@@ -11,8 +11,24 @@ class ApiService {
 
   // Helper method to get Supabase auth token
   async getAuthToken() {
-    const { data: { session } } = await supabaseClient.auth.getSession()
-    return session?.access_token || null
+    try {
+      const { data: { session }, error } = await supabaseClient.auth.getSession()
+
+      if (error) {
+        throw error
+      }
+
+      return session?.access_token || null
+    } catch (error) {
+      const message = String(error?.message || error || '').toLowerCase()
+      const isInvalidRefreshToken = message.includes('invalid refresh token') || message.includes('refresh token not found')
+
+      if (isInvalidRefreshToken && typeof window !== 'undefined') {
+        window.localStorage.removeItem('zaryah-auth-token')
+      }
+
+      return null
+    }
   }
 
   // Helper method to handle API calls

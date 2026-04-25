@@ -27,6 +27,22 @@ export const AuthProvider = ({ children }) => {
     return window.location.pathname === '/reset-password'
   }
 
+  const isInvalidRefreshTokenError = (error) => {
+    const message = String(error?.message || error || '').toLowerCase()
+    return message.includes('invalid refresh token') || message.includes('refresh token not found')
+  }
+
+  const clearLocalAuthState = () => {
+    setUser(null)
+    setSupabaseUser(null)
+    setIsLoading(false)
+    sessionStorage.removeItem('zaryah_user_cache')
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('zaryah-auth-token')
+    }
+  }
+
   // Sync Supabase Auth user with our users table
   useEffect(() => {
     let isMounted = true
@@ -48,33 +64,41 @@ export const AuthProvider = ({ children }) => {
     }, 10000) // 10 second timeout
 
     // Get initial session
-    supabaseClient.auth.getSession().then(({ data: { session } }) => {
-      if (!isMounted) return
-      if (loadingTimeout) clearTimeout(loadingTimeout)
-      
-      if (session) {
-        if (isResetPasswordRoute()) {
-          setSupabaseUser(session.user)
-          setUser(null)
-          setIsLoading(false)
+    ;(async () => {
+      try {
+        const { data: { session }, error } = await supabaseClient.auth.getSession()
+
+        if (!isMounted) return
+        if (loadingTimeout) clearTimeout(loadingTimeout)
+
+        if (error) {
+          throw error
+        }
+
+        if (session) {
+          if (isResetPasswordRoute()) {
+            setSupabaseUser(session.user)
+            setUser(null)
+            setIsLoading(false)
+            return
+          }
+          syncUser(session.user)
+        } else {
+          clearLocalAuthState()
+        }
+      } catch (error) {
+        if (!isMounted) return
+        if (loadingTimeout) clearTimeout(loadingTimeout)
+
+        if (isInvalidRefreshTokenError(error)) {
+          clearLocalAuthState()
           return
         }
-        syncUser(session.user)
-      } else {
-        setUser(null)
-        setSupabaseUser(null)
-        setIsLoading(false)
-        sessionStorage.removeItem('zaryah_user_cache')
+
+        console.error('Auth session error:', error)
+        clearLocalAuthState()
       }
-    }).catch((error) => {
-      if (!isMounted) return
-      if (loadingTimeout) clearTimeout(loadingTimeout)
-      console.error('Auth session error:', error)
-      setIsLoading(false)
-      setUser(null)
-      setSupabaseUser(null)
-      sessionStorage.removeItem('zaryah_user_cache')
-    })
+    })()
 
     // Listen for auth changes
     const {
@@ -108,15 +132,23 @@ export const AuthProvider = ({ children }) => {
       if (document.visibilityState === 'visible' && !isLoading) {
         // Tab became visible - verify session is still valid
         try {
-          const { data: { session } } = await supabaseClient.auth.getSession()
+          const { data: { session }, error } = await supabaseClient.auth.getSession()
+
+          if (error) {
+            throw error
+          }
+
           if (!session && user) {
             // Session expired while tab was hidden
-            setUser(null)
-            setSupabaseUser(null)
-            sessionStorage.removeItem('zaryah_user_cache')
+            clearLocalAuthState()
             toast.error('Your session has expired. Please log in again.')
           }
         } catch (error) {
+          if (isInvalidRefreshTokenError(error)) {
+            clearLocalAuthState()
+            return
+          }
+
           console.error('Error checking session on visibility change:', error)
         }
       }

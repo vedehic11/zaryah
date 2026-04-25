@@ -18,13 +18,17 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const { orderId, razorpayPaymentId, reason } = await request.json()
+    const { orderId, razorpayPaymentId, reason, manualRefund = false, manualReference } = await request.json()
 
-    if (!orderId || !razorpayPaymentId) {
-      return NextResponse.json({ error: 'Order ID and Payment ID required' }, { status: 400 })
+    if (!orderId) {
+      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 })
     }
 
-    console.log(`Admin initiating refund for order ${orderId}, payment ${razorpayPaymentId}`)
+    if (!manualRefund && !razorpayPaymentId) {
+      return NextResponse.json({ error: 'Razorpay Payment ID required' }, { status: 400 })
+    }
+
+    console.log(`Admin initiating ${manualRefund ? 'manual ' : ''}refund for order ${orderId}`)
 
     // Get order details
     const { data: order, error: orderError } = await supabase
@@ -37,23 +41,37 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    // Initiate refund via Razorpay
+    // Initiate refund via Razorpay (or mark manual refund)
     let refund
-    try {
-      refund = await razorpay.payments.refund(razorpayPaymentId, {
-        amount: Math.round(order.total_amount * 100), // Full refund in paise
-        notes: {
-          order_id: orderId,
-          reason: reason || 'Admin initiated refund'
-        }
-      })
-      console.log('✅ Razorpay refund initiated:', refund.id)
-    } catch (rzpError) {
-      console.error('Razorpay refund error:', rzpError)
-      return NextResponse.json({ 
-        error: `Razorpay refund failed: ${rzpError.error?.description || rzpError.message}` 
-      }, { status: 400 })
+    if (manualRefund) {
+      refund = {
+        id: `manual_${Date.now()}`,
+        amount: Math.round(order.total_amount * 100),
+        status: 'processed'
+      }
+    } else {
+      try {
+        refund = await razorpay.payments.refund(razorpayPaymentId, {
+          amount: Math.round(order.total_amount * 100), // Full refund in paise
+          notes: {
+            order_id: orderId,
+            reason: reason || 'Admin initiated refund'
+          }
+        })
+        console.log('✅ Razorpay refund initiated:', refund.id)
+      } catch (rzpError) {
+        console.error('Razorpay refund error:', rzpError)
+        return NextResponse.json({ 
+          error: `Razorpay refund failed: ${rzpError.error?.description || rzpError.message}` 
+        }, { status: 400 })
+      }
     }
+
+    const manualReferenceText = manualReference ? ` (Ref: ${manualReference})` : ''
+    const refundNote = manualRefund
+      ? `Manual refund recorded${manualReferenceText} - ${reason || 'Admin marked as refunded'}`
+      : `Refunded: ${refund.id} - ${reason || 'Admin initiated'}`
+    const notesAccumulator = order.notes ? `${order.notes}\n${refundNote}` : refundNote
 
     // Update order status
     await supabase
@@ -61,7 +79,7 @@ export async function POST(request) {
       .update({
         payment_status: 'refunded',
         status: 'cancelled',
-        notes: `Refunded: ${refund.id} - ${reason || 'Admin initiated'}`
+        notes: notesAccumulator
       })
       .eq('id', orderId)
 
@@ -115,18 +133,20 @@ export async function POST(request) {
             order_id: orderId,
             metadata: {
               refund_id: refund.id,
-              payment_id: razorpayPaymentId,
+              payment_id: razorpayPaymentId || order.razorpay_payment_id || null,
+              manual_refund: manualRefund,
+              manual_reference: manualReference || null,
               reason: reason || 'Admin initiated refund'
             }
           })
       }
     }
 
-    console.log(`✅ Order ${orderId} refunded successfully`)
+    console.log(`✅ Order ${orderId} ${manualRefund ? 'marked as manually refunded' : 'refunded successfully'}`)
 
     return NextResponse.json({
       success: true,
-      message: 'Refund initiated successfully',
+      message: manualRefund ? 'Manual refund recorded successfully' : 'Refund initiated successfully',
       refund_id: refund.id,
       amount: order.total_amount,
       order: {
