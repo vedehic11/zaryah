@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import { calculateShippingRates, getCheapestShippingRate } from '@/lib/shiprocket'
 import { supabase } from '@/lib/supabase'
+import { normalizeWeightToKg } from '@/lib/weight'
 
 // POST /api/shipping/calculate-rate - Calculate delivery charges
 export async function POST(request) {
@@ -26,8 +27,8 @@ export async function POST(request) {
     const sellerPincodes = new Set()
 
     for (const item of cartItems) {
-      const itemWeight = parseFloat(item.weight || 0.5) // Default 0.5 kg per item
-      totalWeight += itemWeight * (item.quantity || 1)
+      const itemWeightKg = normalizeWeightToKg(item.weight, 0.5)
+      totalWeight += itemWeightKg * (item.quantity || 1)
 
       // Get seller pincode for this product
       if (item.seller_id) {

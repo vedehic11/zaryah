@@ -7,6 +7,7 @@ import { useCart } from '../contexts/CartContext'
 import { toast } from 'react-hot-toast'
 import { Reviews } from './Reviews'
 import Image from 'next/image'
+import { formatWeightDisplay } from '@/lib/weight'
 
 export default function MobileProductDetail({ product, similarProducts = [] }) {
   const router = useRouter()
@@ -461,10 +462,10 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
               <div className="pt-4 border-t border-cream-200">
                 <h4 className="text-sm font-bold text-charcoal-900 mb-3">Product Specifications</h4>
                 <div className="grid grid-cols-2 gap-3">
-                  {product.weight && (
+                  {formatWeightDisplay(product.weight) && (
                     <div className="bg-gradient-to-br from-cream-50 to-primary-50 border border-primary-200 rounded-lg p-3">
                       <p className="text-xs text-charcoal-600 mb-1">Weight</p>
-                      <p className="text-sm font-semibold text-charcoal-900">{product.weight} kg</p>
+                      <p className="text-sm font-semibold text-charcoal-900">{formatWeightDisplay(product.weight)}</p>
                     </div>
                   )}
                   {product.stock !== undefined && product.stock !== null && (
