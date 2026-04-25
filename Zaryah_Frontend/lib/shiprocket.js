@@ -129,7 +129,8 @@ export async function createShipment({
   deliveryAddress,
   items,
   totalAmount,
-  paymentMethod
+  paymentMethod,
+  autoAssignAwb = true
 }) {
   const token = await authenticate()
 
@@ -223,6 +224,18 @@ export async function createShipment({
   // Step 2: Assign AWB (Air Waybill) code
   let awbCode = null
   let courierName = 'Pending Assignment'
+
+  if (!autoAssignAwb) {
+    console.log('ℹ️ Auto AWB assignment disabled. Assign courier manually in Shiprocket dashboard.')
+    return {
+      shipment_id: result.shipment_id,
+      order_id: result.order_id,
+      awb_code: null,
+      courier_name: courierName,
+      status: result.status || 'PENDING',
+      tracking_url: null
+    }
+  }
   
   try {
     const awbResponse = await fetch(`${SHIPROCKET_API_BASE}/courier/assign/awb`, {

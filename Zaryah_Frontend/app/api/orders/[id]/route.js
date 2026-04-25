@@ -466,9 +466,9 @@ export async function PUT(request, context) {
       }
     }
 
-    // Create Shiprocket shipment when order is confirmed (disabled by default; manual flow preferred)
+    // Push confirmed orders to Shiprocket; AWB assignment can remain manual when auto mode is off.
     const autoCreateShipmentEnabled = process.env.AUTO_CREATE_SHIPMENT === 'true'
-    if (status === 'confirmed' && !order.shipment_id && autoCreateShipmentEnabled) {
+    if (status === 'confirmed' && !order.shipment_id) {
       console.log('Creating Shiprocket shipment...')
       try {
         const { createShipment } = await import('@/lib/shiprocket')
@@ -619,7 +619,8 @@ export async function PUT(request, context) {
           deliveryAddress,
           items,
           totalAmount: order.total_amount,
-          paymentMethod: order.payment_method
+          paymentMethod: order.payment_method,
+          autoAssignAwb: autoCreateShipmentEnabled
         })
 
         console.log('Shipment created:', shipment)

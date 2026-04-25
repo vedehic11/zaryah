@@ -232,9 +232,14 @@ export default function SellerDashboardPage() {
     }
 
     dashboardFetchInProgress.current = true
+    const shouldShowBlockingLoader =
+      reason === 'initial' ||
+      (reason === 'manual' && products.length === 0 && orders.length === 0)
 
     try {
-      setLoading(true)
+      if (shouldShowBlockingLoader) {
+        setLoading(true)
+      }
 
       // Fetch all data in parallel for better performance
       const [productsData, ordersData, walletData] = await Promise.allSettled([
@@ -401,7 +406,9 @@ export default function SellerDashboardPage() {
     } finally {
       dashboardLastFetchAt.current = Date.now()
       dashboardFetchInProgress.current = false
-      setLoading(false)
+      if (shouldShowBlockingLoader) {
+        setLoading(false)
+      }
     }
   }
 
@@ -1048,6 +1055,18 @@ export default function SellerDashboardPage() {
                                             <Printer className="w-3 h-3" />
                                             Print Label
                                           </button>
+                                        ) : order.shipment_id ? (
+                                          <div className="space-y-2">
+                                            <p className="text-xs font-semibold text-blue-900">Order pushed to Shiprocket.</p>
+                                            <p className="text-xs text-blue-800">Assign courier in Shiprocket dashboard to generate AWB and label.</p>
+                                            <button
+                                              onClick={() => window.open('https://app.shiprocket.in/seller', '_blank')}
+                                              className="w-full inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-blue-300 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium"
+                                            >
+                                              <ExternalLink className="w-4 h-4" />
+                                              Open Shiprocket
+                                            </button>
+                                          </div>
                                         ) : (
                                           <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 text-center">
                                             Shipment is yet to be created.
@@ -1301,6 +1320,18 @@ export default function SellerDashboardPage() {
                                                 <ExternalLink className="w-4 h-4" />
                                               </button>
                                             </div>
+                                          </div>
+                                        ) : order.shipment_id ? (
+                                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                                            <p className="text-xs font-semibold text-blue-900">Order pushed to Shiprocket.</p>
+                                            <p className="text-xs text-blue-800">Assign courier in Shiprocket to generate AWB and label.</p>
+                                            <button
+                                              onClick={() => window.open('https://app.shiprocket.in/seller', '_blank')}
+                                              className="w-full inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-blue-300 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium"
+                                            >
+                                              <ExternalLink className="w-4 h-4" />
+                                              Open Shiprocket
+                                            </button>
                                           </div>
                                         ) : (
                                           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">

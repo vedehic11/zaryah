@@ -35,7 +35,7 @@ class ApiService {
   // Supabase Auth: send token in Authorization header
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`
-    const { silentErrors = false, ...requestOptions } = options
+    const { silentErrors = false, timeoutMs, ...requestOptions } = options
     
     // Get auth token
     const token = await this.getAuthToken()
@@ -67,6 +67,26 @@ class ApiService {
       delete config.headers['Content-Type']
     }
 
+    // Add timeout protection so screens do not buffer forever on stalled network calls.
+    const controller = new AbortController()
+    const externalSignal = requestOptions.signal
+    const defaultTimeout = requestOptions.body instanceof FormData ? 45000 : 15000
+    const requestTimeoutMs = typeof timeoutMs === 'number' ? timeoutMs : defaultTimeout
+
+    if (externalSignal) {
+      if (externalSignal.aborted) {
+        controller.abort(externalSignal.reason)
+      } else {
+        externalSignal.addEventListener('abort', () => controller.abort(externalSignal.reason), { once: true })
+      }
+    }
+
+    config.signal = controller.signal
+
+    const timeoutId = setTimeout(() => {
+      controller.abort(new Error(`Request timeout after ${requestTimeoutMs}ms`))
+    }, requestTimeoutMs)
+
     try {
       if (!silentErrors) {
         console.log(`API Request: ${requestOptions.method || 'GET'} ${url}`)
@@ -97,6 +117,13 @@ class ApiService {
       }
       return data
     } catch (error) {
+      if (error?.name === 'AbortError') {
+        if (!silentErrors) {
+          console.error(`API Timeout/Error [${url}]:`, error)
+        }
+        throw new Error('Request timed out. Please try again.')
+      }
+
       // Check if it's a network error
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         if (!silentErrors) {
@@ -108,6 +135,8 @@ class ApiService {
         console.error('API Error:', error)
       }
       throw error
+    } finally {
+      clearTimeout(timeoutId)
     }
   }
 
