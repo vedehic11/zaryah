@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { supabaseClient } from '@/lib/supabase-client'
+import { apiService } from '@/app/services/api'
 import { 
   Package, 
   Upload, 
@@ -27,7 +28,7 @@ export default function AddProductPage() {
     price: '',
     mrp: '',
     category: '',
-    section: '',
+    section: 'Featured',
     weight: '',
     stock: '',
     customisable: false,
@@ -50,6 +51,7 @@ export default function AddProductPage() {
   const [customQuestions, setCustomQuestions] = useState([{ question: '', required: false }])
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
+  const [sectionOptions, setSectionOptions] = useState(['Featured', 'Trending', 'New Arrivals', 'Best Sellers'])
 
   const categories = [
     'Resin Art',
@@ -73,9 +75,36 @@ export default function AddProductPage() {
     'Other'
   ]
 
-  const sections = [
-    'Featured', 'Trending', 'New Arrivals', 'Best Sellers', 'None'
-  ]
+  useEffect(() => {
+    if (!user) return
+
+    const loadSections = async () => {
+      try {
+        const sellerSections = await apiService.getSellerSections()
+        const names = (sellerSections || [])
+          .map(section => String(section?.name || '').trim())
+          .filter(Boolean)
+
+        if (names.length > 0) {
+          setSectionOptions(names)
+
+          setFormData(prev => {
+            const current = String(prev.section || '').trim()
+            if (current && names.includes(current)) return prev
+            return {
+              ...prev,
+              section: names[0]
+            }
+          })
+        }
+      } catch (error) {
+        // Keep defaults if seller sections cannot be loaded.
+        console.error('Failed to load seller sections for add product:', error)
+      }
+    }
+
+    loadSections()
+  }, [user])
 
   const fillDemoData = () => {
     setFormData({
@@ -84,7 +113,7 @@ export default function AddProductPage() {
       price: '899',
       mrp: '1099',
       category: 'Sweets',
-      section: 'Featured',
+      section: sectionOptions[0] || 'Featured',
       weight: '500',
       stock: '25',
       customisable: true,
@@ -186,6 +215,7 @@ export default function AddProductPage() {
     if (!formData.mrp || parseFloat(formData.mrp) <= 0) newErrors.mrp = 'Valid MRP is required'
     if (parseFloat(formData.price) > parseFloat(formData.mrp)) newErrors.price = 'Price cannot be greater than MRP'
     if (!formData.category) newErrors.category = 'Category is required'
+    if (!String(formData.section || '').trim()) newErrors.section = 'Section is required'
     if (!formData.weight || parseFloat(formData.weight) <= 0) newErrors.weight = 'Valid weight is required'
     if (!formData.stock || parseInt(formData.stock) < 0) newErrors.stock = 'Valid stock is required'
     if (!formData.deliveryTimeMin || parseInt(formData.deliveryTimeMin) <= 0) newErrors.deliveryTimeMin = 'Min delivery time required'
@@ -424,18 +454,22 @@ export default function AddProductPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Section</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Section <span className="text-red-500">*</span>
+                </label>
                 <select
                   name="section"
                   value={formData.section}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className={`w-full px-4 py-2 border ${errors.section ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                  required
                 >
-                  <option value="">Select section (optional)</option>
-                  {sections.map(sec => (
+                  <option value="">Select section</option>
+                  {sectionOptions.map(sec => (
                     <option key={sec} value={sec}>{sec}</option>
                   ))}
                 </select>
+                {errors.section && <p className="text-sm text-red-600 mt-1">{errors.section}</p>}
               </div>
             </div>
           </div>

@@ -1,15 +1,18 @@
 'use client'
 
-import { use, useEffect, useMemo, useState } from 'react'
+import { use, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { 
-  Store, MapPin, Instagram, Star, Package, ShoppingBag, Heart, CheckCircle, ListFilter, X
+  Store, MapPin, Instagram, Star, Package, ShoppingBag, Heart, CheckCircle, ListFilter, X, Search, Menu, History, MessageSquare, Home, User
 } from 'lucide-react'
 import { ProductCard } from '@/app/components/ProductCard'
 import { Layout } from '@/app/components/Layout'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useCart } from '@/app/contexts/CartContext'
+import { useWishlist } from '@/app/contexts/WishlistContext'
+import { useAuth } from '@/app/contexts/AuthContext'
 
 export default function SellerProfilePage({ params }) {
   const { username } = use(params)
@@ -20,7 +23,13 @@ export default function SellerProfilePage({ params }) {
   const [isSeller, setIsSeller] = useState(false)
   const [selectedSection, setSelectedSection] = useState('All')
   const [searchTerm, setSearchTerm] = useState('')
+  const [isOverlaySearchOpen, setIsOverlaySearchOpen] = useState(false)
   const [isSectionDrawerOpen, setIsSectionDrawerOpen] = useState(false)
+  const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false)
+  const overlaySearchInputRef = useRef(null)
+  const { totalItems, setIsCartOpen } = useCart()
+  const { wishlistCount } = useWishlist()
+  const { user } = useAuth()
 
   useEffect(() => {
     const fetchSeller = async () => {
@@ -121,11 +130,26 @@ export default function SellerProfilePage({ params }) {
     }
 
     if (selectedSection === 'New Arrivals') {
-      return normalizedProducts.sort((a, b) => new Date(b.created_at || b.createdAt || 0) - new Date(a.created_at || a.createdAt || 0))
+      normalizedProducts = normalizedProducts.sort((a, b) => new Date(b.created_at || b.createdAt || 0) - new Date(a.created_at || a.createdAt || 0))
     }
 
-    return normalizedProducts.filter(product => String(product.section || '').trim() === selectedSection)
+    if (selectedSection !== 'All' && selectedSection !== 'New Arrivals') {
+      normalizedProducts = normalizedProducts.filter(product => String(product.section || '').trim() === selectedSection)
+    }
+
+    return normalizedProducts
   }, [products, searchTerm, selectedSection])
+
+  const handleOverlaySearch = () => {
+    setIsOverlaySearchOpen(true)
+    setSelectedSection('All')
+  }
+
+  useEffect(() => {
+    if (isOverlaySearchOpen && overlaySearchInputRef.current) {
+      overlaySearchInputRef.current.focus()
+    }
+  }, [isOverlaySearchOpen])
 
   if (loading) {
     return (
@@ -179,9 +203,171 @@ export default function SellerProfilePage({ params }) {
           animate={{ opacity: 1 }}
           className="relative w-full"
         >
+          <div className="absolute right-3 top-3 md:right-5 md:top-5 z-40 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleOverlaySearch}
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white backdrop-blur-xl shadow-lg transition-colors hover:bg-white/30"
+              aria-label="Search seller products"
+            >
+              <Search className="h-5 w-5" />
+            </button>
+            <Link
+              href={`/wishlist?seller=${encodeURIComponent(username)}&back=${encodeURIComponent(`/${username}`)}`}
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white backdrop-blur-xl shadow-lg transition-colors hover:bg-white/30"
+              aria-label="Open this seller wishlist"
+            >
+              <Heart className="h-5 w-5" />
+              {wishlistCount > 0 && (
+                <span className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[11px] font-semibold text-white ring-2 ring-white/70">
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsCartOpen(true)}
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white backdrop-blur-xl shadow-lg transition-colors hover:bg-white/30"
+              aria-label="Open cart"
+            >
+              <ShoppingBag className="h-5 w-5" />
+              {totalItems > 0 && (
+                <span className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[11px] font-semibold text-white ring-2 ring-white/70">
+                  {totalItems}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsQuickMenuOpen(true)}
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white backdrop-blur-xl shadow-lg transition-colors hover:bg-white/30"
+              aria-label="Open quick menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </div>
+
+          {isOverlaySearchOpen && (
+            <div className="absolute left-3 right-3 top-16 md:left-auto md:right-5 md:top-16 z-40 md:w-[340px]">
+              <div className="flex items-center gap-2 rounded-2xl border border-white/40 bg-white/20 p-2.5 text-white backdrop-blur-xl shadow-2xl">
+                <Search className="h-4 w-4 shrink-0 text-white/90" />
+                <input
+                  ref={overlaySearchInputRef}
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSelectedSection('All')
+                    setSearchTerm(e.target.value)
+                  }}
+                  placeholder="Search this seller's products"
+                  className="w-full bg-transparent text-sm placeholder-white/80 outline-none"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full hover:bg-white/20 transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsOverlaySearchOpen(false)}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full hover:bg-white/20 transition-colors"
+                  aria-label="Close search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isQuickMenuOpen && (
+            <div className="fixed inset-0 z-[90]">
+              <button
+                type="button"
+                aria-label="Close quick menu"
+                className="absolute inset-0 bg-black/55"
+                onClick={() => setIsQuickMenuOpen(false)}
+              />
+              <motion.aside
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ duration: 0.2 }}
+                className="absolute right-0 top-0 h-full w-80 max-w-[86%] border-l border-primary-200 bg-cream-50/95 text-charcoal-900 backdrop-blur-xl shadow-2xl overflow-y-auto"
+              >
+                <div className="flex items-center justify-between border-b border-primary-200 px-4 py-4">
+                  <h3 className="text-base font-semibold">Quick Menu</h3>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickMenuOpen(false)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-primary-200 bg-white hover:bg-cream-100 transition-colors"
+                    aria-label="Close menu"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-4 p-4">
+                  <nav className="space-y-1.5">
+                    <Link
+                      href="/"
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                      onClick={() => setIsQuickMenuOpen(false)}
+                    >
+                      <Home className="h-4 w-4" />
+                      <span>Zaryah Home</span>
+                    </Link>
+                    <Link
+                      href="/support"
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                      onClick={() => setIsQuickMenuOpen(false)}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Support</span>
+                    </Link>
+                    {user?.role === 'buyer' && (
+                      <Link
+                        href="/orders"
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                        onClick={() => setIsQuickMenuOpen(false)}
+                      >
+                        <History className="h-4 w-4" />
+                        <span>Past Orders</span>
+                      </Link>
+                    )}
+                  </nav>
+
+                  <div className="rounded-2xl border border-primary-200 bg-white p-3">
+                    <p className="text-[11px] uppercase tracking-wider text-charcoal-500">Seller Details</p>
+                    <p className="mt-1 text-sm font-semibold text-charcoal-900">{seller.business_name}</p>
+                    <p className="mt-1 text-xs text-charcoal-600">@{seller.username}</p>
+                    <p className="mt-1 text-xs text-charcoal-600">{seller.city || 'India'}</p>
+                  </div>
+
+                  {user && (
+                    <div className="rounded-2xl border border-primary-200 bg-white p-3">
+                      <p className="text-[11px] uppercase tracking-wider text-charcoal-500">My Profile</p>
+                      <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-charcoal-900">
+                        <User className="h-4 w-4" />
+                        {user.name || user.full_name || user.username || 'User'}
+                      </p>
+                      <p className="mt-1 text-xs text-charcoal-600 break-all">{user.email || 'No email available'}</p>
+                      <p className="mt-1 text-xs text-charcoal-600 capitalize">Role: {user.role || 'buyer'}</p>
+                    </div>
+                  )}
+                </div>
+              </motion.aside>
+            </div>
+          )}
+
           <div className="absolute inset-0 bg-gradient-to-b from-charcoal-900/80 via-charcoal-900/50 to-charcoal-900/70 z-10" />
           {seller.cover_photo ? (
-            <div className="relative h-44 md:h-56 lg:h-64">
+            <div className="relative h-72 md:h-80 lg:h-96">
               {seller.cover_photo.match(/\.(mp4|webm|mov)$/i) ? (
                 <video
                   src={seller.cover_photo}
@@ -202,7 +388,7 @@ export default function SellerProfilePage({ params }) {
               )}
             </div>
           ) : (
-            <div className="h-44 md:h-56 lg:h-64 bg-gradient-to-br from-primary-900 via-primary-700 to-secondary-700" />
+            <div className="h-72 md:h-80 lg:h-96 bg-gradient-to-br from-primary-900 via-primary-700 to-secondary-700" />
           )}
 
           <div className="absolute inset-0 z-20 pointer-events-none">
@@ -210,13 +396,13 @@ export default function SellerProfilePage({ params }) {
             <div className="absolute bottom-20 right-16 h-52 w-52 rounded-full bg-primary-200/20 blur-3xl" />
           </div>
 
-          <div className="relative z-30 -mt-16 md:-mt-20 lg:-mt-24">
+          <div className="absolute inset-x-0 bottom-4 md:bottom-5 lg:bottom-6 z-30">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <motion.div
                 initial={{ y: 28, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="rounded-3xl border border-white/20 bg-white/15 backdrop-blur-md p-3.5 md:p-4 shadow-elegant"
+                className="rounded-3xl border border-white/20 bg-white/15 backdrop-blur-md p-3 md:p-3.5 shadow-elegant"
               >
                 <div className="flex flex-col lg:flex-row lg:items-end gap-3">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -261,21 +447,21 @@ export default function SellerProfilePage({ params }) {
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 w-full lg:w-auto">
-                    <div className="rounded-2xl border border-white/25 bg-white/15 px-2.5 py-2">
+                    <div className="rounded-2xl border border-white/25 bg-white/15 px-2.5 py-1.5">
                       <p className="text-[11px] uppercase tracking-wider text-white/80">Rating</p>
                       <p className="mt-0.5 text-white font-bold text-base inline-flex items-center gap-1">
                         <Star className="w-4 h-4 fill-yellow-300 text-yellow-300" />
                         {stats.averageRating > 0 ? Number(stats.averageRating).toFixed(1) : '0.0'}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-white/25 bg-white/15 px-2.5 py-2">
+                    <div className="rounded-2xl border border-white/25 bg-white/15 px-2.5 py-1.5">
                       <p className="text-[11px] uppercase tracking-wider text-white/80">Products</p>
                       <p className="mt-0.5 text-white font-bold text-base inline-flex items-center gap-1">
                         <Package className="w-4 h-4 text-white/90" />
                         {products.length}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-white/25 bg-white/15 px-2.5 py-2">
+                    <div className="rounded-2xl border border-white/25 bg-white/15 px-2.5 py-1.5">
                       <p className="text-[11px] uppercase tracking-wider text-white/80">Location</p>
                       <p className="mt-0.5 text-white font-bold text-sm md:text-base inline-flex items-center gap-1">
                         <MapPin className="w-4 h-4 text-white/90" />

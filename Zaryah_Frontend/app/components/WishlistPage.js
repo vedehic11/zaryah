@@ -6,7 +6,7 @@ import { Heart, ShoppingBag, Trash2, Search, X, ChevronLeft } from 'lucide-react
 import { useWishlist } from '../contexts/WishlistContext'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
@@ -14,10 +14,15 @@ import toast from 'react-hot-toast'
 export const WishlistPage = () => {
   const { user, isLoading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { wishlist, loading, removeFromWishlist, fetchWishlist } = useWishlist()
   const { addToCart } = useCart()
   const [searchQuery, setSearchQuery] = useState('')
   const [filteredWishlist, setFilteredWishlist] = useState([])
+
+  const scopedSeller = String(searchParams.get('seller') || '').trim().toLowerCase()
+  const backTarget = String(searchParams.get('back') || '').trim()
+  const scopedTitle = scopedSeller ? `Wishlist for @${scopedSeller}` : 'My Wishlist'
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -44,6 +49,52 @@ export const WishlistPage = () => {
       setFilteredWishlist(filtered)
     }
   }, [searchQuery, wishlist])
+
+  const scopedWishlist = scopedSeller
+    ? wishlist.filter(item => {
+        const username = String(
+          item.product?.seller?.username ||
+          item.product?.seller_username ||
+          item.product?.username ||
+          ''
+        ).toLowerCase()
+
+        const sellerNameSlug = String(item.product?.seller?.business_name || '')
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+
+        return username === scopedSeller || sellerNameSlug === scopedSeller
+      })
+    : wishlist
+
+  const displayWishlist = searchQuery.trim() === ''
+    ? scopedWishlist
+    : filteredWishlist.filter(item => {
+        const username = String(
+          item.product?.seller?.username ||
+          item.product?.seller_username ||
+          item.product?.username ||
+          ''
+        ).toLowerCase()
+
+        const sellerNameSlug = String(item.product?.seller?.business_name || '')
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+
+        return !scopedSeller || username === scopedSeller || sellerNameSlug === scopedSeller
+      })
+
+  const handleBack = () => {
+    if (backTarget.startsWith('/')) {
+      router.push(backTarget)
+      return
+    }
+    router.back()
+  }
 
   const handleRemove = async (productId) => {
     await removeFromWishlist(productId)
@@ -76,7 +127,7 @@ export const WishlistPage = () => {
           {/* Title Row with Back Button */}
           <div className="flex items-center gap-3 mb-4">
             <button
-              onClick={() => router.back()}
+              onClick={handleBack}
               className="flex-shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm hover:shadow-md transition-shadow"
               aria-label="Go back"
             >
@@ -85,16 +136,16 @@ export const WishlistPage = () => {
             <Heart className="w-7 h-7 sm:w-8 sm:h-8 text-amber-700 fill-amber-700 flex-shrink-0" />
             <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-charcoal-800 font-serif">
-                My Wishlist
+                {scopedTitle}
               </h1>
               <p className="text-xs sm:text-sm text-charcoal-600 mt-0.5">
-                {wishlist.length} {wishlist.length === 1 ? 'item' : 'items'} saved
+                {displayWishlist.length} {displayWishlist.length === 1 ? 'item' : 'items'} saved
               </p>
             </div>
           </div>
 
           {/* Search Bar */}
-          {wishlist.length > 0 && (
+          {displayWishlist.length > 0 && (
             <div className="relative w-full sm:w-64 md:w-80">
               <input
                 type="text"
@@ -118,34 +169,36 @@ export const WishlistPage = () => {
           {/* Search Results Info */}
           {searchQuery && (
             <p className="text-sm text-charcoal-600 mt-3">
-              {filteredWishlist.length === 0 ? (
+              {displayWishlist.length === 0 ? (
                 <span className="text-red-600">No items found matching "{searchQuery}"</span>
               ) : (
-                <span>Showing {filteredWishlist.length} of {wishlist.length} items</span>
+                <span>Showing {displayWishlist.length} of {scopedWishlist.length} items</span>
               )}
             </p>
           )}
         </div>
 
-        {wishlist.length === 0 ? (
+        {scopedWishlist.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-2xl shadow-soft p-8 sm:p-12 text-center border border-primary-100"
           >
             <Heart className="w-16 h-16 sm:w-20 sm:h-20 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-xl sm:text-2xl font-bold text-charcoal-800 mb-2">Your wishlist is empty</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-charcoal-800 mb-2">
+              {scopedSeller ? `No wishlisted products for @${scopedSeller}` : 'Your wishlist is empty'}
+            </h2>
             <p className="text-sm sm:text-base text-charcoal-600 mb-6">
-              Start adding your favorite products to your wishlist
+              {scopedSeller ? 'Save products from this seller to see them here.' : 'Start adding your favorite products to your wishlist'}
             </p>
             <Link
-              href="/shop"
+              href={scopedSeller ? `/${scopedSeller}` : '/shop'}
               className="inline-block bg-primary-600 hover:bg-primary-700 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-all shadow-soft"
             >
-              Browse Products
+              {scopedSeller ? 'Back To Seller' : 'Browse Products'}
             </Link>
           </motion.div>
-        ) : filteredWishlist.length === 0 ? (
+        ) : displayWishlist.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -165,7 +218,7 @@ export const WishlistPage = () => {
           </motion.div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredWishlist.map((item, index) => (
+            {displayWishlist.map((item, index) => (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -259,13 +312,13 @@ export const WishlistPage = () => {
         )}
 
         {/* Continue Shopping */}
-        {wishlist.length > 0 && (
+        {displayWishlist.length > 0 && (
           <div className="text-center mt-8">
             <Link
-              href="/shop"
+              href={scopedSeller ? `/${scopedSeller}` : '/shop'}
               className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium transition-colors"
             >
-              Continue Shopping
+              {scopedSeller ? 'Back To Seller' : 'Continue Shopping'}
               <svg
                 className="w-4 h-4 ml-2"
                 fill="none"

@@ -20,6 +20,7 @@ export const ProductCard = ({ product }) => {
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   
   const productId = product.id || product._id
+  const sellerUsername = product?.seller?.username || product?.seller_username || null
   const isOutOfStock = Number(product?.stock ?? 0) <= 0
   const isLiked = isInWishlist(productId)
 
@@ -62,6 +63,12 @@ export const ProductCard = ({ product }) => {
     } else {
       await addToWishlist(productId)
     }
+  }
+
+  const handleSellerClick = (e) => {
+    e.preventDefault()
+    if (!sellerUsername) return
+    router.push(`/${sellerUsername}`)
   }
 
   // Calculate average rating from the ratings array
@@ -190,9 +197,14 @@ export const ProductCard = ({ product }) => {
 
             {/* Seller Info */}
             <div className="flex items-center space-x-1 mb-2">
-              <span className="text-xs sm:text-sm text-charcoal-700">
+              <button
+                type="button"
+                onClick={handleSellerClick}
+                disabled={!sellerUsername}
+                className={`text-xs sm:text-sm ${sellerUsername ? 'text-charcoal-700 hover:text-primary-700 hover:underline' : 'text-charcoal-700'} text-left`}
+              >
                 {product.seller?.businessName || 'Loading seller info...'}
-              </span>
+              </button>
             </div>
 
             {/* Rating */}

@@ -31,7 +31,7 @@ const CATEGORY_OPTIONS = [
   'Other'
 ]
 
-const SECTION_OPTIONS = ['Featured', 'Trending', 'New Arrivals', 'Best Sellers', 'None']
+const DEFAULT_SECTION_OPTIONS = ['Featured', 'Trending', 'New Arrivals', 'Best Sellers']
 
 function toInputValue(value) {
   if (value === null || value === undefined) return ''
@@ -48,6 +48,8 @@ export default function EditSellerProductPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [product, setProduct] = useState(null)
+  const [sectionOptions, setSectionOptions] = useState(DEFAULT_SECTION_OPTIONS)
+  const [hasCustomSections, setHasCustomSections] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -82,7 +84,8 @@ export default function EditSellerProductPage() {
       return
     }
 
-    if (user.user_type !== 'Seller' && user.user_type !== 'Admin') {
+    const normalizedUserType = String(user.role || user.userType || user.user_type || '').toLowerCase()
+    if (normalizedUserType !== 'seller' && normalizedUserType !== 'admin') {
       toast.error('You are not allowed to edit products')
       router.replace('/seller/dashboard')
       return
@@ -90,6 +93,37 @@ export default function EditSellerProductPage() {
 
     if (!productId) {
       return
+    }
+
+    const loadSections = async () => {
+      try {
+        const sellerSections = await apiService.getSellerSections()
+        const names = (sellerSections || [])
+          .map(section => String(section?.name || '').trim())
+          .filter(Boolean)
+
+        if (names.length > 0) {
+          setSectionOptions(names)
+          setHasCustomSections(true)
+
+          // If the product currently has a section that is not part of seller-defined sections,
+          // ask the seller to choose one of their sections before saving.
+          setFormData(prev => {
+            const current = String(prev.section || '').trim()
+            if (!current) return prev
+            if (names.includes(current)) return prev
+            return {
+              ...prev,
+              section: ''
+            }
+          })
+        } else {
+          setHasCustomSections(false)
+        }
+      } catch (error) {
+        console.error('Failed to load seller sections for edit product:', error)
+        setHasCustomSections(false)
+      }
     }
 
     const loadProduct = async () => {
@@ -103,7 +137,7 @@ export default function EditSellerProductPage() {
           price: toInputValue(productData.price),
           mrp: toInputValue(productData.mrp),
           category: toInputValue(productData.category),
-          section: toInputValue(productData.section || 'None'),
+          section: toInputValue(productData.section),
           stock: toInputValue(productData.stock),
           weight: toInputValue(productData.weight),
           delivery_time_min: toInputValue(productData.delivery_time_min),
@@ -128,8 +162,15 @@ export default function EditSellerProductPage() {
       }
     }
 
+    loadSections()
     loadProduct()
   }, [authLoading, productId, router, user])
+
+  const sectionSelectOptions = useMemo(() => {
+    // If seller has custom sections, restrict choices to those sections only.
+    // Otherwise keep the default sections list.
+    return [...sectionOptions]
+  }, [sectionOptions])
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target
@@ -157,6 +198,16 @@ export default function EditSellerProductPage() {
       return
     }
 
+    if (!formData.category) {
+      toast.error('Category is required')
+      return
+    }
+
+    if (!String(formData.section || '').trim()) {
+      toast.error('Section is required')
+      return
+    }
+
     try {
       setSaving(true)
 
@@ -165,8 +216,8 @@ export default function EditSellerProductPage() {
         description: formData.description.trim(),
         price: Number(formData.price),
         mrp: formData.mrp ? Number(formData.mrp) : null,
-        category: formData.category || null,
-        section: formData.section === 'None' ? null : formData.section,
+        category: formData.category,
+        section: String(formData.section).trim(),
         stock: formData.stock === '' ? 0 : Number(formData.stock),
         weight: formData.weight === '' ? null : Number(formData.weight),
         delivery_time_min: formData.delivery_time_min === '' ? null : Number(formData.delivery_time_min),
@@ -257,11 +308,17 @@ export default function EditSellerProductPage() {
             </label>
             <label className="block">
               <span className="block text-sm font-medium text-gray-700 mb-1">Section</span>
-              <select name="section" value={formData.section} onChange={handleChange} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-                {SECTION_OPTIONS.map(option => (
+              <select name="section" value={formData.section} onChange={handleChange} className="w-full rounded-lg border border-gray-300 px-3 py-2" required>
+                <option value="">Select section</option>
+                {sectionSelectOptions.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {hasCustomSections
+                  ? 'Choose one of your self-made sections (manage them in Seller Dashboard → Products).'
+                  : 'No custom sections found yet. Create sections in Seller Dashboard → Products.'}
+              </p>
             </label>
             <label className="block">
               <span className="block text-sm font-medium text-gray-700 mb-1">Size options</span>

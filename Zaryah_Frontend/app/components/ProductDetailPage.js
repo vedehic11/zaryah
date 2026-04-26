@@ -48,6 +48,12 @@ export const ProductDetailPage = ({ productId }) => {
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [customizationSelections, setCustomizationSelections] = useState({});
   const [fetchedProduct, setFetchedProduct] = useState(null);
+  const sellerUsername = product?.seller?.username || product?.seller?.sellerUsername || null
+
+  const goToSellerProfile = () => {
+    if (!sellerUsername) return
+    router.push(`/${sellerUsername}`)
+  }
 
   useEffect(() => {
     if (product?.sizeOptions && product.sizeOptions.length > 0) {
@@ -271,9 +277,14 @@ export const ProductDetailPage = ({ productId }) => {
               <div className="space-y-6">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <p className="text-lg font-bold text-primary-700 mb-1">
+                      <button
+                        type="button"
+                        onClick={goToSellerProfile}
+                        disabled={!sellerUsername}
+                        className={`text-lg font-bold mb-1 ${sellerUsername ? 'text-primary-700 hover:text-primary-800 hover:underline cursor-pointer' : 'text-primary-700 cursor-default'}`}
+                      >
                         {product.seller?.businessName || 'Brand'}
-                      </p>
+                      </button>
                       <h1 className="text-3xl font-bold text-charcoal-900 mb-2">{product.name}</h1>
                       <div className="flex items-center space-x-4 mb-3 flex-wrap gap-2">
                         <div className="flex items-center space-x-1">
@@ -914,7 +925,14 @@ export const ProductDetailPage = ({ productId }) => {
                         </span>
                       </div>
                       <div>
-                        <h3 className="text-xl font-semibold">{product.seller?.businessName || 'Loading seller info...'}</h3>
+                        <button
+                          type="button"
+                          onClick={goToSellerProfile}
+                          disabled={!sellerUsername}
+                          className={`text-xl font-semibold ${sellerUsername ? 'hover:text-primary-700 hover:underline cursor-pointer' : 'cursor-default'}`}
+                        >
+                          {product.seller?.businessName || 'Loading seller info...'}
+                        </button>
                         <p className="text-gray-600">{product.seller?.businessAddress || 'Address not available'}</p>
                         <div className="flex items-center space-x-1 mt-1">
                           <Star className="w-4 h-4 text-yellow-400 fill-current" />
@@ -925,6 +943,15 @@ export const ProductDetailPage = ({ productId }) => {
                     <p className="text-gray-700 leading-relaxed">
                       {product.seller?.businessDescription || 'A passionate seller dedicated to providing quality products and excellent service.'}
                     </p>
+                    {sellerUsername && (
+                      <button
+                        type="button"
+                        onClick={goToSellerProfile}
+                        className="mt-5 inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 transition-colors"
+                      >
+                        Visit Seller Profile
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

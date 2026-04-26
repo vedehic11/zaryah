@@ -363,6 +363,23 @@ class ApiService {
     return this.request(`/sellers/username/check?username=${username}`, { method: 'GET' })
   }
 
+  async getSellerSections() {
+    return this.request('/seller-sections', { method: 'GET' })
+  }
+
+  async createSellerSection(name) {
+    return this.request('/seller-sections', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    })
+  }
+
+  async deleteSellerSection(id) {
+    return this.request(`/seller-sections?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    })
+  }
+
   // Admin endpoints
   async getPendingProducts() {
     return this.request('/admin/products/pending', { method: 'GET' })

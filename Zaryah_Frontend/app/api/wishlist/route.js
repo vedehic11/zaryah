@@ -40,6 +40,7 @@ export async function GET(request) {
           seller_id,
           sellers (
             id,
+            username,
             business_name,
             city
           )

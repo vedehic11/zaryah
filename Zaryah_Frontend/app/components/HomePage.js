@@ -197,12 +197,13 @@ export const HomePage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {sellers.map((seller) => {
                 const user = seller.users || {}
+                const sellerUsername = seller.username || user.username || ''
                 const coverPhoto = seller.cover_photo || ''
                 const hasVideo = coverPhoto && (coverPhoto.endsWith('.mp4') || coverPhoto.endsWith('.webm') || coverPhoto.endsWith('.mov'))
                 
                 return (
                   <Link 
-                    href={'/' + (seller.username || user.username)} 
+                    href={sellerUsername ? `/${sellerUsername}` : '/shop'} 
                     key={seller.id}
                     className="group bg-neutral-50 rounded-2xl shadow-subtle border border-primary-100 overflow-hidden hover:shadow-lg transition-all cursor-pointer"
                   >
@@ -250,8 +251,8 @@ export const HomePage = () => {
                         <h3 className="text-xl font-bold text-primary-700 group-hover:text-primary-800 transition-colors">
                           {seller.business_name}
                         </h3>
-                        {(seller.username || user.username) && (
-                          <span className="text-sm text-neutral-500">@{seller.username || user.username}</span>
+                        {sellerUsername && (
+                          <span className="text-sm text-neutral-500">@{sellerUsername}</span>
                         )}
                       </div>
                       <p className="text-neutral-600 line-clamp-3">

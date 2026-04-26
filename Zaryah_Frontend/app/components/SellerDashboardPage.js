@@ -29,6 +29,10 @@ export default function SellerDashboardPage() {
     totalRevenue: 0
   })
   const [products, setProducts] = useState([])
+  const [sellerSections, setSellerSections] = useState([])
+  const [newSectionName, setNewSectionName] = useState('')
+  const [addingSection, setAddingSection] = useState(false)
+  const [deletingSectionId, setDeletingSectionId] = useState(null)
   const [orders, setOrders] = useState([])
   const [tickets, setTickets] = useState([])
   
@@ -412,11 +416,69 @@ export default function SellerDashboardPage() {
     }
   }
 
+  const loadSellerSections = async () => {
+    try {
+      const sections = await apiService.getSellerSections()
+      setSellerSections(sections || [])
+    } catch (error) {
+      console.error('Failed to load seller sections:', error)
+    }
+  }
+
+  const handleAddSection = async () => {
+    const normalized = String(newSectionName || '').trim().replace(/\s+/g, ' ')
+    if (!normalized) {
+      toast.error('Enter a section name')
+      return
+    }
+
+    if (normalized.length > 50) {
+      toast.error('Section name must be 50 characters or fewer')
+      return
+    }
+
+    if (sellerSections.some(section => String(section.name || '').toLowerCase() === normalized.toLowerCase())) {
+      toast.error('Section already exists')
+      return
+    }
+
+    try {
+      setAddingSection(true)
+      await apiService.createSellerSection(normalized)
+      setNewSectionName('')
+      await loadSellerSections()
+      toast.success('Section added')
+    } catch (error) {
+      toast.error(error.message || 'Failed to add section')
+    } finally {
+      setAddingSection(false)
+    }
+  }
+
+  const handleDeleteSection = async (id) => {
+    try {
+      setDeletingSectionId(id)
+      await apiService.deleteSellerSection(id)
+      await loadSellerSections()
+      toast.success('Section removed')
+    } catch (error) {
+      toast.error(error.message || 'Failed to remove section')
+    } finally {
+      setDeletingSectionId(null)
+    }
+  }
+
   useEffect(() => {
     if (user && user.role === 'seller' && activeTab === 'orders') {
       fetchDashboardData({ reason: 'manual' })
     }
   }, [ordersPage, orderFilter])
+
+  useEffect(() => {
+    if (user && user.role === 'seller' && activeTab === 'products') {
+      loadSellerSections()
+    }
+  }, [user?.id, user?.role, activeTab])
   
   const fetchSellerProfile = async () => {
     try {
@@ -755,14 +817,68 @@ export default function SellerDashboardPage() {
             {/* Products Tab */}
             {activeTab === 'products' && (
               <div>
-                <div className="flex items-center justify-end mb-6">
-                  <Link
-                    href="/seller/products/new"
-                    className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Product</span>
-                  </Link>
+                <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-sm font-semibold text-gray-900 mb-2">Your Product Sections</p>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {sellerSections.length > 0 ? (
+                        sellerSections.map(section => (
+                          <span
+                            key={section.id}
+                            className="inline-flex items-center gap-1 rounded-full bg-white border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700"
+                          >
+                            {section.name}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSection(section.id)}
+                              disabled={deletingSectionId === section.id}
+                              className="text-gray-400 hover:text-red-600 disabled:opacity-50"
+                              aria-label={`Remove ${section.name} section`}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </span>
+                        ))
+                      ) : (
+                        <p className="text-xs text-gray-500">No custom sections yet. Add one below.</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <input
+                        type="text"
+                        value={newSectionName}
+                        onChange={(e) => setNewSectionName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleAddSection()
+                          }
+                        }}
+                        placeholder="Add a section (e.g. Festive Specials)"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                        maxLength={50}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddSection}
+                        disabled={addingSection}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
+                      >
+                        <Plus className="w-4 h-4" />
+                        {addingSection ? 'Adding...' : 'Add Section'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start justify-end">
+                    <Link
+                      href="/seller/products/new"
+                      className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Product</span>
+                    </Link>
+                  </div>
                 </div>
 
                 {products.length === 0 ? (

@@ -25,8 +25,6 @@ import { CartIcon } from './CartIcon'
 import { WishlistIcon } from './WishlistIcon'
 import { CartSidebar } from './CartSidebar'
 import { NotificationCenter } from './NotificationCenter'
-import ChatSupportButton from './ChatSupportButton'
-import LocationDetectButton from './LocationDetectButton'
 import { UserAvatar } from './UserAvatar'
 import { apiService } from '../services/api'
 
@@ -88,6 +86,12 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
     if (!isUsernameBrandPage || pathSegments.length !== 1) return null
     return pathSegments[0]
   }, [isUsernameBrandPage, pathSegments])
+  const headerBrandLabel = useMemo(() => {
+    if (isUsernameBrandPage && currentSellerUsername) {
+      return `@${decodeURIComponent(currentSellerUsername)}`
+    }
+    return 'Zaryah'
+  }, [isUsernameBrandPage, currentSellerUsername])
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -150,6 +154,29 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
     await logout()
     router.push('/')
   }, [logout, router])
+
+  const handleSellerSearchIconClick = useCallback(() => {
+    if (!currentSellerUsername) return
+
+    const query = window.prompt('Search this seller\'s products', searchQuery || '')
+    if (query === null) return
+
+    const normalizedQuery = query.trim()
+    setSearchQuery(normalizedQuery)
+    setShowSuggestions(false)
+
+    window.dispatchEvent(new CustomEvent('zaryah:seller-search', {
+      detail: {
+        query: normalizedQuery,
+        sellerUsername: currentSellerUsername
+      }
+    }))
+
+    const productsContainer = document.getElementById('seller-products')
+    if (productsContainer) {
+      productsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [currentSellerUsername, searchQuery])
 
   // Handle search input change with debouncing - generate text suggestions from product names
   const handleSearchChange = async (e) => {
@@ -269,12 +296,16 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
     }
   }, [user, getBuyerNavigation, getSellerNavigation, getAdminNavigation])
 
+  useEffect(() => {
+    if (isUsernameBrandPage) {
+      setIsMenuOpen(false)
+    }
+  }, [isUsernameBrandPage])
+
   return (
     <div className="min-h-screen bg-cream-50">
-      {/* Floating Buttons */}
-      <ChatSupportButton />
-      <LocationDetectButton />
       {/* Header */}
+      {!isUsernameBrandPage && (
       <header className="bg-cream-50/95 backdrop-blur-md border-b border-cream-200 sticky top-0 z-50 shadow-lg">
         {/* Desktop header row */}
         <div className="hidden lg:flex w-full items-center justify-between py-4 px-4 xl:px-6">
@@ -285,53 +316,55 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
                 <Sparkles className="w-6 h-6 xl:w-7 xl:h-7 transition-colors duration-200 text-primary-600" />
               </span>
               <span className="text-xl xl:text-2xl font-bold font-serif transition-colors duration-200 text-primary-700">
-                Zaryah
+                {headerBrandLabel}
               </span>
             </Link>
           </div>
           {/* Center Navigation */}
-          <nav className="flex flex-1 justify-center gap-8 xl:gap-12">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href
-              const Icon = item.icon
-              
-              if (item.isAnchor) {
+          {!isUsernameBrandPage && (
+            <nav className="flex flex-1 justify-center gap-8 xl:gap-12">
+              {navigation.map((item) => {
+                const isActive = pathname === item.href
+                const Icon = item.icon
+                
+                if (item.isAnchor) {
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (item.onClick) {
+                          item.onClick()
+                        }
+                      }}
+                      className={`flex items-center gap-1 text-base xl:text-lg font-medium transition-colors duration-200 cursor-pointer ${
+                        'text-neutral-900 hover:text-primary-600'
+                      }`}
+                      style={{ background: 'none', boxShadow: 'none', padding: 0, border: 'none' }}
+                    >
+                      <Icon className="w-5 h-5 xl:w-6 xl:h-6" />
+                      <span>{item.name}</span>
+                    </button>
+                  )
+                }
+                
                 return (
-                  <button
+                  <Link
                     key={item.name}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      if (item.onClick) {
-                        item.onClick()
-                      }
-                    }}
-                    className={`flex items-center gap-1 text-base xl:text-lg font-medium transition-colors duration-200 cursor-pointer ${
-                      'text-neutral-900 hover:text-primary-600'
+                    href={item.href}
+                    prefetch={true}
+                    className={`flex items-center gap-1 text-base xl:text-lg font-medium transition-colors duration-200 ${
+                      isActive ? 'text-primary-700 underline underline-offset-8 decoration-2' : 'text-neutral-900 hover:text-primary-600'
                     }`}
-                    style={{ background: 'none', boxShadow: 'none', padding: 0, border: 'none' }}
+                    style={{ textDecoration: 'none', background: 'none', boxShadow: 'none', padding: 0 }}
                   >
                     <Icon className="w-5 h-5 xl:w-6 xl:h-6" />
                     <span>{item.name}</span>
-                  </button>
+                  </Link>
                 )
-              }
-              
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  prefetch={true}
-                  className={`flex items-center gap-1 text-base xl:text-lg font-medium transition-colors duration-200 ${
-                    isActive ? 'text-primary-700 underline underline-offset-8 decoration-2' : 'text-neutral-900 hover:text-primary-600'
-                  }`}
-                  style={{ textDecoration: 'none', background: 'none', boxShadow: 'none', padding: 0 }}
-                >
-                  <Icon className="w-5 h-5 xl:w-6 xl:h-6" />
-                  <span>{item.name}</span>
-                </Link>
-              )
-            })}
-          </nav>
+              })}
+            </nav>
+          )}
           {/* Right Side - User Menu */}
           <div className="flex items-center space-x-2">
             {/* Notification Bell Icon */}
@@ -351,6 +384,15 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
             )}
             {(!user || user.role === 'buyer') && (
               <>
+                {isUsernameBrandPage && (
+                  <button
+                    onClick={handleSellerSearchIconClick}
+                    className="p-2 rounded-full hover:bg-primary-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-300"
+                    aria-label="Search seller products"
+                  >
+                    <Search className="w-6 h-6 text-primary-600" />
+                  </button>
+                )}
                 <WishlistIcon />
                 <CartIcon />
               </>
@@ -395,7 +437,7 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
               <Sparkles className="w-5 h-5 xl:w-6 xl:h-6 transition-colors duration-200 text-primary-600" />
             </span>
             <span className="text-lg xl:text-xl font-bold font-serif transition-colors duration-200 text-primary-700">
-              Zaryah
+              {headerBrandLabel}
             </span>
           </Link>
           <div className="flex items-center space-x-2">
@@ -416,21 +458,32 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
             )}
             {(!user || user.role === 'buyer') && (
               <>
+                {isUsernameBrandPage && (
+                  <button
+                    onClick={handleSellerSearchIconClick}
+                    className="p-2 rounded-full hover:bg-primary-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-300"
+                    aria-label="Search seller products"
+                  >
+                    <Search className="w-5 h-5 text-primary-600" />
+                  </button>
+                )}
                 <WishlistIcon />
                 <CartIcon />
               </>
             )}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 text-neutral-900 hover:text-neutral-100 hover:bg-neutral-100 rounded-xl transition-all"
-            >
-              {isMenuOpen ? <X className="w-5 h-5 xl:w-6 xl:h-6" /> : <Menu className="w-5 h-5 xl:w-6 xl:h-6" />}
-            </button>
+            {!isUsernameBrandPage && (
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 text-neutral-900 hover:text-neutral-100 hover:bg-neutral-100 rounded-xl transition-all"
+              >
+                {isMenuOpen ? <X className="w-5 h-5 xl:w-6 xl:h-6" /> : <Menu className="w-5 h-5 xl:w-6 xl:h-6" />}
+              </button>
+            )}
           </div>
         </div>
         
         {/* Mobile search bar row - hide on shop and orders pages */}
-        {pathname !== '/shop' && pathname !== '/orders' && (
+        {pathname !== '/shop' && pathname !== '/orders' && !isUsernameBrandPage && (
           <div className="md:hidden w-full px-4 pb-3 relative">
             <form onSubmit={handleSearchSubmit}>
               <div className="flex items-center bg-white rounded-2xl px-4 py-3 border border-neutral-200 shadow focus-within:ring-2 focus-within:ring-primary-300 transition-all">
@@ -466,7 +519,7 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
         )}
         
         {/* Mobile/Tablet nav dropdown */}
-        {isMenuOpen && (
+        {isMenuOpen && !isUsernameBrandPage && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -549,6 +602,7 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
           </motion.div>
         )}
       </header>
+      )}
       {/* Notification Sidebar */}
       <NotificationSidebar isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} />
       {/* Main Content */}
