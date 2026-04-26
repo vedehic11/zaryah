@@ -330,14 +330,14 @@ export default function SellerProfilePage({ params }) {
                       <MessageSquare className="h-4 w-4" />
                       <span>Support</span>
                     </Link>
-                    {user?.role === 'buyer' && (
+                    {user && (
                       <Link
                         href="/orders"
                         className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
                         onClick={() => setIsQuickMenuOpen(false)}
                       >
                         <History className="h-4 w-4" />
-                        <span>Past Orders</span>
+                        <span>Order History</span>
                       </Link>
                     )}
                   </nav>
