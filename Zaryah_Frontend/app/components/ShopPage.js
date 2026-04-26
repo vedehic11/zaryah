@@ -14,6 +14,7 @@ export const ShopPage = () => {
   const searchParams = useSearchParams()
   const [searchTerm, setSearchTerm] = useState('')
   const [searchType, setSearchType] = useState('products') // 'products' or 'artisans'
+  const [sellerFilter, setSellerFilter] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [priceRange, setPriceRange] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
@@ -27,12 +28,19 @@ export const ShopPage = () => {
   useEffect(() => {
     const searchQuery = searchParams.get('search')
     const categoryParam = searchParams.get('category')
+    const sellerParam = searchParams.get('seller')
     if (searchQuery) {
       setSearchTerm(searchQuery)
       setSearchType('products') // Ensure search from header searches products
     }
     if (categoryParam) {
       setSelectedCategory(categoryParam)
+    }
+    if (sellerParam) {
+      setSellerFilter(sellerParam)
+      setSearchType('products')
+    } else {
+      setSellerFilter('')
     }
   }, [searchParams])
 
@@ -134,6 +142,11 @@ export const ShopPage = () => {
   const filteredProducts = useMemo(() => {
     let filtered = [...products] // Clone to avoid mutating original array
 
+    if (sellerFilter) {
+      const normalizedSeller = sellerFilter.toLowerCase()
+      filtered = filtered.filter(product => String(product?.seller?.username || '').toLowerCase() === normalizedSeller)
+    }
+
     // Search filter
     if (searchTerm && searchType === 'products') {
       const lowerSearch = searchTerm.toLowerCase()
@@ -186,7 +199,7 @@ export const ShopPage = () => {
     }
 
     return filtered
-  }, [products, searchTerm, selectedCategory, priceRange, sortBy, searchType])
+  }, [products, sellerFilter, searchTerm, selectedCategory, priceRange, sortBy, searchType])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream-50 to-primary-50 py-4">

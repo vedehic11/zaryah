@@ -56,10 +56,38 @@ function NotificationSidebar({ isOpen, onClose }) {
   )
 }
 
-export const Layout = ({ children }) => {
+export const Layout = ({ children, dynamicNavItems = [] }) => {
   const { user, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const reservedTopLevelRoutes = useMemo(() => new Set([
+    '',
+    'shop',
+    'product',
+    'login',
+    'register',
+    'admin',
+    'seller',
+    'orders',
+    'cart',
+    'support',
+    'gift-suggester',
+    'hamper-builder',
+    'checkout',
+    'wishlist',
+    'addresses',
+    'reset-password',
+    'api'
+  ]), [])
+  const pathSegments = useMemo(() => (pathname || '').split('/').filter(Boolean), [pathname])
+  const isUsernameBrandPage = useMemo(() => {
+    if (pathSegments.length !== 1) return false
+    return !reservedTopLevelRoutes.has(pathSegments[0])
+  }, [pathSegments, reservedTopLevelRoutes])
+  const currentSellerUsername = useMemo(() => {
+    if (!isUsernameBrandPage || pathSegments.length !== 1) return null
+    return pathSegments[0]
+  }, [isUsernameBrandPage, pathSegments])
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -71,13 +99,19 @@ export const Layout = ({ children }) => {
   // const { syncGuestCartToBackend } = useCart() // Removed automatic syncing
 
   // Load products for search suggestions only when needed
+  const getContextualProducts = useCallback((allProducts = []) => {
+    if (!currentSellerUsername) return allProducts
+    const normalizedUsername = currentSellerUsername.toLowerCase()
+    return allProducts.filter(product => String(product?.seller?.username || '').toLowerCase() === normalizedUsername)
+  }, [currentSellerUsername])
+
   const loadProducts = async () => {
-    if (productsLoaded) return products
+    if (productsLoaded) return getContextualProducts(products)
     try {
       const data = await apiService.getApprovedProducts()
       setProducts(data || [])
       setProductsLoaded(true)
-      return data || []
+      return getContextualProducts(data || [])
     } catch (error) {
       console.error('Error loading products:', error)
       return []
@@ -121,6 +155,18 @@ export const Layout = ({ children }) => {
   const handleSearchChange = async (e) => {
     const value = e.target.value
     setSearchQuery(value)
+
+    if (currentSellerUsername && value.trim().length === 0) {
+      setSearchSuggestions([])
+      setShowSuggestions(false)
+      window.dispatchEvent(new CustomEvent('zaryah:seller-search', {
+        detail: {
+          query: '',
+          sellerUsername: currentSellerUsername
+        }
+      }))
+      return
+    }
     
     if (value.trim().length > 1) {
       // Load products only when user starts typing
@@ -158,6 +204,15 @@ export const Layout = ({ children }) => {
     e.preventDefault()
     if (searchQuery.trim()) {
       setShowSuggestions(false)
+      if (currentSellerUsername) {
+        window.dispatchEvent(new CustomEvent('zaryah:seller-search', {
+          detail: {
+            query: searchQuery.trim(),
+            sellerUsername: currentSellerUsername
+          }
+        }))
+        return
+      }
       router.push(`/shop?search=${encodeURIComponent(searchQuery)}`)
     }
   }
@@ -166,19 +221,36 @@ export const Layout = ({ children }) => {
   const handleSuggestionClick = (suggestion) => {
     setSearchQuery(suggestion)
     setShowSuggestions(false)
+    if (currentSellerUsername) {
+      window.dispatchEvent(new CustomEvent('zaryah:seller-search', {
+        detail: {
+          query: suggestion,
+          sellerUsername: currentSellerUsername
+        }
+      }))
+      return
+    }
     router.push(`/shop?search=${encodeURIComponent(suggestion)}`)
   }
 
-  const getBuyerNavigation = useCallback(() => [
-    { name: 'Home', href: '/', icon: Heart },
-    { name: 'Shop', href: '/shop', icon: ShoppingBag },
-    { name: 'Gift Suggester', href: '/gift-suggester', icon: Gift },
-    { name: 'Hamper Builder', href: '/hamper-builder', icon: Package },
-    ...(user ? [
-      { name: 'Orders', href: '/orders', icon: History },
-      { name: 'Support', href: '/support', icon: MessageSquare }
-    ] : [])
-  ], [user])
+  const getBuyerNavigation = useCallback(() => {
+    if (isUsernameBrandPage) {
+      return [
+        { name: 'Past Orders', href: '/orders', icon: History }
+      ]
+    }
+
+    return [
+      { name: 'Home', href: '/', icon: Heart },
+      { name: 'Shop', href: '/shop', icon: ShoppingBag },
+      { name: 'Gift Suggester', href: '/gift-suggester', icon: Gift },
+      { name: 'Hamper Builder', href: '/hamper-builder', icon: Package },
+      ...(user ? [
+        { name: 'Orders', href: '/orders', icon: History },
+        { name: 'Support', href: '/support', icon: MessageSquare }
+      ] : [])
+    ]
+  }, [user, isUsernameBrandPage, dynamicNavItems])
 
   const getSellerNavigation = useCallback(() => [
     { name: 'Dashboard', href: '/seller/dashboard', icon: User },
@@ -222,6 +294,28 @@ export const Layout = ({ children }) => {
             {navigation.map((item) => {
               const isActive = pathname === item.href
               const Icon = item.icon
+              
+              if (item.isAnchor) {
+                return (
+                  <button
+                    key={item.name}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      if (item.onClick) {
+                        item.onClick()
+                      }
+                    }}
+                    className={`flex items-center gap-1 text-base xl:text-lg font-medium transition-colors duration-200 cursor-pointer ${
+                      'text-neutral-900 hover:text-primary-600'
+                    }`}
+                    style={{ background: 'none', boxShadow: 'none', padding: 0, border: 'none' }}
+                  >
+                    <Icon className="w-5 h-5 xl:w-6 xl:h-6" />
+                    <span>{item.name}</span>
+                  </button>
+                )
+              }
+              
               return (
                 <Link
                   key={item.name}
@@ -249,7 +343,7 @@ export const Layout = ({ children }) => {
               >
                 <Bell className="w-6 h-6 text-primary-600" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 block h-4 w-4 rounded-full ring-2 ring-white bg-red-500 text-xs text-white flex items-center justify-center">
+                  <span className="absolute top-0 right-0 h-4 w-4 rounded-full ring-2 ring-white bg-red-500 text-xs text-white flex items-center justify-center">
                     {unreadCount}
                   </span>
                 )}
@@ -314,7 +408,7 @@ export const Layout = ({ children }) => {
               >
                 <Bell className="w-6 h-6 text-primary-600" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 block h-4 w-4 rounded-full ring-2 ring-white bg-red-500 text-xs text-white flex items-center justify-center">
+                  <span className="absolute top-0 right-0 h-4 w-4 rounded-full ring-2 ring-white bg-red-500 text-xs text-white flex items-center justify-center">
                     {unreadCount}
                   </span>
                 )}
@@ -383,6 +477,27 @@ export const Layout = ({ children }) => {
               {navigation.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href
+                
+                if (item.isAnchor) {
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => {
+                        setIsMenuOpen(false)
+                        if (item.onClick) {
+                          item.onClick()
+                        }
+                      }}
+                      className={`flex items-center space-x-4 px-6 py-3 rounded-xl transition-all text-base w-full text-left ${
+                        'text-neutral-900 hover:text-primary-700 hover:bg-neutral-100'
+                      }`}
+                    >
+                      <Icon className="w-6 h-6" />
+                      <span className="font-semibold">{item.name}</span>
+                    </button>
+                  )
+                }
+                
                 return (
                   <Link
                     key={item.name}

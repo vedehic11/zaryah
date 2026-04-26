@@ -312,7 +312,19 @@ export const CartProvider = ({ children }) => {
       } catch (error) {
         console.error('CartContext: Error adding to backend cart:', error);
         console.error('CartContext: Error stack:', error.stack);
-        toast.error('Failed to add item to cart');
+        const message = error?.message || 'Failed to add item to cart'
+        const isAuthError = /unauthorized|log\s*in|login|session/i.test(String(message))
+
+        if (isAuthError) {
+          toast.error('Your session has expired. Please log in again.')
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              window.location.href = '/login'
+            }, 300)
+          }
+        } else {
+          toast.error(message)
+        }
       } finally {
         setLoading(false);
       }

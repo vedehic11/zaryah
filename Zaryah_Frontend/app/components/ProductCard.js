@@ -20,6 +20,7 @@ export const ProductCard = ({ product }) => {
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   
   const productId = product.id || product._id
+  const isOutOfStock = Number(product?.stock ?? 0) <= 0
   const isLiked = isInWishlist(productId)
 
   const checkAuthAndRedirect = () => {
@@ -30,18 +31,26 @@ export const ProductCard = ({ product }) => {
     return true;
   };
 
-  const handleQuickAdd = (e) => {
+  const handleQuickAdd = async (e) => {
     e.preventDefault() // Prevent navigation
     if (!checkAuthAndRedirect()) return;
-    addToCart(product)
-    toast.success('Added to cart!')
+    if (isOutOfStock) {
+      toast.error('This product is out of stock')
+      return
+    }
+
+    await addToCart(product)
   }
 
-  const handleGiftAdd = (e) => {
+  const handleGiftAdd = async (e) => {
     e.preventDefault() // Prevent navigation
     if (!checkAuthAndRedirect()) return;
-    addToCart(product, { giftPackaging: true })
-    toast.success('Added as gift to cart!')
+    if (isOutOfStock) {
+      toast.error('This product is out of stock')
+      return
+    }
+
+    await addToCart(product, { giftPackaging: true })
   }
 
   const handleLike = async (e) => {
@@ -207,6 +216,7 @@ export const ProductCard = ({ product }) => {
           <div className="flex space-x-2 mt-3 lg:hidden">
             <button
               onClick={handleQuickAdd}
+              disabled={isOutOfStock}
               className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2.5 rounded-lg text-sm font-medium transition-all shadow-soft border border-primary-700 flex items-center justify-center"
               title="Add to Cart"
             >
@@ -215,6 +225,7 @@ export const ProductCard = ({ product }) => {
             
             <button
               onClick={handleGiftAdd}
+              disabled={isOutOfStock}
               className="flex-1 bg-secondary-600 hover:bg-secondary-700 text-white py-2.5 rounded-lg text-sm font-medium transition-all shadow-soft border border-secondary-700 flex items-center justify-center"
               title="Add as Gift"
             >
