@@ -2,6 +2,11 @@
 const nextConfig = {
   output: 'standalone',
   images: {
+    localPatterns: [
+      {
+        pathname: '/assets/**',
+      },
+    ],
     remotePatterns: [
       {
         protocol: 'https',

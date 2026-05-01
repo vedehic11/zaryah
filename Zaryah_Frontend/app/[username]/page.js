@@ -29,7 +29,13 @@ export default function SellerProfilePage({ params }) {
   const overlaySearchInputRef = useRef(null)
   const { totalItems, setIsCartOpen } = useCart()
   const { wishlistCount } = useWishlist()
-  const { user } = useAuth()
+  const { user, isLoading: isAuthLoading } = useAuth()
+
+  useEffect(() => {
+    if (!isAuthLoading && !user && username) {
+      router.push(`/login?redirect=${encodeURIComponent(`/${username}`)}`)
+    }
+  }, [user, isAuthLoading, username, router])
 
   useEffect(() => {
     const fetchSeller = async () => {
@@ -581,7 +587,7 @@ export default function SellerProfilePage({ params }) {
                         visible: { opacity: 1, y: 0 }
                       }}
                     >
-                      <ProductCard product={product} />
+                      <ProductCard product={product} backHref={`/${username}`} />
                     </motion.div>
                   ))}
                 </motion.div>

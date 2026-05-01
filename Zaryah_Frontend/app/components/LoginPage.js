@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, Lock, Eye, EyeOff, Sparkles, User, KeyRound, ArrowLeft } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, User, KeyRound, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import Link from 'next/link'
+import Image from 'next/image'
+const LOGO_SRC = '/assets/image.png?v=20260501'
 import toast from 'react-hot-toast'
 
 // ─── Forgot Password Sub-Component ─────────────────────────────────────────
@@ -87,6 +89,9 @@ export const LoginPage = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const { login, isLoading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTarget = String(searchParams.get('redirect') || '').trim()
+  const safeRedirectTarget = redirectTarget.startsWith('/') ? redirectTarget : ''
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -129,6 +134,11 @@ export const LoginPage = () => {
     const success = await login(formData.email, formData.password, formData.userType)
     
     if (success) {
+      if (safeRedirectTarget) {
+        router.push(safeRedirectTarget)
+        return
+      }
+
       // Redirect based on user type
       if (formData.userType === 'Admin') {
         router.push('/admin')
@@ -149,11 +159,15 @@ export const LoginPage = () => {
       >
         {/* Header */}
         <div className="text-center">
-          <div className="flex items-center justify-center space-x-3 mb-6">
-            <div className="bg-primary-600 p-3 rounded-xl">
-              <Sparkles className="w-8 h-8 text-white" />
-            </div>
-            <span className="text-3xl font-bold text-primary-700 font-serif">Zaryah</span>
+          <div className="flex items-center justify-center mb-4">
+            <Image
+              src={LOGO_SRC}
+              alt="Zaryah"
+              width={280}
+              height={84}
+              className="h-16 w-auto"
+              priority
+            />
           </div>
           {showForgotPassword ? (
             <>

@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start -p $PORT",
     "lint": "eslint . --ext .js,.jsx",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run --reporter=verbose",
     "test:env": "node test-env.js",
     "test:supabase": "node test-supabase.js",
     "test:all": "npm run test:env && npm run test:supabase"
@@ -32,6 +35,7 @@
   },
   "devDependencies": {
     "dotenv": "^17.2.3",
-    "eslint": "^9.38.0"
+    "eslint": "^9.38.0",
+    "vitest": "^4.1.5"
   }
 }

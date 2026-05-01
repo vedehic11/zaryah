@@ -23,7 +23,8 @@ import {
   Mail,
   Image as ImageIcon,
   ThumbsUp,
-  ChevronLeft
+  ChevronLeft,
+  XCircle
 } from 'lucide-react'
 import { CreateSupportTicket } from './CreateSupportTicket'
 import { ReviewModal } from './ReviewModal'
@@ -424,12 +425,12 @@ export const OrderHistoryPage = () => {
               >
                 {/* Order Header */}
                 <div className="p-6 border-b border-primary-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 items-center space-x-3">
                       <div className="bg-primary-100 p-2 rounded-lg">
                         <Package className="w-5 h-5 text-primary-600" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <h3 className="text-lg font-semibold text-charcoal-900">
                           Order #{order.id?.slice(-8)?.toUpperCase() || 'N/A'}
                         </h3>
@@ -438,7 +439,7 @@ export const OrderHistoryPage = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                         {canBuyerCancelOrder(order) && (
                           <button
                             onClick={(e) => {
@@ -475,10 +476,10 @@ export const OrderHistoryPage = () => {
 
                   {/* Order Progress */}
                   <div className="mb-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 sm:gap-2">
                       {getOrderProgress(order.status).map((step, stepIndex) => (
-                        <div key={step.name} className="flex items-center">
-                          <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
+                        <div key={step.name} className="flex flex-1 min-w-0 items-center">
+                          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${
                             step.completed 
                               ? 'bg-primary-600 border-primary-600 text-white' 
                               : 'bg-gray-100 border-gray-300 text-gray-400'
@@ -490,16 +491,16 @@ export const OrderHistoryPage = () => {
                             )}
                           </div>
                           {stepIndex < getOrderProgress(order.status).length - 1 && (
-                            <div className={`flex-1 h-0.5 mx-2 ${
+                            <div className={`mx-1 h-0.5 min-w-[10px] flex-1 sm:mx-2 ${
                               step.completed ? 'bg-primary-600' : 'bg-gray-300'
                             }`} />
                           )}
                         </div>
                       ))}
                     </div>
-                    <div className="flex justify-between text-xs text-charcoal-500 mt-2">
+                    <div className="mt-2 grid grid-cols-4 gap-1 text-[11px] leading-tight text-charcoal-500 sm:text-xs">
                       {getOrderProgress(order.status).map(step => (
-                        <span key={step.name} className="text-center">{step.name}</span>
+                        <span key={step.name} className="text-center break-words">{step.name}</span>
                       ))}
                     </div>
                   </div>

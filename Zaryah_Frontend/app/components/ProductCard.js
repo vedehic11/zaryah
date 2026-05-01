@@ -12,7 +12,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
-export const ProductCard = ({ product }) => {
+export const ProductCard = ({ product, backHref }) => {
   const { user } = useAuth();
   const router = useRouter();
   const [showQuickAdd, setShowQuickAdd] = useState(false)
@@ -21,6 +21,12 @@ export const ProductCard = ({ product }) => {
   
   const productId = product.id || product._id
   const sellerUsername = product?.seller?.username || product?.seller_username || null
+  const normalizedBackHref = typeof backHref === 'string' && backHref.startsWith('/') ? backHref : ''
+  const productHref = productId
+    ? normalizedBackHref
+      ? `/product/${productId}?back=${encodeURIComponent(normalizedBackHref)}`
+      : `/product/${productId}`
+    : '#'
   const isOutOfStock = Number(product?.stock ?? 0) <= 0
   const isLiked = isInWishlist(productId)
 
@@ -88,7 +94,7 @@ export const ProductCard = ({ product }) => {
         {/* Product Image */}
         <div className="relative overflow-hidden">
           <Link 
-            href={productId ? `/product/${productId}` : '#'}
+            href={productHref}
             className="block relative w-full h-32 sm:h-48 lg:h-64"
           >
             <Image
@@ -171,7 +177,7 @@ export const ProductCard = ({ product }) => {
         {/* Product Info */}
         <div className="p-2 sm:p-4 flex-1 flex flex-col">
           <Link 
-            href={productId ? `/product/${productId}` : '#'}
+            href={productHref}
             className="flex-1"
           >
             <div className="flex items-start justify-between mb-2">

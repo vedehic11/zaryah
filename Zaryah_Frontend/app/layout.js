@@ -12,17 +12,20 @@ import { RealtimeProvider } from './contexts/RealtimeContext'
 const inter = Inter({ 
   subsets: ['latin'],
   variable: '--font-inter',
+  preload: false,
 })
 
 const poppins = Poppins({ 
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-poppins',
+  preload: false,
 })
 
 const playfair = Playfair_Display({ 
   subsets: ['latin'],
   variable: '--font-playfair',
+  preload: false,
 })
 
 export const metadata = {

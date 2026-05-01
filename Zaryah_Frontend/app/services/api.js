@@ -35,7 +35,7 @@ class ApiService {
   // Supabase Auth: send token in Authorization header
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`
-    const { silentErrors = false, timeoutMs, ...requestOptions } = options
+    const { silentErrors = false, timeoutMs, _retryAuth = false, ...requestOptions } = options
     
     // Get auth token
     const token = await this.getAuthToken()
@@ -105,6 +105,18 @@ class ApiService {
       }
 
       if (!response.ok) {
+        if (response.status === 401 && !_retryAuth) {
+          try {
+            const { data: refreshed } = await supabaseClient.auth.refreshSession()
+            if (refreshed?.session?.access_token) {
+              return this.request(endpoint, { ...options, _retryAuth: true })
+            }
+          } catch (refreshError) {
+            if (!silentErrors) {
+              console.error('Auth refresh failed:', refreshError)
+            }
+          }
+        }
         const errorMsg = data?.error || data?.message || `HTTP ${response.status}: ${response.statusText}`
         if (!silentErrors) {
           console.error(`API Error [${url}]:`, errorMsg)

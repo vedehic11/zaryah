@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { 
@@ -11,7 +12,6 @@ import {
   LogOut, 
   Menu, 
   X,
-  Sparkles,
   Package,
   History,
   ShoppingBag,
@@ -27,6 +27,8 @@ import { CartSidebar } from './CartSidebar'
 import { NotificationCenter } from './NotificationCenter'
 import { UserAvatar } from './UserAvatar'
 import { apiService } from '../services/api'
+
+const LOGO_SRC = '/assets/image.png?v=20260501'
 
 // NotificationSidebar component (like CartSidebar)
 function NotificationSidebar({ isOpen, onClose }) {
@@ -55,7 +57,7 @@ function NotificationSidebar({ isOpen, onClose }) {
 }
 
 export const Layout = ({ children, dynamicNavItems = [] }) => {
-  const { user, logout } = useAuth()
+  const { user, logout, isLoading: authLoading } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const reservedTopLevelRoutes = useMemo(() => new Set([
@@ -124,10 +126,12 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
 
   // Load unread notification count
   useEffect(() => {
-    if (user) {
+    if (user && !authLoading) {
       loadUnreadCount()
+    } else if (!user && !authLoading) {
+      setUnreadCount(0)
     }
-  }, [user])
+  }, [user, authLoading])
 
   const loadUnreadCount = async () => {
     try {
@@ -308,16 +312,18 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
       {!isUsernameBrandPage && (
       <header className="bg-cream-50/95 backdrop-blur-md border-b border-cream-200 sticky top-0 z-50 shadow-lg">
         {/* Desktop header row */}
-        <div className="hidden lg:flex w-full items-center justify-between py-4 px-4 xl:px-6">
+        <div className="hidden lg:flex w-full items-center justify-between py-3 px-4 xl:px-6">
           {/* Logo - Left Side */}
           <div className="flex-shrink-0 flex items-center justify-start">
-            <Link href="/" className="flex items-center space-x-2">
-              <span className="p-2 rounded-lg flex items-center justify-center transition-colors duration-200 bg-primary-100">
-                <Sparkles className="w-6 h-6 xl:w-7 xl:h-7 transition-colors duration-200 text-primary-600" />
-              </span>
-              <span className="text-xl xl:text-2xl font-bold font-serif transition-colors duration-200 text-primary-700">
-                {headerBrandLabel}
-              </span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src={LOGO_SRC}
+                alt="Zaryah"
+                width={260}
+                height={78}
+                className="h-12 xl:h-14 w-auto"
+                priority
+              />
             </Link>
           </div>
           {/* Center Navigation */}
@@ -431,14 +437,16 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
         </div>
         
         {/* Tablet and Mobile header (combined) */}
-        <div className="flex lg:hidden w-full items-center justify-between py-3 px-3 xl:px-6">
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="p-2 rounded-lg flex items-center justify-center transition-colors duration-200 bg-primary-100">
-              <Sparkles className="w-5 h-5 xl:w-6 xl:h-6 transition-colors duration-200 text-primary-600" />
-            </span>
-            <span className="text-lg xl:text-xl font-bold font-serif transition-colors duration-200 text-primary-700">
-              {headerBrandLabel}
-            </span>
+        <div className="flex lg:hidden w-full items-center justify-between py-2 px-3 xl:px-6">
+          <Link href="/" className="flex items-center">
+            <Image
+              src={LOGO_SRC}
+              alt="Zaryah"
+              width={220}
+              height={66}
+              className="h-10 w-auto"
+              priority
+            />
           </Link>
           <div className="flex items-center space-x-2">
             {/* Notification Bell Icon */}
@@ -618,11 +626,14 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {/* Brand */}
             <div className="col-span-2 md:col-span-2 lg:col-span-2">
-              <div className="flex items-center space-x-3 mb-8">
-                <div className="bg-primary-600 p-2 rounded-xl">
-                  <Sparkles className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-2xl lg:text-3xl font-bold text-neutral-800 font-serif">Zaryah</span>
+              <div className="flex items-center mb-6">
+                <Image
+                  src={LOGO_SRC}
+                  alt="Zaryah"
+                  width={280}
+                  height={84}
+                  className="h-14 w-auto"
+                />
               </div>
               <p className="text-neutral-600 mb-6 lg:mb-8 max-w-md text-base lg:text-lg leading-relaxed">
                 Your path to meaningful connections through thoughtfully curated gifts. Every purchase tells a story 

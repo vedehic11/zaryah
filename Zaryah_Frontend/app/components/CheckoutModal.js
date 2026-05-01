@@ -210,7 +210,7 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
         order_id: paymentOrder.order_id,
         name: 'Zaryah',
         description: `Order #${order.order_number || order.id}`,
-        image: '/assets/logo.png',
+        image: '/assets/image.png?v=20260501',
         prefill: {
           name: user.name,
           email: user.email,

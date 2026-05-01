@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ChevronLeft, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles, Star } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useCart } from '../contexts/CartContext'
 import { toast } from 'react-hot-toast'
 import { Reviews } from './Reviews'
@@ -11,12 +11,30 @@ import { formatWeightDisplay } from '@/lib/weight'
 
 export default function MobileProductDetail({ product, similarProducts = [] }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { addToCart } = useCart()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [selectedSize, setSelectedSize] = useState(null)
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [customizationAnswers, setCustomizationAnswers] = useState({})
   const [activeTab, setActiveTab] = useState('details')
+  const sellerUsername = product?.seller?.username || product?.seller?.sellerUsername || null
+  const backTarget = String(searchParams.get('back') || '').trim()
+  const safeBackTarget = backTarget.startsWith('/') ? backTarget : ''
+
+  const handleBack = () => {
+    if (safeBackTarget) {
+      router.push(safeBackTarget)
+      return
+    }
+
+    if (sellerUsername) {
+      router.push(`/${sellerUsername}`)
+      return
+    }
+
+    router.back()
+  }
 
   useEffect(() => {
     if (product?.sizeOptions && product.sizeOptions.length > 0) {
@@ -95,7 +113,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       <div className="sticky top-0 z-50 bg-cream-50 border-b border-primary-200 shadow-sm">
         <div className="flex items-center px-3 py-2.5 space-x-2">
           <button 
-            onClick={() => router.back()}
+            onClick={handleBack}
             className="p-1 -ml-1 active:bg-primary-100 rounded-full transition-colors"
           >
             <ChevronLeft className="w-7 h-7 text-charcoal-800" strokeWidth={2} />

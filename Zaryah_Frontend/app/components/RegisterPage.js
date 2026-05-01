@@ -5,13 +5,15 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { 
-  Mail, Lock, Eye, EyeOff, User, MapPin, Building, FileText, Phone, Sparkles, Instagram, Facebook, Twitter, Linkedin, Camera, ArrowLeft, ArrowRight, CheckCircle, AlertCircle, Upload, X, File, Navigation2
+  Mail, Lock, Eye, EyeOff, User, MapPin, Building, FileText, Phone, Instagram, Facebook, Twitter, Linkedin, Camera, ArrowLeft, ArrowRight, CheckCircle, AlertCircle, Upload, X, File, Navigation2
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useAddress } from '../contexts/AddressContext'
 import { OtpVerification } from './OtpVerification'
 import { AddressDetectionModal } from './AddressDetectionModal'
 import Link from 'next/link'
+import Image from 'next/image'
+const LOGO_SRC = '/assets/image.png?v=20260501'
 import { apiService } from '../services/api'
 
 export const RegisterPage = () => {
@@ -1152,9 +1154,15 @@ export const RegisterPage = () => {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-3 mb-6">
-            <div className="bg-primary-600 p-3 rounded-xl"><Sparkles className="w-8 h-8 text-white" /></div>
-            <span className="text-3xl font-bold text-primary-700 font-serif">Zaryah</span>
+          <div className="flex items-center justify-center mb-4">
+            <Image
+              src={LOGO_SRC}
+              alt="Zaryah"
+              width={280}
+              height={84}
+              className="h-16 w-auto"
+              priority
+            />
           </div>
           <h2 className="text-3xl font-bold text-gray-900">Join Our Community</h2>
           <p className="mt-2 text-gray-600">Create your account and start your journey with meaningful gifts</p>

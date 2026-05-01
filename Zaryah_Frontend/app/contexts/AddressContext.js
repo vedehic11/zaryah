@@ -16,7 +16,7 @@ export const useAddress = () => {
 }
 
 export const AddressProvider = ({ children }) => {
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const [addresses, setAddresses] = useState([])
   const [selectedAddress, setSelectedAddress] = useState(null)
   const [defaultAddress, setDefaultAddress] = useState(null)
@@ -51,16 +51,16 @@ export const AddressProvider = ({ children }) => {
 
   // Load addresses from backend when user changes
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !authLoading) {
       loadUserAddresses()
-    } else {
+    } else if (!user?.id && !authLoading) {
       // Clear addresses when user logs out
       setAddresses([])
       setSelectedAddress(null)
       setDefaultAddress(null)
       setUserCity(null)
     }
-  }, [user?.id, loadUserAddresses])
+  }, [user?.id, authLoading, loadUserAddresses])
 
   // Add new address
   const addAddress = useCallback(async (addressData) => {

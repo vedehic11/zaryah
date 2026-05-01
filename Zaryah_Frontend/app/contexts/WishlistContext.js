@@ -16,18 +16,18 @@ export const useWishlist = () => {
 }
 
 export const WishlistProvider = ({ children }) => {
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const [wishlist, setWishlist] = useState([])
   const [loading, setLoading] = useState(false)
 
   // Fetch wishlist when user logs in
   useEffect(() => {
-    if (user) {
+    if (user && !authLoading) {
       fetchWishlist()
-    } else {
+    } else if (!user && !authLoading) {
       setWishlist([])
     }
-  }, [user])
+  }, [user, authLoading])
 
   const fetchWishlist = async () => {
     try {
@@ -36,6 +36,11 @@ export const WishlistProvider = ({ children }) => {
       // Get token from Supabase session
       const { data: { session } } = await supabaseClient.auth.getSession()
       const token = session?.access_token
+
+      if (!token) {
+        setWishlist([])
+        return
+      }
       
       const response = await fetch('/api/wishlist', {
         credentials: 'include',

@@ -7,7 +7,7 @@ import { Bell, Check, Trash2, X, Clock, Package, CreditCard, Gift, Settings } fr
 import toast from 'react-hot-toast'
 
 export const NotificationCenter = () => {
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -15,10 +15,15 @@ export const NotificationCenter = () => {
 
   // Load notifications
   useEffect(() => {
-    if (user) {
+    if (user && !authLoading) {
       loadNotifications()
+    } else if (!user && !authLoading) {
+      setNotifications([])
+      setUnreadCount(0)
+      setError(null)
+      setLoading(false)
     }
-  }, [user])
+  }, [user, authLoading])
 
   const loadNotifications = async () => {
     try {

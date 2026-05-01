@@ -97,7 +97,7 @@ export const HomePage = () => {
     <div className="min-h-screen bg-gradient-elegant pt-0 md:pt-0">
       <div ref={heroRef} className="relative w-full overflow-visible mt-0">
         <motion.div
-          className="sticky top-0 z-30 w-full"
+          className="sticky top-0 z-30 w-full relative"
           style={{ opacity: fadeOut, scale: scaleOut }}
         >
           <VideoCarousel />
@@ -120,6 +120,7 @@ export const HomePage = () => {
                     src={cat.img} 
                     alt={cat.title}
                     fill
+                    sizes="(min-width: 1024px) 200px, (min-width: 640px) 180px, 160px"
                     className="object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                   <span className="text-2xl font-bold text-primary-600 absolute inset-0 hidden items-center justify-center">{cat.title.charAt(0)}</span>
@@ -222,6 +223,7 @@ export const HomePage = () => {
                           src={coverPhoto} 
                           alt={seller.business_name}
                           fill
+                          sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       )}
@@ -236,6 +238,7 @@ export const HomePage = () => {
                             src={user.profile_photo} 
                             alt={seller.business_name}
                             fill
+                            sizes="64px"
                             className="object-cover"
                           />
                         ) : (

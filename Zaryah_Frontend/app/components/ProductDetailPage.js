@@ -27,7 +27,7 @@ import { useCart } from '../contexts/CartContext'
 import { InstantDeliveryBadge, DeliveryTimeEstimate } from './InstantDeliveryBadge'
 import { useAuth } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Reviews } from './Reviews'
 import { ReviewModal } from './ReviewModal'
 import Image from 'next/image'
@@ -41,6 +41,7 @@ export const ProductDetailPage = ({ productId }) => {
   const { addToCart } = useCart()
   const { user } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [quantity, setQuantity] = useState(1)
   const [isLiked, setIsLiked] = useState(false)
   const [selectedSize, setSelectedSize] = useState(null)
@@ -49,6 +50,22 @@ export const ProductDetailPage = ({ productId }) => {
   const [customizationSelections, setCustomizationSelections] = useState({});
   const [fetchedProduct, setFetchedProduct] = useState(null);
   const sellerUsername = product?.seller?.username || product?.seller?.sellerUsername || null
+  const backTarget = String(searchParams.get('back') || '').trim()
+  const safeBackTarget = backTarget.startsWith('/') ? backTarget : ''
+
+  const handleBack = () => {
+    if (safeBackTarget) {
+      router.push(safeBackTarget)
+      return
+    }
+
+    if (sellerUsername) {
+      router.push(`/${sellerUsername}`)
+      return
+    }
+
+    router.back()
+  }
 
   const goToSellerProfile = () => {
     if (!sellerUsername) return
@@ -221,7 +238,7 @@ export const ProductDetailPage = ({ productId }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back Button */}
         <button
-          onClick={() => router.back()}
+          onClick={handleBack}
           className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm hover:shadow-md transition-shadow mb-6"
           aria-label="Go back"
         >
@@ -229,52 +246,54 @@ export const ProductDetailPage = ({ productId }) => {
         </button>
 
         {product && (
-          <div className="bg-white rounded-2xl shadow-soft border border-primary-100 overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Product Images */}
-              <div className="space-y-4">
-                <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden relative">
-                  {product.images && product.images.length > 0 ? (
-                    <Image
-                      src={product.images[0]}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                      priority
-                    />
-                  ) : product.image ? (
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      <Package className="w-16 h-16" />
+              <div className="bg-white rounded-2xl shadow-soft border border-primary-100 p-8 h-fit lg:sticky lg:top-24">
+                <div className="space-y-4">
+                  <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden relative">
+                    {product.images && product.images.length > 0 ? (
+                      <Image
+                        src={product.images[0]}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                        priority
+                      />
+                    ) : product.image ? (
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <Package className="w-16 h-16" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Additional Images */}
+                  {product.images && product.images.length > 1 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {product.images.slice(1, 5).map((image, index) => (
+                        <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
+                          <Image
+                            src={image}
+                            alt={`${product.name} ${index + 2}`}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-                
-                {/* Additional Images */}
-                {product.images && product.images.length > 1 && (
-                  <div className="grid grid-cols-4 gap-2">
-                    {product.images.slice(1, 5).map((image, index) => (
-                      <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
-                        <Image
-                          src={image}
-                          alt={`${product.name} ${index + 2}`}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Product Info */}
-              <div className="space-y-6">
+              <div className="bg-white rounded-2xl shadow-soft border border-primary-100 p-8 space-y-6">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <button
@@ -597,7 +616,7 @@ export const ProductDetailPage = ({ productId }) => {
             </div>
 
             {/* Tabs */}
-            <div className="border-t border-gray-200">
+            <div className="bg-white rounded-2xl shadow-soft border border-primary-100 overflow-hidden">
               <div className="flex border-b border-gray-200 overflow-x-auto">
                 {[
                   { key: 'description', label: 'Description' },

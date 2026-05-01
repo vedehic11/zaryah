@@ -84,6 +84,11 @@ export async function isUsernameAvailable(username) {
     .eq('username', username)
     .single()
 
-  // If error code is PGRST116 (not found), username is available
-  return error && error.code === 'PGRST116'
+  // If error code is PGRST116 (not found), username is available.
+  // When no error exists, availability depends on whether a row was returned.
+  if (error) {
+    return error.code === 'PGRST116'
+  }
+
+  return !data
 }
