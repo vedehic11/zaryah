@@ -29,13 +29,7 @@ export default function SellerProfilePage({ params }) {
   const overlaySearchInputRef = useRef(null)
   const { totalItems, setIsCartOpen } = useCart()
   const { wishlistCount } = useWishlist()
-  const { user, isLoading: isAuthLoading } = useAuth()
-
-  useEffect(() => {
-    if (!isAuthLoading && !user && username) {
-      router.push(`/login?redirect=${encodeURIComponent(`/${username}`)}`)
-    }
-  }, [user, isAuthLoading, username, router])
+  const { user } = useAuth()
 
   useEffect(() => {
     const fetchSeller = async () => {
