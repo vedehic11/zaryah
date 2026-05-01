@@ -8,7 +8,8 @@ import {
   Plus, Clock, CheckCircle, XCircle, AlertTriangle, Users, Star,
   BarChart3, Settings, Upload, Image as ImageIcon, FileText, MessageCircle,
   Wallet, ArrowUpCircle, ArrowDownCircle, CreditCard, IndianRupee, Truck, ExternalLink, User,
-  Instagram, Facebook, Twitter, Linkedin, MapPin, Building, Sparkles, X, ChevronDown, ChevronUp, Filter, Printer, RefreshCw
+  Instagram, Facebook, Twitter, Linkedin, MapPin, Building, Sparkles, X, ChevronDown, ChevronUp, Filter, Printer, RefreshCw,
+  Share2, Copy, QrCode, Download
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
@@ -176,6 +177,30 @@ export default function SellerDashboardPage() {
   }
 
   const isKycMissing = !(hasValue(profileData.account_holder_name) && hasValue(profileData.account_number) && hasValue(profileData.ifsc_code))
+  const profileUrl = profileData?.username && typeof window !== 'undefined'
+    ? `${window.location.origin}/${profileData.username}`
+    : ''
+  const qrPreviewUrl = profileUrl
+    ? `/api/qr?size=160&data=${encodeURIComponent(profileUrl)}`
+    : ''
+  const qrDownloadUrl = profileUrl
+    ? `/api/qr?size=512&data=${encodeURIComponent(profileUrl)}&download=1`
+    : ''
+
+  const handleCopyProfileUrl = async () => {
+    if (!profileUrl) {
+      toast.error('Set a username to share your profile link')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(profileUrl)
+      toast.success('Profile link copied')
+    } catch (error) {
+      console.error('Failed to copy profile link:', error)
+      toast.error('Unable to copy. Please copy the link manually.')
+    }
+  }
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -540,17 +565,10 @@ export default function SellerDashboardPage() {
       formData.append('folder', 'seller-covers')
       formData.append('useSupabase', 'false') // Use Cloudinary for cover photos/videos
       
-      const response = await fetch('/api/upload', {
+      const data = await apiService.request('/upload', {
         method: 'POST',
         body: formData
       })
-      
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Upload failed')
-      }
-      
-      const data = await response.json()
       
       // Update seller profile with new cover photo URL
       await apiService.request(`/sellers`, {
@@ -591,17 +609,10 @@ export default function SellerDashboardPage() {
       formData.append('folder', 'profile-photos')
       formData.append('useSupabase', 'false')
       
-      const response = await fetch('/api/upload', {
+      const data = await apiService.request('/upload', {
         method: 'POST',
         body: formData
       })
-      
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Upload failed')
-      }
-      
-      const data = await response.json()
       
       // Update user profile photo in users table via API
       await apiService.request(`/sellers`, {
@@ -2021,6 +2032,76 @@ export default function SellerDashboardPage() {
                       </div>
                     </div>
 
+                    {/* Share Profile */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <Share2 className="w-5 h-5 text-primary-600" />
+                        Share Your Profile
+                      </h3>
+                      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-start">
+                        <div className="space-y-3">
+                          <p className="text-sm text-gray-600">
+                            Share your public seller profile with customers.
+                          </p>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 break-all">
+                              {profileUrl || 'Add a username to enable your profile link.'}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleCopyProfileUrl}
+                              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              disabled={!profileUrl}
+                            >
+                              <Copy className="h-4 w-4" />
+                              Copy Link
+                            </button>
+                            {profileUrl && (
+                              <Link
+                                href={`/${profileData.username}`}
+                                target="_blank"
+                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                                Open
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-3">
+                          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                            <QrCode className="h-4 w-4" />
+                            QR Code
+                          </div>
+                          {profileUrl ? (
+                            <img
+                              src={qrPreviewUrl}
+                              alt="Profile QR code"
+                              className="h-32 w-32 rounded-md border border-gray-200 bg-white"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="h-32 w-32 rounded-md border border-gray-200 bg-white flex items-center justify-center text-xs text-gray-400">
+                              Add username
+                            </div>
+                          )}
+                          <a
+                            href={qrDownloadUrl || '#'}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            aria-disabled={!profileUrl}
+                            onClick={(event) => {
+                              if (!profileUrl) {
+                                event.preventDefault()
+                              }
+                            }}
+                          >
+                            <Download className="h-4 w-4" />
+                            Download QR
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Business Information */}
                     <div className="bg-white rounded-xl border border-gray-200 p-6">
                       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -2314,10 +2395,10 @@ export default function SellerDashboardPage() {
                             Recommended: Square image, at least 400x400px. Supports JPEG, PNG, WebP (max 5MB)
                           </p>
                           {uploadingProfile && (
-                            <p className="mt-2 text-sm text-primary-600 flex items-center gap-2">
-                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+                            <div className="mt-2 text-sm text-primary-600 flex items-center gap-2">
+                              <span className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent" aria-hidden="true"></span>
                               Uploading...
-                            </p>
+                            </div>
                           )}
                         </div>
                       </div>
