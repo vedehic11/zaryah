@@ -122,6 +122,13 @@ export const OrderHistoryPage = () => {
                   }
                 }
 
+                if (!isTwoWay && order.status === 'ready' && live.status === 'confirmed') {
+                  return {
+                    ...order,
+                    shipment_status: live.shipment_status || order.shipment_status
+                  }
+                }
+
                 return {
                   ...order,
                   status: live.status,
@@ -219,7 +226,8 @@ export const OrderHistoryPage = () => {
 
     return [
       { name: 'Order Placed', completed: true },
-      { name: 'Confirmed', completed: ['confirmed', 'dispatched', 'delivered'].includes(status) },
+      { name: 'Confirmed', completed: ['confirmed', 'ready', 'dispatched', 'delivered'].includes(status) },
+      { name: 'Ready', completed: ['ready', 'dispatched', 'delivered'].includes(status) },
       { name: 'Dispatched', completed: ['dispatched', 'delivered'].includes(status) },
       { name: 'Delivered', completed: status === 'delivered' }
     ]
@@ -522,7 +530,8 @@ export const OrderHistoryPage = () => {
                           const labels = {
                             'payment_failed': 'Payment Failed',
                             'pickup_dispatched': 'Pickup Dispatched',
-                            'received_by_seller': 'Received by Seller'
+                            'received_by_seller': 'Received by Seller',
+                            'ready': 'Ready'
                           }
                           return labels[s] || s.charAt(0).toUpperCase() + s.slice(1)
                         })()}
@@ -731,6 +740,20 @@ export const OrderHistoryPage = () => {
                             <div className="flex justify-between">
                               <span className="text-charcoal-600">Payment Method:</span>
                               <span className="font-medium">{(order.payment_method || order.paymentMethod) === 'cod' ? 'Cash on Delivery' : 'Online Payment'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-charcoal-600">Order Status:</span>
+                              <span className="font-medium">
+                                {(() => {
+                                  const statusValue = getDisplayStatus(order)
+                                  const labels = {
+                                    payment_failed: 'Payment Failed',
+                                    pickup_dispatched: 'Pickup Dispatched',
+                                    received_by_seller: 'Received by Seller'
+                                  }
+                                  return labels[statusValue] || statusValue.charAt(0).toUpperCase() + statusValue.slice(1)
+                                })()}
+                              </span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-charcoal-600">Refund Status:</span>

@@ -1332,42 +1332,39 @@ export default function SellerDashboardPage() {
 
                                     {order.status === 'confirmed' && !order.two_way_delivery && (
                                       <>
-                                        {order.shipment_id && order.awb_code ? (
-                                          <button
-                                            onClick={async (e) => {
-                                              e.stopPropagation()
-                                              try {
-                                                const response = await apiService.request('/orders/shipping-label', {
-                                                  method: 'POST',
-                                                  body: JSON.stringify({ orderId: order.id })
-                                                })
-                                                if (response.labelUrl) {
-                                                  window.open(response.labelUrl, '_blank')
-                                                  toast.success('Label opened!')
-                                                } else {
-                                                  toast.error('Shipment is yet to be created.')
-                                                }
-                                              } catch (error) {
-                                                toast.error(error.message || 'Failed to get label')
-                                              }
-                                            }}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1"
-                                          >
-                                            <Printer className="w-3 h-3" />
-                                            Print Label
-                                          </button>
-                                        ) : order.shipment_id ? (
-                                          <div className="space-y-2">
-                                            <p className="text-xs font-semibold text-blue-900">Request approved.</p>
-                                            <p className="text-xs text-blue-800">Delivery label will be created in 5-6 hours.</p>
-                                          </div>
-                                        ) : (
-                                          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 text-center">
-                                            Shipment is yet to be created.
-                                          </p>
-                                        )}
+                                        <button
+                                          onClick={async (e) => {
+                                            e.stopPropagation()
+                                            if (updatingOrders.has(order.id)) {
+                                              toast.error('Already updating...')
+                                              return
+                                            }
+                                            setUpdatingOrders(prev => new Set(prev).add(order.id))
+                                            try {
+                                              await apiService.request(`/orders/${order.id}`, {
+                                                method: 'PUT',
+                                                body: JSON.stringify({ status: 'ready' })
+                                              })
+                                              toast.success('Marked ready — shipment being created')
+                                              fetchDashboardData()
+                                            } catch (error) {
+                                              toast.error(error.message || 'Failed to mark ready')
+                                            } finally {
+                                              setUpdatingOrders(prev => {
+                                                const newSet = new Set(prev)
+                                                newSet.delete(order.id)
+                                                return newSet
+                                              })
+                                            }
+                                          }}
+                                          disabled={updatingOrders.has(order.id)}
+                                          className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1"
+                                        >
+                                          <CheckCircle className="w-3 h-3" />
+                                          {updatingOrders.has(order.id) ? 'Updating...' : 'Mark Ready'}
+                                        </button>
                                         <p className="text-[11px] text-gray-600 text-center">
-                                          Status moves to dispatched automatically after AWB assignment.
+                                          Ready will create the shipment. Dispatched updates after AWB assignment.
                                         </p>
                                       </>
                                     )}
@@ -1405,7 +1402,7 @@ export default function SellerDashboardPage() {
                                           </div>
                                         ) : (
                                           <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 text-center">
-                                            Return shipment is being created.
+                                            {order.two_way_delivery ? 'Return shipment is being created.' : 'Shipment is being created.'}
                                           </p>
                                         )}
                                         <p className="text-[11px] text-gray-600 text-center">

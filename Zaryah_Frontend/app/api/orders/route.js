@@ -17,6 +17,11 @@ function getPassiveSyncStatus(mappedStatus, order) {
     return null
   }
 
+  // For standard orders, don't regress from ready back to confirmed
+  if (!order?.two_way_delivery && order?.status === 'ready' && mappedStatus === 'confirmed') {
+    return null
+  }
+
   return mappedStatus
 }
 

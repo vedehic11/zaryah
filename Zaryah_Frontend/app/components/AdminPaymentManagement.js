@@ -148,14 +148,21 @@ export const AdminPaymentManagement = () => {
                   <p className="text-sm text-gray-600">Date: {new Date(order.created_at).toLocaleString()}</p>
                 </div>
                 
-                <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  order.payment_status === 'paid' 
-                    ? 'bg-green-100 text-green-700'
-                    : order.payment_status === 'failed'
-                    ? 'bg-red-100 text-red-700'
-                    : 'bg-yellow-100 text-yellow-700'
-                }`}>
-                  {order.payment_status}
+                <div className="flex flex-col items-end gap-2">
+                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    order.payment_status === 'paid' 
+                      ? 'bg-green-100 text-green-700'
+                      : order.payment_status === 'failed'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {order.payment_status}
+                  </div>
+                  {order.status && (
+                    <div className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
+                      {order.status.replace(/_/g, ' ')}
+                    </div>
+                  )}
                 </div>
               </div>
 

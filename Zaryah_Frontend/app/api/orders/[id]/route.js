@@ -241,7 +241,7 @@ export async function PUT(request, context) {
       // Check valid transitions for different statuses
       const validTransitions = {
         'pending': ['confirmed', 'cancelled'],
-        'confirmed': order.two_way_delivery ? ['pickup_dispatched', 'cancelled'] : ['dispatched', 'cancelled'],
+        'confirmed': order.two_way_delivery ? ['pickup_dispatched', 'cancelled'] : ['ready', 'cancelled'],
         'pickup_dispatched': ['received_by_seller', 'cancelled'],
         'received_by_seller': ['ready', 'cancelled'],
         'ready': ['dispatched', 'cancelled'],
@@ -318,7 +318,7 @@ export async function PUT(request, context) {
     }
 
     if (status === 'ready' && !order.two_way_delivery) {
-      return NextResponse.json({ error: 'Ready status is only for two-way delivery orders.' }, { status: 400 })
+      // Ready is allowed for standard orders to trigger shipment creation
     }
 
     if (['pickup_dispatched', 'received_by_seller'].includes(status) && !order.two_way_delivery) {
@@ -595,7 +595,7 @@ export async function PUT(request, context) {
       }
     }
 
-    // Push confirmed orders to Shiprocket; AWB assignment can remain manual when auto mode is off.
+    // Push orders to Shiprocket when ready; AWB assignment can remain manual when auto mode is off.
     const autoCreateShipmentEnabled = process.env.AUTO_CREATE_SHIPMENT === 'true'
     const items = (updatedOrder.order_items || []).map(item => ({
       id: item.product_id,
@@ -663,79 +663,6 @@ export async function PUT(request, context) {
             updatedOrder.status = 'confirmed'
             updatedOrder.notes = `⚠️ INBOUND SHIPMENT ERROR: ${shipmentError.message}. Please create pickup manually in Shiprocket dashboard.`
           }
-        }
-      } else if (!order.shipment_id) {
-        console.log('Creating outbound Shiprocket shipment...')
-        try {
-          const { createShipment } = await import('@/lib/shiprocket')
-          const deliveryAddress = parseDeliveryAddress(order, updatedOrder.buyers)
-
-          if (!deliveryAddress.city || !deliveryAddress.state || !deliveryAddress.pincode || !deliveryAddress.phone) {
-            throw new Error(`Incomplete delivery address. Missing: ${[
-              !deliveryAddress.city && 'city',
-              !deliveryAddress.state && 'state',
-              !deliveryAddress.pincode && 'pincode',
-              !deliveryAddress.phone && 'phone'
-            ].filter(Boolean).join(', ')}`)
-          }
-
-          if (!/^\d{10}$/.test(deliveryAddress.phone)) {
-            throw new Error('Invalid phone number. Must be 10 digits.')
-          }
-
-          if (!/^\d{6}$/.test(deliveryAddress.pincode)) {
-            throw new Error('Invalid pincode. Must be 6 digits.')
-          }
-
-          const pickupLocation = buildSellerPickupLocation(updatedOrder.sellers, id)
-
-          if (!pickupLocation.city || !pickupLocation.state || !pickupLocation.pincode || !pickupLocation.phone) {
-            throw new Error('Incomplete seller pickup address. Please complete your profile details.')
-          }
-
-          const shipment = await createShipment({
-            orderId: id,
-            orderDate: new Date(order.created_at).toISOString().split('T')[0],
-            pickupLocation,
-            deliveryAddress,
-            items,
-            totalAmount: order.total_amount,
-            paymentMethod: order.payment_method,
-            autoAssignAwb: autoCreateShipmentEnabled
-          })
-
-          const shipmentUpdate = {
-            shipment_id: shipment.shipment_id,
-            awb_code: shipment.awb_code,
-            courier_name: shipment.courier_name,
-            tracking_url: shipment.tracking_url,
-            shipment_status: shipment.status,
-            shipment_created_at: new Date().toISOString()
-          }
-
-          if (shipment.awb_code) {
-            shipmentUpdate.status = 'dispatched'
-          }
-
-          await supabase
-            .from('orders')
-            .update(shipmentUpdate)
-            .eq('id', id)
-
-          Object.assign(updatedOrder, shipmentUpdate)
-        } catch (shipmentError) {
-          console.error('❌ Shipment creation failed:', shipmentError.message)
-          await supabase
-            .from('orders')
-            .update({
-              status: 'confirmed',
-              notes: `⚠️ SHIPMENT ERROR: ${shipmentError.message}. Please create shipment manually in Shiprocket dashboard or contact support.`
-            })
-            .eq('id', id)
-
-          updatedOrder.status = 'confirmed'
-          updatedOrder.shipment_error = shipmentError.message
-          updatedOrder.notes = `⚠️ SHIPMENT ERROR: ${shipmentError.message}. Please create shipment manually in Shiprocket dashboard or contact support.`
         }
       }
     }
@@ -823,11 +750,98 @@ export async function PUT(request, context) {
           updatedOrder.status = 'ready'
           updatedOrder.notes = `⚠️ RETURN SHIPMENT ERROR: ${shipmentError.message}. Please create shipment manually in Shiprocket dashboard.`
         }
+      } else if (!order.two_way_delivery && !order.shipment_id) {
+        console.log('✅ Condition met — Creating outbound Shiprocket shipment...')
+        try {
+          const { createShipment } = await import('@/lib/shiprocket')
+          const deliveryAddress = parseDeliveryAddress(order, updatedOrder.buyers)
+
+          if (!deliveryAddress.city || !deliveryAddress.state || !deliveryAddress.pincode || !deliveryAddress.phone) {
+            throw new Error(`Incomplete delivery address. Missing: ${[
+              !deliveryAddress.city && 'city',
+              !deliveryAddress.state && 'state',
+              !deliveryAddress.pincode && 'pincode',
+              !deliveryAddress.phone && 'phone'
+            ].filter(Boolean).join(', ')}`)
+          }
+
+          if (!/^\d{10}$/.test(deliveryAddress.phone)) {
+            throw new Error('Invalid phone number. Must be 10 digits.')
+          }
+
+          if (!/^\d{6}$/.test(deliveryAddress.pincode)) {
+            throw new Error('Invalid pincode. Must be 6 digits.')
+          }
+
+          const pickupLocation = buildSellerPickupLocation(updatedOrder.sellers, id)
+
+          if (!pickupLocation.city || !pickupLocation.state || !pickupLocation.pincode || !pickupLocation.phone) {
+            throw new Error('Incomplete seller pickup address. Please complete your profile details.')
+          }
+
+          const shipment = await createShipment({
+            orderId: id,
+            orderDate: new Date(order.created_at).toISOString().split('T')[0],
+            pickupLocation,
+            deliveryAddress,
+            items,
+            totalAmount: order.total_amount,
+            paymentMethod: order.payment_method,
+            autoAssignAwb: autoCreateShipmentEnabled
+          })
+
+          const shipmentUpdate = {
+            shipment_id: shipment.shipment_id,
+            awb_code: shipment.awb_code,
+            courier_name: shipment.courier_name,
+            tracking_url: shipment.tracking_url,
+            shipment_status: shipment.status,
+            shipment_created_at: new Date().toISOString()
+          }
+
+          if (shipment.awb_code) {
+            shipmentUpdate.status = 'dispatched'
+          }
+
+          await supabase
+            .from('orders')
+            .update(shipmentUpdate)
+            .eq('id', id)
+
+          Object.assign(updatedOrder, shipmentUpdate)
+        } catch (shipmentError) {
+          console.error('❌ Shipment creation failed:', shipmentError.message)
+          await supabase
+            .from('orders')
+            .update({
+              status: 'ready',
+              notes: `⚠️ SHIPMENT ERROR: ${shipmentError.message}. Please create shipment manually in Shiprocket dashboard or contact support.`
+            })
+            .eq('id', id)
+
+          updatedOrder.status = 'ready'
+          updatedOrder.shipment_error = shipmentError.message
+          updatedOrder.notes = `⚠️ SHIPMENT ERROR: ${shipmentError.message}. Please create shipment manually in Shiprocket dashboard or contact support.`
+        }
       } else {
-        console.log('❌ Condition NOT met — skipping return shipment creation')
-        if (!order.two_way_delivery) console.log('  Reason: not a two-way delivery order')
+        console.log('❌ Condition NOT met — skipping shipment creation')
         if (order.shipment_id) console.log('  Reason: shipment_id already exists:', order.shipment_id)
       }
+    }
+
+    if (status === 'ready' && order.status !== 'ready') {
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: order.buyer_id,
+          user_model: 'Buyer',
+          title: 'Order Ready for Shipment',
+          message: 'Your order is ready and will be handed to the courier soon.',
+          type: 'order',
+          related_order_id: id,
+          priority: 'low',
+          action_url: '/orders'
+        })
     }
 
     // Handle order delivery - release seller funds and update payment status
