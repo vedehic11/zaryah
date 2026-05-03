@@ -21,7 +21,8 @@ import {
   CheckCircle,
   RotateCcw,
   AlertCircle,
-  ChevronLeft
+  ChevronLeft,
+  Image as ImageIcon
 } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { InstantDeliveryBadge, DeliveryTimeEstimate } from './InstantDeliveryBadge'
@@ -50,6 +51,7 @@ export const ProductDetailPage = ({ productId }) => {
   const [activeTab, setActiveTab] = useState('description')
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [customizationSelections, setCustomizationSelections] = useState({});
+  const [customUploadStatus, setCustomUploadStatus] = useState({})
   const [fetchedProduct, setFetchedProduct] = useState(null);
   const sellerUsername = product?.seller?.username || product?.seller?.sellerUsername || null
   const isTwoWayDelivery = Boolean(product?.twoWayDelivery || product?.two_way_delivery)
@@ -157,7 +159,8 @@ export const ProductDetailPage = ({ productId }) => {
       product.customQuestions.forEach((q, index) => {
         initialSelections[index] = {
           question: q.question,
-          answer: ''
+          answer: '',
+          answerType: q.answerType || q.type || 'text'
         };
       });
       setCustomizationSelections(initialSelections);
@@ -199,8 +202,12 @@ export const ProductDetailPage = ({ productId }) => {
     if (product.customisable && product.customQuestions && product.customQuestions.length > 0) {
       const requiredQuestions = product.customQuestions.filter(q => q.required !== false);
       const unanswered = requiredQuestions.some((q, index) => {
-        const answer = customizationSelections[index]?.answer;
-        return !answer || answer.trim() === '';
+        const questionType = q.answerType || q.type || 'text'
+        const answer = customizationSelections[index]?.answer
+        if (questionType === 'photo') {
+          return !answer || customUploadStatus[index]
+        }
+        return !answer || answer.trim() === ''
       });
       
       if (unanswered) {
@@ -214,6 +221,7 @@ export const ProductDetailPage = ({ productId }) => {
       return {
         question: question || "Customization",
         answer: value.answer,
+        answerType: value.answerType || 'text'
       };
     });
     addToCart(product, {
@@ -234,8 +242,12 @@ export const ProductDetailPage = ({ productId }) => {
     if (product.customisable && product.customQuestions && product.customQuestions.length > 0) {
       const requiredQuestions = product.customQuestions.filter(q => q.required !== false);
       const unanswered = requiredQuestions.some((q, index) => {
-        const answer = customizationSelections[index]?.answer;
-        return !answer || answer.trim() === '';
+        const questionType = q.answerType || q.type || 'text'
+        const answer = customizationSelections[index]?.answer
+        if (questionType === 'photo') {
+          return !answer || customUploadStatus[index]
+        }
+        return !answer || answer.trim() === ''
       });
       
       if (unanswered) {
@@ -249,6 +261,7 @@ export const ProductDetailPage = ({ productId }) => {
       return {
         question: question || "Customization",
         answer: value.answer,
+        answerType: value.answerType || 'text'
       };
     });
 
@@ -272,6 +285,54 @@ export const ProductDetailPage = ({ productId }) => {
       }
     }));
   };
+
+  const handlePhotoAnswerUpload = async (questionIndex, file) => {
+    if (!file) return
+
+    const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
+    const isValidSize = file.size <= 5 * 1024 * 1024
+
+    if (!isValidType) {
+      toast.error('Only JPG, PNG, GIF, or WebP images are allowed')
+      return
+    }
+
+    if (!isValidSize) {
+      toast.error('Image must be 5MB or smaller')
+      return
+    }
+
+    setCustomUploadStatus(prev => ({ ...prev, [questionIndex]: true }))
+
+    try {
+      const uploadData = new FormData()
+      uploadData.append('file', file)
+      uploadData.append('folder', 'product-custom-answers')
+
+      const response = await apiService.request('/upload', {
+        method: 'POST',
+        body: uploadData
+      })
+
+      if (!response?.url) {
+        throw new Error('Failed to upload image')
+      }
+
+      setCustomizationSelections(prev => ({
+        ...prev,
+        [questionIndex]: {
+          ...prev[questionIndex],
+          answer: response.url
+        }
+      }))
+
+      toast.success('Photo uploaded')
+    } catch (error) {
+      toast.error(error.message || 'Failed to upload image')
+    } finally {
+      setCustomUploadStatus(prev => ({ ...prev, [questionIndex]: false }))
+    }
+  }
 
   const handleOptionSelect = (questionIndex, option) => {
     setCustomizationSelections(prev => ({
@@ -521,25 +582,46 @@ export const ProductDetailPage = ({ productId }) => {
                     </div>
                     
                     <div className="space-y-4">
-                      {product.customQuestions.map((question, index) => (
+                      {product.customQuestions.map((question, index) => {
+                        const questionType = question.answerType || question.type || 'text'
+                        return (
                         <div key={index} className="space-y-2">
                           <label className="block text-sm font-semibold text-charcoal-800">
                               {question.question}
                             {question.required !== false && <span className="text-primary-600 ml-1">*</span>}
                           </label>
-                          {question.image && (
-                            <div className="max-w-sm">
-                              <div className="aspect-video bg-white rounded-xl border border-primary-200 overflow-hidden shadow-sm">
-                                <img
-                                  src={question.image}
-                                  alt="Customization reference"
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
+                          {questionType === 'photo' ? (
+                            <div className="space-y-3">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handlePhotoAnswerUpload(index, e.target.files?.[0])}
+                                className="hidden"
+                                id={`custom-photo-${index}`}
+                              />
+                              <div className="flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => document.getElementById(`custom-photo-${index}`)?.click()}
+                                  disabled={customUploadStatus[index]}
+                                  className="inline-flex items-center gap-2 px-3 py-2 border border-primary-200 rounded-xl text-sm text-charcoal-700 hover:bg-primary-50 disabled:opacity-50"
+                                >
+                                  <ImageIcon className="w-4 h-4" />
+                                  {customUploadStatus[index] ? 'Uploading...' : (customizationSelections[index]?.answer ? 'Change Photo' : 'Upload Photo')}
+                                </button>
+                                {customizationSelections[index]?.answer && (
+                                  <a
+                                    href={customizationSelections[index].answer}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-primary-700 hover:text-primary-800 font-medium"
+                                  >
+                                    View Photo
+                                  </a>
+                                )}
                               </div>
                             </div>
-                          )}
-                          {question.type === 'select' && question.options && question.options.length > 0 ? (
+                          ) : question.type === 'select' && question.options && question.options.length > 0 ? (
                             <select
                               value={customizationSelections[index]?.answer || ''}
                               onChange={(e) => handleCustomizationChange(index, e.target.value)}
@@ -568,7 +650,8 @@ export const ProductDetailPage = ({ productId }) => {
                             />
                           )}
                         </div>
-                      ))}
+                        )
+                      })}
                     </div>
                     
                     <div className="pt-4 border-t border-primary-200">

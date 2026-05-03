@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronLeft, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles, Star } from 'lucide-react'
+import { ChevronLeft, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles, Star, Image as ImageIcon } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCart } from '../contexts/CartContext'
 import { toast } from 'react-hot-toast'
 import { Reviews } from './Reviews'
 import Image from 'next/image'
 import { formatWeightDisplay } from '@/lib/weight'
+import { apiService } from '../services/api'
 
 export default function MobileProductDetail({ product, similarProducts = [] }) {
   const router = useRouter()
@@ -18,6 +19,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   const [selectedColor, setSelectedColor] = useState(null)
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [customizationAnswers, setCustomizationAnswers] = useState({})
+  const [customUploadStatus, setCustomUploadStatus] = useState({})
   const [activeTab, setActiveTab] = useState('details')
   const sellerUsername = product?.seller?.username || product?.seller?.sellerUsername || null
   const isTwoWayDelivery = Boolean(product?.twoWayDelivery || product?.two_way_delivery)
@@ -111,7 +113,14 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   const handleAddToCart = async () => {
     // Validate customization questions if product is customizable
     if (product.customisable && product.customQuestions && product.customQuestions.length > 0) {
-      const unanswered = product.customQuestions.some((q, index) => !customizationAnswers[index] || customizationAnswers[index].trim() === '')
+      const unanswered = product.customQuestions.some((q, index) => {
+        const questionType = q.answerType || q.type || 'text'
+        const answer = customizationAnswers[index]
+        if (questionType === 'photo') {
+          return !answer || customUploadStatus[index]
+        }
+        return !answer || answer.trim() === ''
+      })
       if (unanswered) {
         toast.error('Please answer all customization questions before adding to bag')
         return
@@ -122,7 +131,8 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       const customizations = product.customisable && product.customQuestions 
         ? product.customQuestions.map((q, index) => ({
             question: q.question,
-            answer: customizationAnswers[index]
+            answer: customizationAnswers[index],
+            answerType: q.answerType || q.type || 'text'
           }))
         : []
       
@@ -136,6 +146,50 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       toast.success('Added to bag!')
     } catch (error) {
       toast.error(error.message || 'Failed to add to bag')
+    }
+  }
+
+  const handlePhotoAnswerUpload = async (questionIndex, file) => {
+    if (!file) return
+
+    const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
+    const isValidSize = file.size <= 5 * 1024 * 1024
+
+    if (!isValidType) {
+      toast.error('Only JPG, PNG, GIF, or WebP images are allowed')
+      return
+    }
+
+    if (!isValidSize) {
+      toast.error('Image must be 5MB or smaller')
+      return
+    }
+
+    setCustomUploadStatus(prev => ({ ...prev, [questionIndex]: true }))
+
+    try {
+      const uploadData = new FormData()
+      uploadData.append('file', file)
+      uploadData.append('folder', 'product-custom-answers')
+
+      const response = await apiService.request('/upload', {
+        method: 'POST',
+        body: uploadData
+      })
+
+      if (!response?.url) {
+        throw new Error('Failed to upload image')
+      }
+
+      setCustomizationAnswers(prev => ({
+        ...prev,
+        [questionIndex]: response.url
+      }))
+      toast.success('Photo uploaded')
+    } catch (error) {
+      toast.error(error.message || 'Failed to upload image')
+    } finally {
+      setCustomUploadStatus(prev => ({ ...prev, [questionIndex]: false }))
     }
   }
 
@@ -395,6 +449,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
           
           <div className="space-y-4">
             {product.customQuestions.map((item, index) => {
+              const questionType = item.answerType || item.type || 'text'
               const handleInputChange = (value) => {
                 console.log(`Question ${index} answered:`, value)
                 setCustomizationAnswers(prev => {
@@ -413,19 +468,38 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                     {item.question}
                     {item.required !== false && <span className="text-primary-600 ml-1">*</span>}
                   </label>
-                  {item.image && (
-                    <div className="max-w-xs">
-                      <div className="aspect-video bg-white rounded-xl border border-primary-200 overflow-hidden shadow-sm">
-                        <img
-                          src={item.image}
-                          alt="Customization reference"
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
+                  {questionType === 'photo' ? (
+                    <div className="space-y-3">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handlePhotoAnswerUpload(index, e.target.files?.[0])}
+                        className="hidden"
+                        id={`custom-photo-${index}`}
+                      />
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById(`custom-photo-${index}`)?.click()}
+                          disabled={customUploadStatus[index]}
+                          className="inline-flex items-center gap-2 px-3 py-2 border border-primary-200 rounded-xl text-sm text-charcoal-700 hover:bg-primary-50 disabled:opacity-50"
+                        >
+                          <ImageIcon className="w-4 h-4" />
+                          {customUploadStatus[index] ? 'Uploading...' : (customizationAnswers[index] ? 'Change Photo' : 'Upload Photo')}
+                        </button>
+                        {customizationAnswers[index] && (
+                          <a
+                            href={customizationAnswers[index]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary-700 hover:text-primary-800 font-medium"
+                          >
+                            View Photo
+                          </a>
+                        )}
                       </div>
                     </div>
-                  )}
-                  {(!item.type || item.type === 'text') ? (
+                  ) : (!item.type || item.type === 'text') ? (
                     <input
                       type="text"
                       value={customizationAnswers[index] || ''}

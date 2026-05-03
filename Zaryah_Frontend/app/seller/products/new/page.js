@@ -21,7 +21,6 @@ export default function AddProductPage() {
   const router = useRouter()
   const { user } = useAuth()
   const fileInputRef = useRef(null)
-  const questionImageInputRefs = useRef({})
   const colorImageInputRefs = useRef({})
 
   const [formData, setFormData] = useState({
@@ -51,8 +50,7 @@ export default function AddProductPage() {
 
   const [images, setImages] = useState([])
   const [features, setFeatures] = useState([''])
-  const [customQuestions, setCustomQuestions] = useState([{ question: '', required: false, image: '' }])
-  const [questionImageUploading, setQuestionImageUploading] = useState({})
+  const [customQuestions, setCustomQuestions] = useState([{ question: '', required: false, answerType: 'text' }])
   const [sizePriceOptions, setSizePriceOptions] = useState([{ label: '', price: '' }])
   const [colorOptions, setColorOptions] = useState([{ name: '', image: '' }])
   const [colorImageUploading, setColorImageUploading] = useState({})
@@ -155,8 +153,8 @@ export default function AddProductPage() {
     ])
     
     setCustomQuestions([
-      { question: 'Any dietary restrictions?', required: false },
-      { question: 'Message for the card?', required: true }
+      { question: 'Any dietary restrictions?', required: false, answerType: 'text' },
+      { question: 'Message for the card?', required: true, answerType: 'text' }
     ])
     
     toast.success('Demo data filled!')
@@ -214,76 +212,12 @@ export default function AddProductPage() {
     setCustomQuestions(newQuestions)
   }
 
-  const handleQuestionImageUpload = async (index, file) => {
-    if (!file) return
-
-    const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
-    const isValidSize = file.size <= 5 * 1024 * 1024
-
-    if (!isValidType) {
-      toast.error('Only JPG, PNG, GIF, or WebP images are allowed')
-      return
-    }
-
-    if (!isValidSize) {
-      toast.error('Image must be 5MB or smaller')
-      return
-    }
-
-    setQuestionImageUploading(prev => ({ ...prev, [index]: true }))
-
-    try {
-      const uploadData = new FormData()
-      uploadData.append('file', file)
-      uploadData.append('folder', 'product-custom-questions')
-
-      const response = await apiService.request('/upload', {
-        method: 'POST',
-        body: uploadData
-      })
-
-      if (!response?.url) {
-        throw new Error('Failed to upload image')
-      }
-
-      setCustomQuestions(prev => {
-        const updated = [...prev]
-        updated[index] = {
-          ...updated[index],
-          image: response.url
-        }
-        return updated
-      })
-      toast.success('Image uploaded')
-    } catch (error) {
-      toast.error(error.message || 'Failed to upload image')
-    } finally {
-      setQuestionImageUploading(prev => ({ ...prev, [index]: false }))
-    }
-  }
-
-  const handleQuestionImageRemove = (index) => {
-    setCustomQuestions(prev => {
-      const updated = [...prev]
-      updated[index] = {
-        ...updated[index],
-        image: ''
-      }
-      return updated
-    })
-  }
-
   const addCustomQuestion = () => {
-    setCustomQuestions([...customQuestions, { question: '', required: false, image: '' }])
+    setCustomQuestions([...customQuestions, { question: '', required: false, answerType: 'text' }])
   }
 
   const removeCustomQuestion = (index) => {
     setCustomQuestions(customQuestions.filter((_, i) => i !== index))
-    setQuestionImageUploading(prev => {
-      const next = { ...prev }
-      delete next[index]
-      return next
-    })
   }
 
   const handleSizePriceChange = (index, field, value) => {
@@ -441,7 +375,7 @@ export default function AddProductPage() {
         .map(q => ({
           question: q.question.trim(),
           required: !!q.required,
-          image: q.image || null
+          answerType: q.answerType || 'text'
         }))
       if (validQuestions.length > 0) {
         formDataToSend.append('customQuestions', JSON.stringify(validQuestions))
@@ -1187,45 +1121,18 @@ export default function AddProductPage() {
                         <span className="text-sm text-gray-700">Required</span>
                       </label>
                       <div className="mt-3">
-                        <input
-                          ref={(el) => { questionImageInputRefs.current[index] = el }}
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleQuestionImageUpload(index, e.target.files?.[0])}
-                          className="hidden"
-                        />
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => questionImageInputRefs.current[index]?.click()}
-                            disabled={questionImageUploading[index]}
-                            className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                          >
-                            <ImageIcon className="w-4 h-4" />
-                            {questionImageUploading[index] ? 'Uploading...' : (q.image ? 'Change Image' : 'Upload Image')}
-                          </button>
-                          {q.image && (
-                            <button
-                              type="button"
-                              onClick={() => handleQuestionImageRemove(index)}
-                              className="text-sm text-red-600 hover:text-red-700"
-                            >
-                              Remove
-                            </button>
-                          )}
-                        </div>
-                        {q.image && (
-                          <div className="mt-3 max-w-xs">
-                            <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                              <img
-                                src={q.image}
-                                alt="Customization reference"
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500 mt-2">Optional reference image for this question.</p>
-                          </div>
-                        )}
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Expected Answer Type</label>
+                        <select
+                          value={q.answerType || 'text'}
+                          onChange={(e) => handleQuestionChange(index, 'answerType', e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        >
+                          <option value="text">Text</option>
+                          <option value="photo">Photo</option>
+                        </select>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Buyers will answer with text or upload a photo based on this selection.
+                        </p>
                       </div>
                     </div>
                     {customQuestions.length > 1 && (

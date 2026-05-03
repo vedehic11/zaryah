@@ -1500,7 +1500,26 @@ export default function SellerDashboardPage() {
                                                   <p className="text-xs font-semibold text-gray-700">Customer Requests:</p>
                                                   {item.customizations.map((custom, customIdx) => (
                                                     <div key={customIdx} className="text-xs text-gray-600 pl-3 border-l-2 border-blue-400">
-                                                      <span className="font-medium">{custom.question}:</span> {custom.answer}
+                                                      <span className="font-medium">{custom.question}:</span>{' '}
+                                                      {custom.answerType === 'photo' && custom.answer ? (
+                                                        <span className="inline-flex items-center gap-2">
+                                                          <a
+                                                            href={custom.answer}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-blue-600 hover:text-blue-800 underline"
+                                                          >
+                                                            View Photo
+                                                          </a>
+                                                          <a
+                                                            href={custom.answer}
+                                                            download
+                                                            className="text-blue-600 hover:text-blue-800 underline"
+                                                          >
+                                                            Download
+                                                          </a>
+                                                        </span>
+                                                      ) : (custom.answer || 'No answer')}
                                                     </div>
                                                   ))}
                                                 </div>

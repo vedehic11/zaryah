@@ -677,7 +677,26 @@ export const OrderHistoryPage = () => {
                                         product.customizations.length > 0 ? (
                                           product.customizations.map((custom, idx) => (
                                             <div key={idx} className="text-xs text-charcoal-600 pl-2 border-l-2 border-blue-300">
-                                              <span className="font-medium">{custom.question || 'Question'}:</span> {custom.answer || 'No answer'}
+                                              <span className="font-medium">{custom.question || 'Question'}:</span>{' '}
+                                              {custom.answerType === 'photo' && custom.answer ? (
+                                                <span className="inline-flex items-center gap-2">
+                                                  <a
+                                                    href={custom.answer}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-primary-700 hover:text-primary-800 underline"
+                                                  >
+                                                    View Photo
+                                                  </a>
+                                                  <a
+                                                    href={custom.answer}
+                                                    download
+                                                    className="text-primary-700 hover:text-primary-800 underline"
+                                                  >
+                                                    Download
+                                                  </a>
+                                                </span>
+                                              ) : (custom.answer || 'No answer')}
                                             </div>
                                           ))
                                         ) : (
