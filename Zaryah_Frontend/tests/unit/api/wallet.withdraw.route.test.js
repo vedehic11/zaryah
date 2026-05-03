@@ -54,8 +54,7 @@ describe('/api/wallet/withdraw route handlers', () => {
                 single: async () => ({
                   data: {
                     id: 'seller-2',
-                    account_number: '123456789012',
-                    ifsc_code: 'ABCD0123456',
+                    upi_id: 'seller@upi',
                     account_holder_name: 'Seller Two',
                   },
                   error: null,

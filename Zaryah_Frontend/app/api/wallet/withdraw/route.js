@@ -19,7 +19,7 @@ export async function POST(request) {
     }
 
     const body = await request.json()
-    const { amount, bank_account_number, ifsc_code, account_holder_name, notes } = body
+    const { amount, account_holder_name, upi_id, notes } = body
     const withdrawalAmount = parseFloat(amount)
 
     // Validate input
@@ -32,7 +32,7 @@ export async function POST(request) {
     // Get seller details for KYC check
     const { data: seller, error: sellerError } = await supabase
       .from('sellers')
-      .select('id, full_name, account_number, ifsc_code, account_holder_name')
+      .select('id, full_name, upi_id, account_holder_name')
       .eq('id', user.id)
       .single()
 
@@ -41,28 +41,19 @@ export async function POST(request) {
     }
 
     // Check if KYC details exist
-    if (!seller.account_number || !seller.ifsc_code) {
+    if (!seller.upi_id) {
       return NextResponse.json({ 
-        error: 'Please complete KYC and add bank details before withdrawal',
+        error: 'Please complete KYC and add UPI ID before withdrawal',
         action: 'complete_kyc'
       }, { status: 400 })
     }
 
     const resolvedAccountHolderName = (account_holder_name || seller.account_holder_name || '').toString().trim()
-    const resolvedBankAccountNumber = (bank_account_number || seller.account_number || '').toString().trim()
-    const resolvedIfscCode = (ifsc_code || seller.ifsc_code || '').toString().trim().toUpperCase()
+    const resolvedUpiId = (upi_id || seller.upi_id || '').toString().trim()
 
-    if (!resolvedBankAccountNumber || !resolvedIfscCode || !resolvedAccountHolderName) {
+    if (!resolvedUpiId || !resolvedAccountHolderName) {
       return NextResponse.json({
-        error: 'Bank details are required. Please update them in Profile before withdrawal.'
-      }, { status: 400 })
-    }
-
-    // Validate IFSC code format
-    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/
-    if (!ifscRegex.test(resolvedIfscCode)) {
-      return NextResponse.json({
-        error: 'Invalid IFSC code format in profile bank details'
+        error: 'Payment details are required. Please update them in Profile before withdrawal.'
       }, { status: 400 })
     }
 
@@ -106,8 +97,7 @@ export async function POST(request) {
       .select('id, status, requested_at')
       .eq('seller_id', user.id)
       .eq('amount', withdrawalAmount)
-      .eq('bank_account_number', resolvedBankAccountNumber)
-      .eq('ifsc_code', resolvedIfscCode)
+      .eq('upi_id', resolvedUpiId)
       .gte('requested_at', duplicateWindowStart)
       .order('requested_at', { ascending: false })
       .limit(1)
@@ -126,8 +116,7 @@ export async function POST(request) {
       .insert({
         seller_id: user.id,
         amount: withdrawalAmount,
-        bank_account_number: resolvedBankAccountNumber,
-        ifsc_code: resolvedIfscCode,
+        upi_id: resolvedUpiId,
         account_holder_name: resolvedAccountHolderName,
         status: 'pending',
         notes: notes || null

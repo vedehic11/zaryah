@@ -69,7 +69,7 @@ export async function POST(request, { params }) {
             seller_id: withdrawal.seller_id,
             amount: -withdrawal.amount, // Negative for debit
             type: 'debit_withdrawal',
-            description: `Withdrawal to bank account ending in ${withdrawal.bank_account_number.slice(-4)}`,
+            description: `Withdrawal to UPI ID ${withdrawal.upi_id || 'unknown'}`,
             status: 'completed',
             created_by: user.id
           })

@@ -46,8 +46,7 @@ export const RegisterPage = () => {
     idNumber: '',
     idType: 'aadhar',
     accountHolderName: '',
-    bankAccountNumber: '',
-    ifscCode: '',
+    upiId: '',
     instagram: '',
     facebook: '',
     x: '',
@@ -259,8 +258,8 @@ export const RegisterPage = () => {
       if (!formData.idNumber.trim()) newErrors.idNumber = 'ID number is required'
       if (!uploadedFiles.idDocument) newErrors.verificationDoc = 'ID document is required'
       if (!formData.accountHolderName.trim()) newErrors.accountHolderName = 'Account holder name is required'
-      if (!formData.bankAccountNumber.trim()) newErrors.bankAccountNumber = 'Bank account number is required'
-      if (!formData.ifscCode.trim()) newErrors.ifscCode = 'IFSC code is required'
+      if (!formData.upiId.trim()) newErrors.upiId = 'UPI ID is required'
+      else if (!/^[a-zA-Z0-9._-]+@[a-zA-Z]{2,}$/.test(formData.upiId)) newErrors.upiId = 'Invalid UPI ID format (e.g., name@upi)'
       
       // Check if at least one social media field is filled
       const hasSocialMedia = formData.instagram?.trim() || formData.facebook?.trim() || formData.x?.trim() || formData.linkedin?.trim()
@@ -412,8 +411,7 @@ export const RegisterPage = () => {
           state: formData.businessState,
           pincode: formData.businessPincode,
           accountHolderName: formData.accountHolderName,
-          accountNumber: formData.bankAccountNumber,
-          ifscCode: formData.ifscCode,
+          upiId: formData.upiId,
           businessDocument: uploadedDocUrls.businessDocuments,
           coverPhoto: uploadedDocUrls.coverPhoto,
           username: formData.username
@@ -1057,24 +1055,19 @@ export const RegisterPage = () => {
         </div>
         {errors.idDocument && (<p className="mt-1 text-sm text-red-600">{errors.idDocument}</p>)}
       </div>
-      {/* Bank Details */}
+      {/* Payment Details */}
       <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-        <h4 className="text-md font-semibold text-gray-700 mb-4">Bank Account Details (for payments) *</h4>
+        <h4 className="text-md font-semibold text-gray-700 mb-4">Payment Details *</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="accountHolderName" className="block text-sm font-medium text-gray-700 mb-2">Account Holder Name *</label>
-            <input id="accountHolderName" name="accountHolderName" type="text" value={formData.accountHolderName} onChange={handleInputChange} className={`block w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${errors.accountHolderName ? 'border-red-300' : 'border-gray-300'}`} placeholder="Name as per bank records" />
+            <input id="accountHolderName" name="accountHolderName" type="text" value={formData.accountHolderName} onChange={handleInputChange} className={`block w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${errors.accountHolderName ? 'border-red-300' : 'border-gray-300'}`} placeholder="Name for payments" />
             {errors.accountHolderName && (<p className="mt-1 text-sm text-red-600">{errors.accountHolderName}</p>)}
           </div>
           <div>
-            <label htmlFor="bankAccountNumber" className="block text-sm font-medium text-gray-700 mb-2">Account Number *</label>
-            <input id="bankAccountNumber" name="bankAccountNumber" type="text" value={formData.bankAccountNumber} onChange={handleInputChange} className={`block w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${errors.bankAccountNumber ? 'border-red-300' : 'border-gray-300'}`} placeholder="Bank account number" />
-            {errors.bankAccountNumber && (<p className="mt-1 text-sm text-red-600">{errors.bankAccountNumber}</p>)}
-          </div>
-          <div>
-            <label htmlFor="ifscCode" className="block text-sm font-medium text-gray-700 mb-2">IFSC Code *</label>
-            <input id="ifscCode" name="ifscCode" type="text" value={formData.ifscCode} onChange={handleInputChange} className={`block w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${errors.ifscCode ? 'border-red-300' : 'border-gray-300'}`} placeholder="e.g., SBIN0001234" />
-            {errors.ifscCode && (<p className="mt-1 text-sm text-red-600">{errors.ifscCode}</p>)}
+            <label htmlFor="upiId" className="block text-sm font-medium text-gray-700 mb-2">UPI ID *</label>
+            <input id="upiId" name="upiId" type="text" value={formData.upiId} onChange={handleInputChange} className={`block w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${errors.upiId ? 'border-red-300' : 'border-gray-300'}`} placeholder="e.g., yourname@upi" />
+            {errors.upiId && (<p className="mt-1 text-sm text-red-600">{errors.upiId}</p>)}
           </div>
         </div>
       </div>

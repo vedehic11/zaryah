@@ -196,6 +196,7 @@ export async function POST(request) {
       'id_type': ['idType', 'id_type'],
       'id_number': ['idNumber', 'id_number'],
       'account_holder_name': ['accountHolderName', 'account_holder_name'],
+      'upi_id': ['upiId', 'upi_id'],
       'account_number': ['accountNumber', 'account_number', 'bankAccountNumber'],
       'ifsc_code': ['ifscCode', 'ifsc_code'],
       'username': ['username'],
@@ -324,8 +325,7 @@ export async function POST(request) {
       'id_type': 'ID type',
       'id_number': 'ID number',
       'account_holder_name': 'Account holder name',
-      'account_number': 'Account number',
-      'ifsc_code': 'IFSC code'
+      'upi_id': 'UPI ID'
     }
     
     const missingFields = []
@@ -584,7 +584,7 @@ export async function PUT(request) {
     const allowedSellerFields = [
       'cover_photo', 'business_description', 'story', 'featured_story', 'instagram', 'facebook', 'x', 'linkedin',
       'primary_mobile', 'business_address', 'city', 'alternate_mobile',
-      'account_holder_name', 'account_number', 'ifsc_code', 'id_type', 'id_number'
+      'account_holder_name', 'upi_id', 'account_number', 'ifsc_code', 'id_type', 'id_number'
     ]
     
     const allowedUserFields = ['profile_photo']

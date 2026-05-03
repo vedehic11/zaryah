@@ -56,10 +56,7 @@ export default function SellerDashboardPage() {
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false)
   const [showAvailableBreakdown, setShowAvailableBreakdown] = useState(false)
   const [withdrawalData, setWithdrawalData] = useState({
-    amount: '',
-    bank_account_number: '',
-    ifsc_code: '',
-    account_holder_name: ''
+    amount: ''
   })
   
   // State to track which order is being updated (to prevent double-clicks)
@@ -164,8 +161,7 @@ export default function SellerDashboardPage() {
     x: '',
     linkedin: '',
     account_holder_name: '',
-    account_number: '',
-    ifsc_code: '',
+    upi_id: '',
     id_type: '',
     id_number: ''
   })
@@ -176,7 +172,7 @@ export default function SellerDashboardPage() {
     return normalized !== '' && normalized !== 'pending' && normalized !== 'null'
   }
 
-  const isKycMissing = !(hasValue(profileData.account_holder_name) && hasValue(profileData.account_number) && hasValue(profileData.ifsc_code))
+  const isKycMissing = !(hasValue(profileData.account_holder_name) && hasValue(profileData.upi_id))
   const profileUrl = profileData?.username && typeof window !== 'undefined'
     ? `${window.location.origin}/${profileData.username}`
     : ''
@@ -528,8 +524,7 @@ export default function SellerDashboardPage() {
           x: response.x || '',
           linkedin: response.linkedin || '',
           account_holder_name: response.account_holder_name || '',
-          account_number: response.account_number || '',
-          ifsc_code: response.ifsc_code || '',
+          upi_id: response.upi_id || '',
           id_type: response.id_type || '',
           id_number: response.id_number || ''
         })
@@ -642,8 +637,7 @@ export default function SellerDashboardPage() {
           x: profileData.x,
           linkedin: profileData.linkedin,
           account_holder_name: profileData.account_holder_name,
-          account_number: profileData.account_number,
-          ifsc_code: profileData.ifsc_code,
+          upi_id: profileData.upi_id,
           id_type: profileData.id_type,
           id_number: profileData.id_number
         })
@@ -2137,8 +2131,8 @@ export default function SellerDashboardPage() {
                 {/* Withdrawal Button */}
                 {isKycMissing && (
                   <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-4">
-                    <p className="text-sm font-semibold text-yellow-900">KYC incomplete: add bank details before withdrawing.</p>
-                    <p className="text-xs text-yellow-800 mt-1">Required: Account Holder Name, Account Number, IFSC Code.</p>
+                    <p className="text-sm font-semibold text-yellow-900">KYC incomplete: add payment details before withdrawing.</p>
+                    <p className="text-xs text-yellow-800 mt-1">Required: Account Holder Name, UPI ID.</p>
                     <button
                       onClick={() => {
                         setActiveTab('profile')
@@ -2158,9 +2152,7 @@ export default function SellerDashboardPage() {
                       if (!showWithdrawalForm) {
                         setWithdrawalData(prev => ({
                           ...prev,
-                          account_holder_name: profileData.account_holder_name || prev.account_holder_name || '',
-                          bank_account_number: profileData.account_number || prev.bank_account_number || '',
-                          ifsc_code: profileData.ifsc_code || prev.ifsc_code || ''
+                          account_holder_name: profileData.account_holder_name || prev.account_holder_name || ''
                         }))
                       }
                       setShowWithdrawalForm(!showWithdrawalForm)
@@ -2199,11 +2191,10 @@ export default function SellerDashboardPage() {
                       </div>
 
                       <div className="bg-white border border-gray-200 rounded-lg p-4">
-                        <p className="text-sm font-medium text-gray-700 mb-2">Payout Bank Details (from Profile)</p>
+                        <p className="text-sm font-medium text-gray-700 mb-2">Payout Payment Details (from Profile)</p>
                         <div className="space-y-1 text-sm text-gray-700">
                           <p><span className="font-medium">Account Holder:</span> {profileData.account_holder_name || 'Not set'}</p>
-                          <p><span className="font-medium">Account Number:</span> {profileData.account_number || 'Not set'}</p>
-                          <p><span className="font-medium">IFSC:</span> {profileData.ifsc_code || 'Not set'}</p>
+                          <p><span className="font-medium">UPI ID:</span> {profileData.upi_id || 'Not set'}</p>
                         </div>
                         <p className="text-xs text-gray-500 mt-2">To change these details, update them in Profile.</p>
                       </div>
@@ -2231,7 +2222,7 @@ export default function SellerDashboardPage() {
                               })
                               toast.success('Withdrawal request submitted! Admin will review shortly.')
                               setShowWithdrawalForm(false)
-                              setWithdrawalData({ amount: '', bank_account_number: '', ifsc_code: '', account_holder_name: '' })
+                              setWithdrawalData({ amount: '' })
                               // Refresh wallet data
                               const walletData = await apiService.getWallet()
                               setWallet(walletData.wallet)
@@ -2558,7 +2549,7 @@ export default function SellerDashboardPage() {
                     <div className="bg-white rounded-xl border border-gray-200 p-6">
                       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                         <CreditCard className="w-5 h-5 text-primary-600" />
-                        Banking Details
+                        Payment Details
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -2566,12 +2557,8 @@ export default function SellerDashboardPage() {
                           <p className="text-gray-900">{profileData?.account_holder_name || 'Not set'}</p>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
-                          <p className="text-gray-900">{profileData?.account_number && profileData.account_number !== 'pending' ? '****' + profileData.account_number.slice(-4) : 'Not set'}</p>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">IFSC Code</label>
-                          <p className="text-gray-900">{profileData?.ifsc_code && profileData.ifsc_code !== 'pending' ? profileData.ifsc_code : 'Not set'}</p>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">UPI ID</label>
+                          <p className="text-gray-900">{profileData?.upi_id || 'Not set'}</p>
                         </div>
                       </div>
                     </div>
@@ -2888,7 +2875,7 @@ export default function SellerDashboardPage() {
                     </div>
 
                     <div className="bg-white rounded-xl border border-gray-200 p-6">
-                      <h3 className="text-lg font-semibold mb-4">Banking & KYC</h3>
+                      <h3 className="text-lg font-semibold mb-4">Payment & KYC</h3>
 
                       <div className="space-y-4">
                         <div>
@@ -2898,29 +2885,18 @@ export default function SellerDashboardPage() {
                             value={profileData.account_holder_name}
                             onChange={(e) => setProfileData(prev => ({ ...prev, account_holder_name: e.target.value }))}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                            placeholder="As per bank records"
+                            placeholder="Name for payments"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">UPI ID</label>
                           <input
                             type="text"
-                            value={profileData.account_number}
-                            onChange={(e) => setProfileData(prev => ({ ...prev, account_number: e.target.value }))}
+                            value={profileData.upi_id}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, upi_id: e.target.value }))}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                            placeholder="Enter bank account number"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">IFSC Code</label>
-                          <input
-                            type="text"
-                            value={profileData.ifsc_code}
-                            onChange={(e) => setProfileData(prev => ({ ...prev, ifsc_code: e.target.value.toUpperCase() }))}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                            placeholder="e.g., SBIN0001234"
+                            placeholder="e.g., yourname@upi"
                           />
                         </div>
 

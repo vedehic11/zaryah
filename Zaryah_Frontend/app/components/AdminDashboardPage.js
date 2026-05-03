@@ -326,12 +326,12 @@ export const AdminDashboardPage = () => {
                           <p className="font-semibold text-lg">₹{withdrawal.amount?.toLocaleString()}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Account</p>
-                          <p className="font-mono text-sm">{withdrawal.bank_account_number}</p>
+                          <p className="text-xs text-gray-500">Account Holder</p>
+                          <p className="text-sm">{withdrawal.account_holder_name || 'Not set'}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">IFSC</p>
-                          <p className="font-mono text-sm">{withdrawal.ifsc_code}</p>
+                          <p className="text-xs text-gray-500">UPI ID</p>
+                          <p className="font-mono text-sm">{withdrawal.upi_id || 'Not set'}</p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-500">Requested</p>
