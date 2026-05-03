@@ -28,6 +28,7 @@ export default function CheckoutPage() {
   const [showAddressForm, setShowAddressForm] = useState(false)
   const [calculatingDelivery, setCalculatingDelivery] = useState(false)
   const [dynamicDeliveryCharge, setDynamicDeliveryCharge] = useState(null)
+  const [twoWayCharges, setTwoWayCharges] = useState({ inbound: null, outbound: null })
   const [newAddress, setNewAddress] = useState({
     name: user?.name || '',
     phone: '',
@@ -61,10 +62,13 @@ export default function CheckoutPage() {
   }, [user, cart, addresses, router])
 
   // Calculate delivery charge dynamically when address changes
+  const hasTwoWayDelivery = cart.some(item => item.two_way_delivery || item.twoWayDelivery)
+
   useEffect(() => {
     const calculateDeliveryCharge = async () => {
       if (!selectedAddress?.pincode || !cart || cart.length === 0) {
         setDynamicDeliveryCharge(null)
+        setTwoWayCharges({ inbound: null, outbound: null })
         return
       }
 
@@ -83,6 +87,7 @@ export default function CheckoutPage() {
               weight: item.weight || 0.5,
               quantity: item.quantity
             })),
+            twoWayDelivery: hasTwoWayDelivery,
             codAmount: paymentMethod === 'cod' ? subtotal : 0
           })
         })
@@ -92,6 +97,10 @@ export default function CheckoutPage() {
         
         if (data.success && data.deliveryCharge !== undefined) {
           setDynamicDeliveryCharge(data.deliveryCharge)
+          setTwoWayCharges({
+            inbound: typeof data.inboundCharge === 'number' ? data.inboundCharge : null,
+            outbound: typeof data.outboundCharge === 'number' ? data.outboundCharge : null
+          })
           console.log('✅ Dynamic delivery charge set:', data.deliveryCharge)
           if (data.fallback) {
             console.warn('⚠️ Using fallback delivery charge:', data.error)
@@ -111,10 +120,10 @@ export default function CheckoutPage() {
     if (selectedAddress?.pincode) {
       calculateDeliveryCharge()
     }
-  }, [selectedAddress, paymentMethod, cart])
+  }, [selectedAddress, paymentMethod, cart, hasTwoWayDelivery])
 
   // Calculate totals
-  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  const subtotal = cart.reduce((sum, item) => sum + ((item.unitPrice || item.price) * item.quantity), 0)
   const giftPackagingFee = cart.reduce((sum, item) => {
     return sum + (item.giftPackaging ? 10 * item.quantity : 0)
   }, 0)
@@ -143,7 +152,10 @@ export default function CheckoutPage() {
           productId: item.id || item._id,
           quantity: item.quantity,
           giftPackaging: item.giftPackaging || false,
-          customizations: item.customizations || []
+          customizations: item.customizations || [],
+          selectedSize: item.selectedSize || null,
+          selectedColor: item.selectedColor || null,
+          unitPrice: item.unitPrice || item.price
         })),
         address: addressString,
         paymentMethod,
@@ -151,7 +163,8 @@ export default function CheckoutPage() {
         deliveryFee: deliveryFee,
         giftPackagingFee: giftPackagingFee,
         codFee: 0,
-        platformFee: platformFee
+        platformFee: platformFee,
+        twoWayDelivery: hasTwoWayDelivery
       }
 
       console.log('Step 2: Creating order with data:', orderData)
@@ -688,8 +701,15 @@ export default function CheckoutPage() {
                       <p className="font-medium text-charcoal-900 text-sm line-clamp-1">
                         {item.name}
                       </p>
+                      {(item.selectedSize || item.selectedColor) && (
+                        <p className="text-xs text-charcoal-500 mt-0.5">
+                          {item.selectedSize && <span>Size: {item.selectedSize}</span>}
+                          {item.selectedSize && item.selectedColor && <span> · </span>}
+                          {item.selectedColor && <span>Color: {item.selectedColor}</span>}
+                        </p>
+                      )}
                       <p className="text-sm text-charcoal-600">
-                        Qty: {item.quantity} × ₹{item.price}
+                        Qty: {item.quantity} × ₹{(item.unitPrice || item.price)}
                       </p>
                       {item.giftPackaging && (
                         <p className="text-xs text-secondary-600">+ Gift Packaging</p>
@@ -719,6 +739,34 @@ export default function CheckoutPage() {
                   </span>
                   <span>{deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`}</span>
                 </div>
+                {hasTwoWayDelivery && (
+                  <div className="text-xs text-charcoal-600 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Pickup to seller</span>
+                      <span>
+                        {calculatingDelivery && twoWayCharges.inbound === null
+                          ? 'Calculating...'
+                          : twoWayCharges.inbound === 0
+                            ? 'FREE'
+                            : twoWayCharges.inbound !== null
+                              ? `₹${twoWayCharges.inbound}`
+                              : '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Return to you</span>
+                      <span>
+                        {calculatingDelivery && twoWayCharges.outbound === null
+                          ? 'Calculating...'
+                          : twoWayCharges.outbound === 0
+                            ? 'FREE'
+                            : twoWayCharges.outbound !== null
+                              ? `₹${twoWayCharges.outbound}`
+                              : '-'}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <div className="flex justify-between text-charcoal-700">
                   <span className="flex items-center gap-1">
                     Platform Fee
@@ -752,6 +800,15 @@ export default function CheckoutPage() {
                   <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-green-800">
                     Yay! You got free delivery
+                  </p>
+                </div>
+              )}
+
+              {hasTwoWayDelivery && (
+                <div className="mt-3 p-3 bg-amber-50 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800">
+                    Two-way delivery: we will arrange pickup from your address after order confirmation and ship back once the seller marks it ready.
                   </p>
                 </div>
               )}

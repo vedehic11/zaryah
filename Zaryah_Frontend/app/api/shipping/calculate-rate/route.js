@@ -12,6 +12,7 @@ export async function POST(request) {
       deliveryPincode, 
       cartItems = [],
       codAmount = 0,
+      twoWayDelivery = false,
       returnAllOptions = false 
     } = body
 
@@ -79,16 +80,35 @@ export async function POST(request) {
       })
     } else {
       // Return only cheapest option
-      const deliveryCharge = await getCheapestShippingRate({
+      const outboundCharge = await getCheapestShippingRate({
         pickupPincode,
         deliveryPincode,
         weight: totalWeight,
         codAmount
       })
 
+      if (!twoWayDelivery) {
+        return NextResponse.json({
+          success: true,
+          deliveryCharge: outboundCharge,
+          weight: totalWeight,
+          pickupPincode,
+          deliveryPincode
+        })
+      }
+
+      const inboundCharge = await getCheapestShippingRate({
+        pickupPincode: deliveryPincode,
+        deliveryPincode: pickupPincode,
+        weight: totalWeight,
+        codAmount: 0
+      })
+
       return NextResponse.json({
         success: true,
-        deliveryCharge,
+        deliveryCharge: outboundCharge + inboundCharge,
+        outboundCharge,
+        inboundCharge,
         weight: totalWeight,
         pickupPincode,
         deliveryPincode
@@ -97,11 +117,16 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Error calculating shipping rate:', error)
-    
+
+    const baseFallback = 50
+    const fallbackCharge = twoWayDelivery ? baseFallback * 2 : baseFallback
+
     // Return fallback rate on error
     return NextResponse.json({
       success: true,
-      deliveryCharge: 50, // Fallback standard rate
+      deliveryCharge: fallbackCharge,
+      outboundCharge: twoWayDelivery ? baseFallback : undefined,
+      inboundCharge: twoWayDelivery ? baseFallback : undefined,
       error: error.message,
       fallback: true
     })

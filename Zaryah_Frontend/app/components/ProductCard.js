@@ -113,6 +113,13 @@ export const ProductCard = ({ product, backHref }) => {
               user.city.trim().toLowerCase() === product.seller.city.trim().toLowerCase() && (
                 <InstantDeliveryBadge />
             )}
+
+            {(product.two_way_delivery || product.twoWayDelivery) && (
+              <div className="bg-amber-600/90 backdrop-blur-sm text-white px-2 py-1 rounded-full shadow-soft flex items-center space-x-1">
+                <Package className="w-3 h-3" />
+                <span className="text-xs font-medium">Two-way</span>
+              </div>
+            )}
             
             {/* Customization Badge */}
             {product.customisable && (

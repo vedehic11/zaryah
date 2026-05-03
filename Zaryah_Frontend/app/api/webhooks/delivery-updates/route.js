@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyWebhookSignature, mapShiprocketStatus } from '@/lib/shiprocket'
-import { applyShiprocketOrderUpdate } from '@/lib/shiprocket-sync'
+import { applyShiprocketOrderUpdate, applyInboundShipmentUpdate } from '@/lib/shiprocket-sync'
 
 export async function POST(request) {
   try {
@@ -89,8 +89,16 @@ export async function POST(request) {
       }
     }
 
+    if (shipmentId) {
+      lookupCandidates.push({ field: 'inbound_shipment_id', value: shipmentId })
+      if (typeof shipmentId !== 'string') {
+        lookupCandidates.push({ field: 'inbound_shipment_id', value: String(shipmentId) })
+      }
+    }
+
     if (awbCode) {
       lookupCandidates.push({ field: 'awb_code', value: awbCode })
+      lookupCandidates.push({ field: 'inbound_awb_code', value: awbCode })
     }
 
     let order = null
@@ -129,15 +137,31 @@ export async function POST(request) {
       requiresRefund: statusMapping.requiresRefund
     })
 
-    await applyShiprocketOrderUpdate(order, {
-      currentStatus,
-      awbCode,
-      courierName,
-      trackingUrl: awbCode ? `https://shiprocket.co/tracking/${awbCode}` : order.tracking_url,
-      deliveredDate
-    }, {
-      source: 'webhook'
-    })
+    const isInboundMatch = Boolean(
+      (shipmentId && String(order.inbound_shipment_id) === String(shipmentId)) ||
+      (awbCode && String(order.inbound_awb_code) === String(awbCode))
+    )
+
+    if (isInboundMatch) {
+      await applyInboundShipmentUpdate(order, {
+        currentStatus,
+        awbCode,
+        courierName,
+        trackingUrl: awbCode ? `https://shiprocket.co/tracking/${awbCode}` : order.inbound_tracking_url
+      }, {
+        source: 'webhook'
+      })
+    } else {
+      await applyShiprocketOrderUpdate(order, {
+        currentStatus,
+        awbCode,
+        courierName,
+        trackingUrl: awbCode ? `https://shiprocket.co/tracking/${awbCode}` : order.tracking_url,
+        deliveredDate
+      }, {
+        source: 'webhook'
+      })
+    }
 
     console.log('Order updated successfully')
     

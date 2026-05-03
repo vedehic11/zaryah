@@ -7,8 +7,18 @@ import { getShipmentTracking, mapShiprocketStatus } from '@/lib/shiprocket'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-function getPassiveSyncStatus(mappedStatus) {
-  return ['confirmed', 'dispatched'].includes(mappedStatus) ? mappedStatus : null
+function getPassiveSyncStatus(mappedStatus, order) {
+  if (!['confirmed', 'dispatched'].includes(mappedStatus)) {
+    return null
+  }
+
+  // Don't let tracking sync regress two-way delivery intermediate statuses
+  const twoWayIntermediateStatuses = ['pickup_dispatched', 'received_by_seller', 'ready']
+  if (order?.two_way_delivery && twoWayIntermediateStatuses.includes(order.status)) {
+    return null
+  }
+
+  return mappedStatus
 }
 
 export async function GET(request, { params }) {
@@ -125,7 +135,7 @@ export async function GET(request, { params }) {
         shipment_status: currentStatus
       }
       
-      const passiveStatus = getPassiveSyncStatus(statusMapping.status)
+      const passiveStatus = getPassiveSyncStatus(statusMapping.status, order)
       if (passiveStatus && passiveStatus !== order.status) {
         updates.status = passiveStatus
         console.log(`Order status updating to: ${passiveStatus}`)

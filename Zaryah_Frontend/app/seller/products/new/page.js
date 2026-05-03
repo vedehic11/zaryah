@@ -21,6 +21,8 @@ export default function AddProductPage() {
   const router = useRouter()
   const { user } = useAuth()
   const fileInputRef = useRef(null)
+  const questionImageInputRefs = useRef({})
+  const colorImageInputRefs = useRef({})
 
   const [formData, setFormData] = useState({
     name: '',
@@ -36,6 +38,7 @@ export default function AddProductPage() {
     deliveryTimeMax: '',
     deliveryTimeUnit: 'days',
     instantDelivery: false,
+    twoWayDelivery: false,
     material: '',
     careInstructions: '',
     returnAvailable: true,
@@ -48,7 +51,11 @@ export default function AddProductPage() {
 
   const [images, setImages] = useState([])
   const [features, setFeatures] = useState([''])
-  const [customQuestions, setCustomQuestions] = useState([{ question: '', required: false }])
+  const [customQuestions, setCustomQuestions] = useState([{ question: '', required: false, image: '' }])
+  const [questionImageUploading, setQuestionImageUploading] = useState({})
+  const [sizePriceOptions, setSizePriceOptions] = useState([{ label: '', price: '' }])
+  const [colorOptions, setColorOptions] = useState([{ name: '', image: '' }])
+  const [colorImageUploading, setColorImageUploading] = useState({})
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const [sectionOptions, setSectionOptions] = useState(['Featured', 'Trending', 'New Arrivals', 'Best Sellers'])
@@ -121,6 +128,7 @@ export default function AddProductPage() {
       deliveryTimeMax: '5',
       deliveryTimeUnit: 'days',
       instantDelivery: false,
+      twoWayDelivery: false,
       material: 'Premium milk chocolate with organic ingredients',
       careInstructions: 'Store in a cool, dry place away from sunlight. Best consumed within 30 days of opening.',
       returnAvailable: false,
@@ -136,6 +144,14 @@ export default function AddProductPage() {
       'Organic cocoa beans',
       'Handmade with love',
       'Beautiful gift packaging included'
+    ])
+
+    setSizePriceOptions([
+      { label: 'Pack', price: '899' }
+    ])
+
+    setColorOptions([
+      { name: 'Classic', image: '' }
     ])
     
     setCustomQuestions([
@@ -198,12 +214,172 @@ export default function AddProductPage() {
     setCustomQuestions(newQuestions)
   }
 
+  const handleQuestionImageUpload = async (index, file) => {
+    if (!file) return
+
+    const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
+    const isValidSize = file.size <= 5 * 1024 * 1024
+
+    if (!isValidType) {
+      toast.error('Only JPG, PNG, GIF, or WebP images are allowed')
+      return
+    }
+
+    if (!isValidSize) {
+      toast.error('Image must be 5MB or smaller')
+      return
+    }
+
+    setQuestionImageUploading(prev => ({ ...prev, [index]: true }))
+
+    try {
+      const uploadData = new FormData()
+      uploadData.append('file', file)
+      uploadData.append('folder', 'product-custom-questions')
+
+      const response = await apiService.request('/upload', {
+        method: 'POST',
+        body: uploadData
+      })
+
+      if (!response?.url) {
+        throw new Error('Failed to upload image')
+      }
+
+      setCustomQuestions(prev => {
+        const updated = [...prev]
+        updated[index] = {
+          ...updated[index],
+          image: response.url
+        }
+        return updated
+      })
+      toast.success('Image uploaded')
+    } catch (error) {
+      toast.error(error.message || 'Failed to upload image')
+    } finally {
+      setQuestionImageUploading(prev => ({ ...prev, [index]: false }))
+    }
+  }
+
+  const handleQuestionImageRemove = (index) => {
+    setCustomQuestions(prev => {
+      const updated = [...prev]
+      updated[index] = {
+        ...updated[index],
+        image: ''
+      }
+      return updated
+    })
+  }
+
   const addCustomQuestion = () => {
-    setCustomQuestions([...customQuestions, { question: '', required: false }])
+    setCustomQuestions([...customQuestions, { question: '', required: false, image: '' }])
   }
 
   const removeCustomQuestion = (index) => {
     setCustomQuestions(customQuestions.filter((_, i) => i !== index))
+    setQuestionImageUploading(prev => {
+      const next = { ...prev }
+      delete next[index]
+      return next
+    })
+  }
+
+  const handleSizePriceChange = (index, field, value) => {
+    setSizePriceOptions(prev => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
+  const addSizePriceOption = () => {
+    setSizePriceOptions(prev => [...prev, { label: '', price: '' }])
+  }
+
+  const removeSizePriceOption = (index) => {
+    setSizePriceOptions(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleColorOptionChange = (index, field, value) => {
+    setColorOptions(prev => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
+  const addColorOption = () => {
+    setColorOptions(prev => [...prev, { name: '', image: '' }])
+  }
+
+  const removeColorOption = (index) => {
+    setColorOptions(prev => prev.filter((_, i) => i !== index))
+    setColorImageUploading(prev => {
+      const next = { ...prev }
+      delete next[index]
+      return next
+    })
+  }
+
+  const handleColorImageUpload = async (index, file) => {
+    if (!file) return
+
+    const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
+    const isValidSize = file.size <= 5 * 1024 * 1024
+
+    if (!isValidType) {
+      toast.error('Only JPG, PNG, GIF, or WebP images are allowed')
+      return
+    }
+
+    if (!isValidSize) {
+      toast.error('Image must be 5MB or smaller')
+      return
+    }
+
+    setColorImageUploading(prev => ({ ...prev, [index]: true }))
+
+    try {
+      const uploadData = new FormData()
+      uploadData.append('file', file)
+      uploadData.append('folder', 'product-color-options')
+
+      const response = await apiService.request('/upload', {
+        method: 'POST',
+        body: uploadData
+      })
+
+      if (!response?.url) {
+        throw new Error('Failed to upload image')
+      }
+
+      setColorOptions(prev => {
+        const updated = [...prev]
+        updated[index] = {
+          ...updated[index],
+          image: response.url
+        }
+        return updated
+      })
+      toast.success('Image uploaded')
+    } catch (error) {
+      toast.error(error.message || 'Failed to upload image')
+    } finally {
+      setColorImageUploading(prev => ({ ...prev, [index]: false }))
+    }
+  }
+
+  const handleColorImageRemove = (index) => {
+    setColorOptions(prev => {
+      const updated = [...prev]
+      updated[index] = {
+        ...updated[index],
+        image: ''
+      }
+      return updated
+    })
   }
 
   const validate = () => {
@@ -260,9 +436,41 @@ export default function AddProductPage() {
       }
 
       // Custom questions (filter empty)
-      const validQuestions = customQuestions.filter(q => q.question.trim())
+      const validQuestions = customQuestions
+        .filter(q => q.question.trim())
+        .map(q => ({
+          question: q.question.trim(),
+          required: !!q.required,
+          image: q.image || null
+        }))
       if (validQuestions.length > 0) {
         formDataToSend.append('customQuestions', JSON.stringify(validQuestions))
+      }
+
+      const validSizePriceOptions = sizePriceOptions
+        .map(option => ({
+          label: String(option.label || '').trim(),
+          price: option.price
+        }))
+        .filter(option => option.label && option.price !== '' && option.price !== null)
+        .map(option => ({
+          ...option,
+          price: parseFloat(option.price)
+        }))
+
+      if (validSizePriceOptions.length > 0) {
+        formDataToSend.append('sizePriceOptions', JSON.stringify(validSizePriceOptions))
+      }
+
+      const validColorOptions = colorOptions
+        .map(option => ({
+          name: String(option.name || '').trim(),
+          image: option.image || ''
+        }))
+        .filter(option => option.name)
+
+      if (validColorOptions.length > 0) {
+        formDataToSend.append('colorOptions', JSON.stringify(validColorOptions))
       }
 
       // Get auth token from Supabase
@@ -607,6 +815,16 @@ export default function AddProductPage() {
                   <span className="text-sm text-gray-700">Customisable Product</span>
                 </label>
               </div>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="twoWayDelivery"
+                  checked={formData.twoWayDelivery}
+                  onChange={handleInputChange}
+                  className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <span className="text-sm text-gray-700">Two-way delivery (buyer sends flowers to you first)</span>
+              </label>
             </div>
           </div>
 
@@ -638,20 +856,134 @@ export default function AddProductPage() {
                     </p>
                   )}
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Size Options
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Size Pricing
                   </label>
-                  <input
-                    type="text"
-                    name="sizeOptions"
-                    value={formData.sizeOptions}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Small, Medium, Large or Pack"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Separate multiple sizes with commas</p>
+                  <button
+                    type="button"
+                    onClick={addSizePriceOption}
+                    className="inline-flex items-center space-x-1 text-primary-600 hover:text-primary-700 text-sm font-medium"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Size</span>
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {sizePriceOptions.map((option, index) => (
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_180px_auto] gap-3 items-center">
+                      <input
+                        type="text"
+                        value={option.label}
+                        onChange={(e) => handleSizePriceChange(index, 'label', e.target.value)}
+                        placeholder="e.g., Small or 250g"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                      <input
+                        type="number"
+                        value={option.price}
+                        onChange={(e) => handleSizePriceChange(index, 'price', e.target.value)}
+                        placeholder="Price"
+                        min="0"
+                        step="0.01"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                      {sizePriceOptions.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeSizePriceOption(index)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Use the same price for multiple sizes if needed.</p>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Color Options
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addColorOption}
+                    className="inline-flex items-center space-x-1 text-primary-600 hover:text-primary-700 text-sm font-medium"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Color</span>
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {colorOptions.map((option, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-start">
+                        <input
+                          type="text"
+                          value={option.name}
+                          onChange={(e) => handleColorOptionChange(index, 'name', e.target.value)}
+                          placeholder="e.g., Rose Gold"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        />
+                        {colorOptions.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeColorOption(index)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg justify-self-end"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="mt-3">
+                        <input
+                          ref={(el) => { colorImageInputRefs.current[index] = el }}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleColorImageUpload(index, e.target.files?.[0])}
+                          className="hidden"
+                        />
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => colorImageInputRefs.current[index]?.click()}
+                            disabled={colorImageUploading[index]}
+                            className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                          >
+                            <ImageIcon className="w-4 h-4" />
+                            {colorImageUploading[index] ? 'Uploading...' : (option.image ? 'Change Image' : 'Upload Image')}
+                          </button>
+                          {option.image && (
+                            <button
+                              type="button"
+                              onClick={() => handleColorImageRemove(index)}
+                              className="text-sm text-red-600 hover:text-red-700"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                        {option.image && (
+                          <div className="mt-3 max-w-xs">
+                            <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                              <img
+                                src={option.image}
+                                alt="Color reference"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">Optional image shown when this color is selected.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -854,6 +1186,47 @@ export default function AddProductPage() {
                         />
                         <span className="text-sm text-gray-700">Required</span>
                       </label>
+                      <div className="mt-3">
+                        <input
+                          ref={(el) => { questionImageInputRefs.current[index] = el }}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleQuestionImageUpload(index, e.target.files?.[0])}
+                          className="hidden"
+                        />
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => questionImageInputRefs.current[index]?.click()}
+                            disabled={questionImageUploading[index]}
+                            className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                          >
+                            <ImageIcon className="w-4 h-4" />
+                            {questionImageUploading[index] ? 'Uploading...' : (q.image ? 'Change Image' : 'Upload Image')}
+                          </button>
+                          {q.image && (
+                            <button
+                              type="button"
+                              onClick={() => handleQuestionImageRemove(index)}
+                              className="text-sm text-red-600 hover:text-red-700"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                        {q.image && (
+                          <div className="mt-3 max-w-xs">
+                            <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                              <img
+                                src={q.image}
+                                alt="Customization reference"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">Optional reference image for this question.</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     {customQuestions.length > 1 && (
                       <button

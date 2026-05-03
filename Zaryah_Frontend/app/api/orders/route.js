@@ -7,8 +7,17 @@ import { getShipmentTracking, getShipmentDetails, mapShiprocketStatus } from '@/
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-function getPassiveSyncStatus(mappedStatus) {
-  return ['confirmed', 'dispatched'].includes(mappedStatus) ? mappedStatus : null
+function getPassiveSyncStatus(mappedStatus, order) {
+  if (!['confirmed', 'dispatched'].includes(mappedStatus)) {
+    return null
+  }
+
+  // For two-way delivery, don't auto-advance past intermediate statuses
+  if (order?.two_way_delivery && ['ready', 'received_by_seller', 'pickup_dispatched'].includes(order.status) && mappedStatus === 'confirmed') {
+    return null
+  }
+
+  return mappedStatus
 }
 
 function getDisplayStatus(order) {
@@ -53,6 +62,8 @@ export async function GET(request) {
           gift_packaging,
           customizations,
           product_id,
+          selected_size,
+          selected_color,
           products (
             id,
             name,
@@ -145,7 +156,7 @@ export async function GET(request) {
               shipment_status: liveStatus
             }
 
-            const passiveStatus = getPassiveSyncStatus(mapped.status)
+            const passiveStatus = getPassiveSyncStatus(mapped.status, order)
             if (passiveStatus && passiveStatus !== order.status) {
               updates.status = passiveStatus
             }
@@ -193,7 +204,7 @@ export async function GET(request) {
               updates.shipment_status = String(shipment.status)
             }
 
-            const passiveStatus = getPassiveSyncStatus(mapped.status)
+            const passiveStatus = getPassiveSyncStatus(mapped.status, order)
             if (passiveStatus && passiveStatus !== order.status) {
               updates.status = passiveStatus
             }
@@ -327,7 +338,8 @@ export async function POST(request) {
       deliveryFee,
       giftPackagingFee,
       codFee,
-      platformFee
+      platformFee,
+      twoWayDelivery
     } = body
 
     console.log('Order breakdown from frontend:', {
@@ -348,12 +360,13 @@ export async function POST(request) {
     // Calculate subtotal from products
     let subtotal = 0
     const orderItems = []
+    let hasTwoWayDelivery = Boolean(twoWayDelivery)
 
     for (const item of items) {
       console.log(`Fetching product: ${item.productId}`)
       const { data: product, error: productError } = await supabase
         .from('products')
-        .select('price, seller_id, stock')
+        .select('price, seller_id, stock, two_way_delivery')
         .eq('id', item.productId)
         .single()
 
@@ -369,21 +382,27 @@ export async function POST(request) {
 
       console.log(`Product found: ${item.productId}, price: ${product.price}, stock: ${product.stock}`)
 
+      if (product.two_way_delivery) {
+        hasTwoWayDelivery = true
+      }
+
       if (product.stock < item.quantity) {
         console.error(`Insufficient stock for product ${item.productId}: available=${product.stock}, requested=${item.quantity}`)
         return NextResponse.json({ error: `Insufficient stock for product ${item.productId}` }, { status: 400 })
       }
 
-      const itemTotal = parseFloat(product.price) * item.quantity
+      const itemTotal = parseFloat(item.unitPrice || product.price) * item.quantity
       subtotal += itemTotal
 
       orderItems.push({
         product_id: item.productId,
         quantity: item.quantity,
-        price: product.price,
+        price: item.unitPrice || product.price,
         gift_packaging: item.giftPackaging || false,
         customizations: item.customizations || [],
-        seller_id: product.seller_id
+        seller_id: product.seller_id,
+        selected_size: item.selectedSize || null,
+        selected_color: item.selectedColor || null
       })
     }
 
@@ -426,7 +445,8 @@ export async function POST(request) {
         gift_packaging_fee: giftPackagingTotal, // Gift packaging fees (100% to seller)
         platform_fee: buyerPlatformFee, // ₹10 or ₹20 platform fee from buyer
         commission_amount: sellerCommission, // 2.5% seller commission only
-        seller_amount: sellerAmount // 97.5% of products + 100% gift fees
+        seller_amount: sellerAmount, // 97.5% of products + 100% gift fees
+        two_way_delivery: hasTwoWayDelivery
       })
       .select()
       .single()
@@ -446,7 +466,9 @@ export async function POST(request) {
       quantity: item.quantity,
       price: item.price,
       gift_packaging: item.gift_packaging,
-      customizations: item.customizations
+      customizations: item.customizations,
+      selected_size: item.selected_size,
+      selected_color: item.selected_color
     }))
 
     const { error: itemsError } = await supabase

@@ -24,7 +24,8 @@ import {
   Image as ImageIcon,
   ThumbsUp,
   ChevronLeft,
-  XCircle
+  XCircle,
+  ExternalLink
 } from 'lucide-react'
 import { CreateSupportTicket } from './CreateSupportTicket'
 import { ReviewModal } from './ReviewModal'
@@ -41,7 +42,7 @@ export const OrderHistoryPage = () => {
   const [showSupportModal, setShowSupportModal] = useState(false)
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
-  const [filter, setFilter] = useState('all') // all, pending, confirmed, dispatched, delivered, cancelled
+  const [filter, setFilter] = useState('all') // all, pending, confirmed, ready, dispatched, delivered, cancelled
   const [cancellingOrderIds, setCancellingOrderIds] = useState(new Set())
 
   useEffect(() => {
@@ -64,7 +65,9 @@ export const OrderHistoryPage = () => {
               price: item.price,
               gift_packaging: item.gift_packaging,
               customizations: item.customizations,
-              order_item_id: item.id
+              order_item_id: item.id,
+              selected_size: item.selected_size || null,
+              selected_color: item.selected_color || null
             })) || [],
             seller: order.sellers || {},
             buyer: order.buyers || {}
@@ -108,6 +111,16 @@ export const OrderHistoryPage = () => {
               transformedOrders = transformedOrders.map(order => {
                 const live = liveStatusByOrderId.get(order.id)
                 if (!live) return order
+
+                // Don't let tracking sync regress two-way delivery intermediate statuses
+                const twoWayIntermediateStatuses = ['pickup_dispatched', 'received_by_seller', 'ready']
+                const isTwoWay = Boolean(order.two_way_delivery || order.twoWayDelivery)
+                if (isTwoWay && twoWayIntermediateStatuses.includes(order.status)) {
+                  return {
+                    ...order,
+                    shipment_status: live.shipment_status || order.shipment_status
+                  }
+                }
 
                 return {
                   ...order,
@@ -162,6 +175,9 @@ export const OrderHistoryPage = () => {
       case 'pending': return 'bg-yellow-100 text-yellow-800'
       case 'payment_failed': return 'bg-red-100 text-red-800'
       case 'confirmed': return 'bg-blue-100 text-blue-800'
+      case 'pickup_dispatched': return 'bg-indigo-100 text-indigo-800'
+      case 'received_by_seller': return 'bg-teal-100 text-teal-800'
+      case 'ready': return 'bg-amber-100 text-amber-800'
       case 'dispatched': return 'bg-purple-100 text-purple-800'
       case 'delivered': return 'bg-green-100 text-green-800'
       case 'cancelled': return 'bg-red-100 text-red-800'
@@ -174,6 +190,9 @@ export const OrderHistoryPage = () => {
       case 'pending': return Clock
       case 'payment_failed': return AlertCircle
       case 'confirmed': return CheckCircle
+      case 'pickup_dispatched': return Truck
+      case 'received_by_seller': return Package
+      case 'ready': return Package
       case 'dispatched': return Truck
       case 'delivered': return CheckCircle
       case 'cancelled': return AlertCircle
@@ -181,14 +200,29 @@ export const OrderHistoryPage = () => {
     }
   }
 
-  const getOrderProgress = (status) => {
-    const steps = [
+  const getOrderProgress = (order) => {
+    const status = order.status
+    const isTwoWay = Boolean(order?.two_way_delivery || order?.twoWayDelivery)
+
+    if (isTwoWay) {
+      const twoWayStatuses = ['confirmed', 'pickup_dispatched', 'received_by_seller', 'ready', 'dispatched', 'delivered']
+      return [
+        { name: 'Order Placed', completed: true },
+        { name: 'Confirmed', completed: twoWayStatuses.includes(status) },
+        { name: 'Pickup Dispatched', completed: ['pickup_dispatched', 'received_by_seller', 'ready', 'dispatched', 'delivered'].includes(status) },
+        { name: 'Received by Seller', completed: ['received_by_seller', 'ready', 'dispatched', 'delivered'].includes(status) },
+        { name: 'Ready', completed: ['ready', 'dispatched', 'delivered'].includes(status) },
+        { name: 'Dispatched', completed: ['dispatched', 'delivered'].includes(status) },
+        { name: 'Delivered', completed: status === 'delivered' }
+      ]
+    }
+
+    return [
       { name: 'Order Placed', completed: true },
       { name: 'Confirmed', completed: ['confirmed', 'dispatched', 'delivered'].includes(status) },
       { name: 'Dispatched', completed: ['dispatched', 'delivered'].includes(status) },
       { name: 'Delivered', completed: status === 'delivered' }
     ]
-    return steps
   }
 
   const handleRaiseIssue = (order) => {
@@ -200,6 +234,28 @@ export const OrderHistoryPage = () => {
     setSelectedProduct(product)
     setSelectedOrder(order)
     setShowReviewModal(true)
+  }
+
+  const openBuyerLabel = async (orderId, direction) => {
+    try {
+      const response = await apiService.request('/orders/shipping-label', {
+        method: 'POST',
+        body: JSON.stringify({ orderId, direction })
+      })
+
+      if (response?.labelUrl) {
+        window.open(response.labelUrl, '_blank')
+        return
+      }
+
+      toast('Label is not ready yet. It may take 5-6 hours after delivery confirmation.', {
+        icon: '⏳'
+      })
+    } catch (error) {
+      toast('Label is not ready yet. It may take 5-6 hours after delivery confirmation.', {
+        icon: '⏳'
+      })
+    }
   }
 
   const canBuyerCancelOrder = (order) => {
@@ -219,7 +275,7 @@ export const OrderHistoryPage = () => {
 
     if (isLikelyShipped) return false
 
-    return displayStatus === 'pending' || displayStatus === 'confirmed'
+    return ['pending', 'confirmed', 'pickup_dispatched', 'received_by_seller', 'ready'].includes(displayStatus)
   }
 
   const handleCancelOrder = async (order) => {
@@ -400,6 +456,9 @@ export const OrderHistoryPage = () => {
             <option value="pending">Pending ({orders.filter(o => getDisplayStatus(o) === 'pending').length})</option>
             <option value="payment_failed">Payment Failed ({orders.filter(o => getDisplayStatus(o) === 'payment_failed').length})</option>
             <option value="confirmed">Confirmed ({orders.filter(o => o.status === 'confirmed').length})</option>
+            <option value="pickup_dispatched">Pickup Dispatched ({orders.filter(o => o.status === 'pickup_dispatched').length})</option>
+            <option value="received_by_seller">Received by Seller ({orders.filter(o => o.status === 'received_by_seller').length})</option>
+            <option value="ready">Ready ({orders.filter(o => o.status === 'ready').length})</option>
             <option value="dispatched">Dispatched ({orders.filter(o => o.status === 'dispatched').length})</option>
             <option value="delivered">Delivered ({orders.filter(o => o.status === 'delivered').length})</option>
             <option value="cancelled">Cancelled ({orders.filter(o => o.status === 'cancelled').length})</option>
@@ -415,14 +474,18 @@ export const OrderHistoryPage = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {filteredOrders.map((order, index) => (
-              <motion.div
-                key={order.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-xl shadow-soft border border-primary-100 overflow-hidden"
-              >
+            {filteredOrders.map((order, index) => {
+              const progressSteps = getOrderProgress(order)
+              const progressColumns = progressSteps.length === 7 ? 'grid-cols-7' : progressSteps.length === 5 ? 'grid-cols-5' : 'grid-cols-4'
+
+              return (
+                <motion.div
+                  key={order.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white rounded-xl shadow-soft border border-primary-100 overflow-hidden"
+                >
                 {/* Order Header */}
                 <div className="p-6 border-b border-primary-100">
                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -454,8 +517,21 @@ export const OrderHistoryPage = () => {
                         )}
                       {getRefundBadge(order)}
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(getDisplayStatus(order))}`}>
-                        {getDisplayStatus(order) === 'payment_failed' ? 'Payment Failed' : getDisplayStatus(order).charAt(0).toUpperCase() + getDisplayStatus(order).slice(1)}
+                        {(() => {
+                          const s = getDisplayStatus(order)
+                          const labels = {
+                            'payment_failed': 'Payment Failed',
+                            'pickup_dispatched': 'Pickup Dispatched',
+                            'received_by_seller': 'Received by Seller'
+                          }
+                          return labels[s] || s.charAt(0).toUpperCase() + s.slice(1)
+                        })()}
                       </span>
+                      {(order.two_way_delivery || order.twoWayDelivery) && (
+                        <span className="px-2 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                          Two-way
+                        </span>
+                      )}
                       <button
                         onClick={() => {
                           setSelectedOrder(order)
@@ -477,7 +553,7 @@ export const OrderHistoryPage = () => {
                   {/* Order Progress */}
                   <div className="mb-4">
                     <div className="flex items-center gap-1 sm:gap-2">
-                      {getOrderProgress(order.status).map((step, stepIndex) => (
+                      {progressSteps.map((step, stepIndex) => (
                         <div key={step.name} className="flex flex-1 min-w-0 items-center">
                           <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${
                             step.completed 
@@ -490,7 +566,7 @@ export const OrderHistoryPage = () => {
                               <span className="text-xs font-bold">{stepIndex + 1}</span>
                             )}
                           </div>
-                          {stepIndex < getOrderProgress(order.status).length - 1 && (
+                          {stepIndex < progressSteps.length - 1 && (
                             <div className={`mx-1 h-0.5 min-w-[10px] flex-1 sm:mx-2 ${
                               step.completed ? 'bg-primary-600' : 'bg-gray-300'
                             }`} />
@@ -498,8 +574,8 @@ export const OrderHistoryPage = () => {
                         </div>
                       ))}
                     </div>
-                    <div className="mt-2 grid grid-cols-4 gap-1 text-[11px] leading-tight text-charcoal-500 sm:text-xs">
-                      {getOrderProgress(order.status).map(step => (
+                    <div className={`mt-2 grid ${progressColumns} gap-1 text-[11px] leading-tight text-charcoal-500 sm:text-xs`}>
+                      {progressSteps.map(step => (
                         <span key={step.name} className="text-center break-words">{step.name}</span>
                       ))}
                     </div>
@@ -565,6 +641,13 @@ export const OrderHistoryPage = () => {
                                 {/* Product Details */}
                                 <div className="flex-1">
                                   <h5 className="font-medium text-charcoal-900">{product.name}</h5>
+                                  {(product.selected_size || product.selected_color) && (
+                                    <p className="text-xs text-charcoal-500 mt-0.5">
+                                      {product.selected_size && <span>Size: {product.selected_size}</span>}
+                                      {product.selected_size && product.selected_color && <span> · </span>}
+                                      {product.selected_color && <span>Color: {product.selected_color}</span>}
+                                    </p>
+                                  )}
                                   <p className="text-sm text-charcoal-600">
                                     Quantity: {product.quantity || 1} × {formatCurrency(product.price)}
                                   </p>
@@ -701,6 +784,49 @@ export const OrderHistoryPage = () => {
                         </div>
                       </div>
 
+                          {(order.two_way_delivery || order.twoWayDelivery) && (
+                        <div className="mb-6">
+                          <h4 className="text-lg font-semibold text-charcoal-900 mb-3">Two-way Delivery Tracking</h4>
+                              <div className="grid grid-cols-1 gap-3 text-sm">
+                                <div className="border border-amber-200 rounded-lg p-3 bg-amber-50">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Package className="w-4 h-4 text-amber-700" />
+                                <span className="font-semibold text-amber-900">Pickup to Seller</span>
+                              </div>
+                                  <div className="grid gap-2 text-charcoal-700 md:grid-cols-[1fr_auto] md:items-center">
+                                    <div className="space-y-1">
+                                      <div>Courier: <span className="font-medium">{order.inbound_courier_name || 'Pending'}</span></div>
+                                      <div>AWB: <span className="font-medium">{order.inbound_awb_code || 'Pending'}</span></div>
+                                      <div>Status: <span className="font-medium">{order.inbound_shipment_status || 'Awaiting pickup'}</span></div>
+                                    </div>
+                                    <div className="flex flex-col items-start gap-2 md:items-end">
+                                      {order.inbound_tracking_url && (
+                                        <a
+                                          href={order.inbound_tracking_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 text-amber-700 hover:text-amber-800 font-medium"
+                                        >
+                                          Track pickup
+                                          <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                      )}
+                                      <button
+                                        onClick={() => openBuyerLabel(order.id, 'inbound')}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                                      >
+                                        View pickup label
+                                      </button>
+                                    </div>
+                                  </div>
+                            </div>
+                          </div>
+                              <p className="mt-3 text-xs text-charcoal-600 bg-white rounded-lg border border-primary-100 px-3 py-2">
+                                You will receive a shipping label within 5-6 hours. Print it and stick it on the parcel before pickup.
+                              </p>
+                        </div>
+                      )}
+
                       {/* Seller Information */}
                       <div className="mb-6">
                         <h4 className="text-lg font-semibold text-charcoal-900 mb-3">Seller Information</h4>
@@ -755,8 +881,9 @@ export const OrderHistoryPage = () => {
                     </div>
                   </motion.div>
                 )}
-              </motion.div>
-            ))}
+                </motion.div>
+              )
+            })}
           </div>
         )}
 

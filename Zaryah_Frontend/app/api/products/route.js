@@ -107,11 +107,17 @@ export async function GET(request) {
         instantDeliveryEligible: product.instant_delivery,
         mrp: product.mrp ? parseFloat(product.mrp) : null,
         size_options: product.size_options || [],
+        size_price_options: product.size_price_options || [],
+        sizePriceOptions: product.size_price_options || [],
         material: product.material,
         care_instructions: product.care_instructions,
         return_available: product.return_available,
         return_days: product.return_days,
         cod_available: product.cod_available,
+        two_way_delivery: product.two_way_delivery,
+        twoWayDelivery: product.two_way_delivery,
+        color_options: product.color_options || [],
+        colorOptions: product.color_options || [],
         legal_disclaimer: product.legal_disclaimer,
         is_genuine: product.is_genuine,
         is_quality_checked: product.is_quality_checked,
@@ -199,6 +205,7 @@ export async function POST(request) {
       exchange_available: formData.get('exchangeAvailable') === 'true',
       return_days: formData.get('returnDays') ? parseInt(formData.get('returnDays')) : 0,
       cod_available: formData.get('codAvailable') === 'true',
+      two_way_delivery: formData.get('twoWayDelivery') === 'true',
       legal_disclaimer: formData.get('legalDisclaimer') || null,
       seller_id: user.user_type === 'Seller' ? user.id : formData.get('sellerId'),
       status: 'approved'
@@ -208,6 +215,35 @@ export async function POST(request) {
     const sizeOptionsStr = formData.get('sizeOptions')
     if (sizeOptionsStr && sizeOptionsStr.trim()) {
       productData.size_options = sizeOptionsStr.split(',').map(s => s.trim()).filter(s => s)
+    }
+
+    const sizePriceOptionsStr = formData.get('sizePriceOptions')
+    if (sizePriceOptionsStr) {
+      try {
+        const parsed = JSON.parse(sizePriceOptionsStr)
+        if (Array.isArray(parsed)) {
+          productData.size_price_options = parsed
+          if (!productData.size_options || productData.size_options.length === 0) {
+            productData.size_options = parsed
+              .map(option => String(option?.label || '').trim())
+              .filter(Boolean)
+          }
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse sizePriceOptions:', parseError)
+      }
+    }
+
+    const colorOptionsStr = formData.get('colorOptions')
+    if (colorOptionsStr) {
+      try {
+        const parsed = JSON.parse(colorOptionsStr)
+        if (Array.isArray(parsed)) {
+          productData.color_options = parsed
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse colorOptions:', parseError)
+      }
     }
 
     if (!productData.seller_id) {

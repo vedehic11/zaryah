@@ -413,6 +413,51 @@ export async function applyShiprocketOrderUpdate(order, liveUpdate, options = {}
   }
 }
 
+export async function applyInboundShipmentUpdate(order, liveUpdate, options = {}) {
+  const currentStatus = normalizeStatusValue(liveUpdate.currentStatus)
+  const awbCode = liveUpdate.awbCode || order.inbound_awb_code || null
+  const courierName = liveUpdate.courierName || order.inbound_courier_name || null
+  const trackingUrl = liveUpdate.trackingUrl || buildTrackingUrl(awbCode) || order.inbound_tracking_url || null
+
+  const updates = {}
+
+  if (currentStatus && currentStatus !== normalizeStatusValue(order.inbound_shipment_status)) {
+    updates.inbound_shipment_status = currentStatus
+  }
+
+  if (awbCode && awbCode !== order.inbound_awb_code) {
+    updates.inbound_awb_code = awbCode
+  }
+
+  if (courierName && courierName !== order.inbound_courier_name) {
+    updates.inbound_courier_name = courierName
+  }
+
+  if (trackingUrl && trackingUrl !== order.inbound_tracking_url) {
+    updates.inbound_tracking_url = trackingUrl
+  }
+
+  if (Object.keys(updates).length > 0) {
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update(updates)
+      .eq('id', order.id)
+
+    if (updateError) {
+      throw updateError
+    }
+  }
+
+  return {
+    orderId: order.id,
+    status: currentStatus,
+    awbCode,
+    courierName,
+    trackingUrl,
+    source: options.source || 'sync'
+  }
+}
+
 export async function fetchShiprocketLiveUpdate(order) {
   let currentStatus = null
   let awbCode = order.awb_code || null

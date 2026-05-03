@@ -15,12 +15,45 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   const { addToCart } = useCart()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [selectedSize, setSelectedSize] = useState(null)
+  const [selectedColor, setSelectedColor] = useState(null)
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [customizationAnswers, setCustomizationAnswers] = useState({})
   const [activeTab, setActiveTab] = useState('details')
   const sellerUsername = product?.seller?.username || product?.seller?.sellerUsername || null
+  const isTwoWayDelivery = Boolean(product?.twoWayDelivery || product?.two_way_delivery)
   const backTarget = String(searchParams.get('back') || '').trim()
   const safeBackTarget = backTarget.startsWith('/') ? backTarget : ''
+
+  const sizePriceOptions = Array.isArray(product?.sizePriceOptions)
+    ? product.sizePriceOptions
+    : Array.isArray(product?.size_price_options)
+      ? product.size_price_options
+      : []
+
+  const sizeOptions = sizePriceOptions.length > 0
+    ? sizePriceOptions.map(option => option?.label).filter(Boolean)
+    : Array.isArray(product?.sizeOptions)
+      ? product.sizeOptions
+      : []
+
+  const colorOptions = Array.isArray(product?.colorOptions)
+    ? product.colorOptions
+    : Array.isArray(product?.color_options)
+      ? product.color_options
+      : []
+
+  const selectedSizePrice = sizePriceOptions.find(option => option?.label === selectedSize)?.price
+  const displayPrice = selectedSizePrice !== undefined && selectedSizePrice !== null
+    ? Number(selectedSizePrice)
+    : Number(product?.price || 0)
+
+  const selectedColorImage = colorOptions.find(option => option?.name === selectedColor)?.image
+  const baseImages = Array.isArray(product?.images) && product.images.length > 0
+    ? product.images
+    : product?.image
+      ? [product.image]
+      : []
+  const displayImages = selectedColorImage ? [selectedColorImage, ...baseImages] : baseImages
 
   const handleBack = () => {
     if (safeBackTarget) {
@@ -37,15 +70,30 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   }
 
   useEffect(() => {
-    if (product?.sizeOptions && product.sizeOptions.length > 0) {
-      setSelectedSize(product.sizeOptions[0])
+    if (sizeOptions.length > 0) {
+      setSelectedSize(sizeOptions[0])
+    } else {
+      setSelectedSize(null)
     }
-    // Debug customization questions
+
+    if (colorOptions.length > 0) {
+      setSelectedColor(colorOptions[0]?.name || null)
+    } else {
+      setSelectedColor(null)
+    }
+
+    setCurrentImageIndex(0)
+
     if (product?.customisable && product?.customQuestions) {
       console.log('Customization enabled:', product.customisable)
       console.log('Custom questions:', product.customQuestions)
     }
-  }, [product])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id])
+
+  useEffect(() => {
+    setCurrentImageIndex(0)
+  }, [selectedColor])
 
   if (!product) {
     return (
@@ -55,8 +103,9 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     )
   }
 
-  const discount = product.mrp && product.price < product.mrp
-    ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
+
+  const discount = product.mrp && displayPrice < product.mrp
+    ? Math.round(((product.mrp - displayPrice) / product.mrp) * 100)
     : 0
 
   const handleAddToCart = async () => {
@@ -80,6 +129,8 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       await addToCart(product, { 
         quantity: 1, 
         selectedSize,
+        selectedColor,
+        unitPrice: displayPrice,
         customizations 
       })
       toast.success('Added to bag!')
@@ -154,7 +205,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       <div className="relative bg-white">
         <div className="aspect-square overflow-hidden relative">
           <Image
-            src={product.images?.[currentImageIndex] || '/placeholder-product.png'}
+            src={displayImages[currentImageIndex] || '/placeholder-product.png'}
             alt={product.name}
             fill
             className="object-cover"
@@ -180,9 +231,9 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
         )}
 
         {/* Dots Indicator */}
-        {product.images?.length > 1 && (
+        {displayImages.length > 1 && (
           <div className="absolute bottom-16 left-0 right-0 flex justify-center space-x-1.5">
-            {product.images.map((_, index) => (
+            {displayImages.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentImageIndex(index)}
@@ -214,12 +265,12 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
         </div>
         
         <div className="mt-2">
-          <span className="text-lg font-bold text-charcoal-900">MRP ₹{product.mrp?.toLocaleString() || product.price?.toLocaleString()}</span>
+          <span className="text-lg font-bold text-charcoal-900">MRP ₹{product.mrp?.toLocaleString() || displayPrice?.toLocaleString()}</span>
         </div>
       </div>
 
       {/* Mega Deal Card */}
-      {product.mrp && product.mrp > product.price && (
+      {product.mrp && product.mrp > displayPrice && (
         <div className="bg-warm-50 px-4 py-3 mb-2 border-b border-secondary-100">
           <div className="bg-gradient-to-r from-warm-100 to-cream-100 rounded-lg p-3 flex items-center justify-between border border-secondary-200 shadow-sm">
             <div className="flex items-center space-x-3">
@@ -227,11 +278,11 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                 SPECIAL OFFER
               </div>
               <div>
-                <span className="text-lg font-bold text-charcoal-900">Get at ₹{product.price?.toLocaleString()}</span>
+                <span className="text-lg font-bold text-charcoal-900">Get at ₹{displayPrice?.toLocaleString()}</span>
               </div>
             </div>
             <div className="bg-gradient-to-r from-mint-600 to-mint-700 text-white text-xs font-bold px-3 py-1.5 rounded-md shadow-sm">
-              Save ₹{(product.mrp - product.price)?.toLocaleString()}
+              Save ₹{(product.mrp - displayPrice)?.toLocaleString()}
             </div>
           </div>
           {discount > 0 && (
@@ -244,36 +295,81 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       )}
 
       {/* Size Selection */}
-      {product.sizeOptions && product.sizeOptions.length > 0 && (
+      {sizeOptions.length > 0 && (
         <div className="bg-cream-50 px-4 py-4 mb-2 border-b border-primary-100">
           <h3 className="text-sm font-bold text-charcoal-900 mb-3">
             Size: <span className="font-normal text-primary-700">{selectedSize}</span>
           </h3>
           <div className="flex flex-wrap gap-2 mb-3">
-            {product.sizeOptions.map((size) => (
+            {sizeOptions.map((size) => {
+              const optionPrice = sizePriceOptions.find(option => option?.label === size)?.price
+              return (
+                <button
+                  key={size}
+                  onClick={() => setSelectedSize(size)}
+                  className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all shadow-sm ${
+                    selectedSize === size
+                      ? 'bg-primary-600 text-white border-2 border-primary-700'
+                      : 'bg-white border-2 border-primary-200 text-charcoal-700 hover:border-primary-400'
+                  }`}
+                >
+                  <span>{size}</span>
+                  {optionPrice !== undefined && optionPrice !== null && (
+                    <span className={`block text-xs mt-0.5 ${
+                      selectedSize === size ? 'text-white/80' : 'text-charcoal-500'
+                    }`}>₹{Number(optionPrice).toLocaleString()}</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Color Selection */}
+      {colorOptions.length > 0 && (
+        <div className="bg-cream-50 px-4 py-4 mb-2 border-b border-primary-100">
+          <h3 className="text-sm font-bold text-charcoal-900 mb-3">
+            Color: <span className="font-normal text-primary-700">{selectedColor}</span>
+          </h3>
+          <div className="flex flex-wrap gap-3">
+            {colorOptions.map((color) => (
               <button
-                key={size}
-                onClick={() => setSelectedSize(size)}
-                className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all shadow-sm ${
-                  selectedSize === size
-                    ? 'bg-primary-600 text-white border-2 border-primary-700'
-                    : 'bg-white border-2 border-primary-200 text-charcoal-700 hover:border-primary-400'
-                }`}
+                key={color.name}
+                onClick={() => setSelectedColor(color.name)}
+                className="flex flex-col items-center gap-1.5 group"
               >
-                {size}
+                {color.image ? (
+                  <div className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shadow-sm ${
+                    selectedColor === color.name
+                      ? 'border-primary-600 ring-2 ring-primary-300 scale-105'
+                      : 'border-gray-200 group-active:border-primary-400'
+                  }`}>
+                    <img src={color.image} alt={color.name} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className={`w-16 h-16 rounded-xl border-2 flex items-center justify-center transition-all shadow-sm ${
+                    selectedColor === color.name
+                      ? 'border-primary-600 bg-primary-50 ring-2 ring-primary-300'
+                      : 'border-gray-200 bg-white group-active:border-primary-400'
+                  }`}>
+                    <span className={`text-xs font-semibold ${
+                      selectedColor === color.name ? 'text-primary-700' : 'text-charcoal-600'
+                    }`}>{color.name.slice(0, 3)}</span>
+                  </div>
+                )}
+                <span className={`text-xs font-medium max-w-[4rem] truncate ${
+                  selectedColor === color.name ? 'text-primary-700' : 'text-charcoal-600'
+                }`}>{color.name}</span>
               </button>
             ))}
           </div>
-          <label className="flex items-center space-x-2 text-sm text-charcoal-600">
-            <input type="checkbox" className="w-4 h-4 rounded border-primary-300 text-primary-600 focus:ring-primary-500" />
-            <span>Show sizing used by {product.seller?.businessName || 'Brand'}</span>
-          </label>
         </div>
       )}
 
       {/* Price & Delivery Info */}
       <div className="bg-warm-50 px-4 py-4 mb-2 space-y-2 border-b border-secondary-100">
-        <div className="text-lg font-bold text-charcoal-900">₹{product.price?.toLocaleString()}</div>
+        <div className="text-lg font-bold text-charcoal-900">₹{displayPrice?.toLocaleString()}</div>
         <div className="text-sm text-charcoal-600">
           Delivery by <span className="font-semibold text-charcoal-900">{deliveryDateStr}</span> - 422001
         </div>
@@ -317,6 +413,18 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                     {item.question}
                     {item.required !== false && <span className="text-primary-600 ml-1">*</span>}
                   </label>
+                  {item.image && (
+                    <div className="max-w-xs">
+                      <div className="aspect-video bg-white rounded-xl border border-primary-200 overflow-hidden shadow-sm">
+                        <img
+                          src={item.image}
+                          alt="Customization reference"
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    </div>
+                  )}
                   {(!item.type || item.type === 'text') ? (
                     <input
                       type="text"
@@ -372,6 +480,18 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
               <div className="font-semibold text-sm text-charcoal-900">Get it by {deliveryDateStr}</div>
             </div>
           </div>
+
+          {isTwoWayDelivery && (
+            <div className="flex items-start space-x-3">
+              <Package className="w-5 h-5 text-amber-600 mt-0.5" strokeWidth={1.5} />
+              <div className="flex-1">
+                <div className="font-semibold text-sm text-charcoal-900">Two-way delivery</div>
+                <div className="text-xs text-charcoal-600 mt-0.5">
+                  We pick up from you first, then deliver after preservation.
+                </div>
+              </div>
+            </div>
+          )}
           
           {product.codAvailable && (
             <div className="flex items-start space-x-3">

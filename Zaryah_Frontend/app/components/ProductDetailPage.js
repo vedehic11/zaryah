@@ -45,13 +45,47 @@ export const ProductDetailPage = ({ productId }) => {
   const [quantity, setQuantity] = useState(1)
   const [isLiked, setIsLiked] = useState(false)
   const [selectedSize, setSelectedSize] = useState(null)
+  const [selectedColor, setSelectedColor] = useState(null)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [activeTab, setActiveTab] = useState('description')
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [customizationSelections, setCustomizationSelections] = useState({});
   const [fetchedProduct, setFetchedProduct] = useState(null);
   const sellerUsername = product?.seller?.username || product?.seller?.sellerUsername || null
+  const isTwoWayDelivery = Boolean(product?.twoWayDelivery || product?.two_way_delivery)
   const backTarget = String(searchParams.get('back') || '').trim()
   const safeBackTarget = backTarget.startsWith('/') ? backTarget : ''
+
+  const sizePriceOptions = Array.isArray(product?.sizePriceOptions)
+    ? product.sizePriceOptions
+    : Array.isArray(product?.size_price_options)
+      ? product.size_price_options
+      : []
+
+  const sizeOptions = sizePriceOptions.length > 0
+    ? sizePriceOptions.map(option => option?.label).filter(Boolean)
+    : Array.isArray(product?.sizeOptions)
+      ? product.sizeOptions
+      : []
+
+  const colorOptions = Array.isArray(product?.colorOptions)
+    ? product.colorOptions
+    : Array.isArray(product?.color_options)
+      ? product.color_options
+      : []
+
+  const selectedSizePrice = sizePriceOptions.find(option => option?.label === selectedSize)?.price
+  const displayPrice = selectedSizePrice !== undefined && selectedSizePrice !== null
+    ? Number(selectedSizePrice)
+    : Number(product?.price || 0)
+
+  const selectedColorImage = colorOptions.find(option => option?.name === selectedColor)?.image
+  const baseImages = Array.isArray(product?.images) && product.images.length > 0
+    ? product.images
+    : product?.image
+      ? [product.image]
+      : []
+  const displayImages = selectedColorImage ? [selectedColorImage, ...baseImages] : baseImages
 
   const handleBack = () => {
     if (safeBackTarget) {
@@ -73,10 +107,21 @@ export const ProductDetailPage = ({ productId }) => {
   }
 
   useEffect(() => {
-    if (product?.sizeOptions && product.sizeOptions.length > 0) {
-      setSelectedSize(product.sizeOptions[0])
+    if (sizeOptions.length > 0) {
+      setSelectedSize(sizeOptions[0])
+    } else {
+      setSelectedSize(null)
     }
-  }, [product])
+
+    if (colorOptions.length > 0) {
+      setSelectedColor(colorOptions[0]?.name || null)
+    } else {
+      setSelectedColor(null)
+    }
+
+    setActiveImageIndex(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id])
 
   useEffect(() => {
     if (!productId) {
@@ -101,6 +146,10 @@ export const ProductDetailPage = ({ productId }) => {
       })
       .finally(() => setLoading(false))
   }, [productId])
+
+  useEffect(() => {
+    setActiveImageIndex(0)
+  }, [selectedColor])
 
   useEffect(() => {
     if (product && product.customisable && product.customQuestions) {
@@ -167,7 +216,14 @@ export const ProductDetailPage = ({ productId }) => {
         answer: value.answer,
       };
     });
-    addToCart(product, { quantity, giftPackaging, customizations });
+    addToCart(product, {
+      quantity,
+      giftPackaging,
+      customizations,
+      selectedSize,
+      selectedColor,
+      unitPrice: displayPrice
+    });
     toast.success('Product added to cart!');
   }
 
@@ -196,7 +252,14 @@ export const ProductDetailPage = ({ productId }) => {
       };
     });
 
-    addToCart(product, { quantity, giftPackaging: false, customizations });
+    addToCart(product, {
+      quantity,
+      giftPackaging: false,
+      customizations,
+      selectedSize,
+      selectedColor,
+      unitPrice: displayPrice
+    });
     router.push('/checkout');
   }
 
@@ -252,20 +315,13 @@ export const ProductDetailPage = ({ productId }) => {
               <div className="bg-white rounded-2xl shadow-soft border border-primary-100 p-8 h-fit lg:sticky lg:top-24">
                 <div className="space-y-4">
                   <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden relative">
-                    {product.images && product.images.length > 0 ? (
+                    {displayImages.length > 0 ? (
                       <Image
-                        src={product.images[0]}
+                        src={displayImages[activeImageIndex] || displayImages[0]}
                         alt={product.name}
                         fill
                         className="object-cover"
                         priority
-                      />
-                    ) : product.image ? (
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -275,17 +331,24 @@ export const ProductDetailPage = ({ productId }) => {
                   </div>
                   
                   {/* Additional Images */}
-                  {product.images && product.images.length > 1 && (
+                  {displayImages.length > 1 && (
                     <div className="grid grid-cols-4 gap-2">
-                      {product.images.slice(1, 5).map((image, index) => (
-                        <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
+                      {displayImages.slice(0, 4).map((image, index) => (
+                        <button
+                          key={`${image}-${index}`}
+                          type="button"
+                          onClick={() => setActiveImageIndex(index)}
+                          className={`aspect-square bg-gray-100 rounded-lg overflow-hidden relative border-2 transition-colors ${
+                            activeImageIndex === index ? 'border-primary-600' : 'border-transparent'
+                          }`}
+                        >
                           <Image
                             src={image}
-                            alt={`${product.name} ${index + 2}`}
+                            alt={`${product.name} ${index + 1}`}
                             fill
                             className="object-cover"
                           />
-                        </div>
+                        </button>
                       ))}
                     </div>
                   )}
@@ -327,15 +390,15 @@ export const ProductDetailPage = ({ productId }) => {
                       </div>
                       <div className="flex items-center space-x-3">
                         <p className="text-3xl font-bold text-primary-600">
-                          ₹{product.price?.toLocaleString()}
+                          ₹{displayPrice?.toLocaleString()}
                         </p>
-                        {product.mrp && product.mrp > product.price && (
+                        {product.mrp && product.mrp > displayPrice && (
                           <>
                             <p className="text-xl text-gray-500 line-through">
                               ₹{product.mrp?.toLocaleString()}
                             </p>
                             <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                              {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
+                              {Math.round(((product.mrp - displayPrice) / product.mrp) * 100)}% OFF
                             </span>
                           </>
                         )}
@@ -378,11 +441,13 @@ export const ProductDetailPage = ({ productId }) => {
                 )}
 
                 {/* Size Selection */}
-                {product.sizeOptions && product.sizeOptions.length > 0 && (
+                {sizeOptions.length > 0 && (
                   <div className="mb-4">
                     <h3 className="text-sm font-semibold text-charcoal-900 mb-3">SELECT SIZE</h3>
                     <div className="flex flex-wrap gap-2">
-                      {product.sizeOptions.map((size) => (
+                      {sizeOptions.map((size) => {
+                        const optionPrice = sizePriceOptions.find(option => option?.label === size)?.price
+                        return (
                         <button
                           key={size}
                           onClick={() => setSelectedSize(size)}
@@ -392,7 +457,48 @@ export const ProductDetailPage = ({ productId }) => {
                               : 'border-gray-300 text-charcoal-700 hover:border-gray-400'
                           }`}
                         >
-                          {size}
+                          <span className="block">{size}</span>
+                          {optionPrice !== undefined && optionPrice !== null && (
+                            <span className="block text-xs text-charcoal-500 mt-1">₹{Number(optionPrice).toLocaleString()}</span>
+                          )}
+                        </button>
+                      )})}
+                    </div>
+                  </div>
+                )}
+
+                {colorOptions.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold text-charcoal-900 mb-3">SELECT COLOR</h3>
+                    <div className="flex flex-wrap gap-3">
+                      {colorOptions.map((color) => (
+                        <button
+                          key={color.name}
+                          onClick={() => setSelectedColor(color.name)}
+                          className="flex flex-col items-center gap-1.5 group"
+                        >
+                          {color.image ? (
+                            <div className={`w-[72px] h-[72px] rounded-xl overflow-hidden border-2 transition-all ${
+                              selectedColor === color.name
+                                ? 'border-primary-600 ring-2 ring-primary-200 shadow-md scale-105'
+                                : 'border-gray-200 hover:border-gray-400 shadow-sm'
+                            }`}>
+                              <img src={color.image} alt={color.name} className="w-full h-full object-cover" />
+                            </div>
+                          ) : (
+                            <div className={`w-[72px] h-[72px] rounded-xl border-2 flex items-center justify-center transition-all ${
+                              selectedColor === color.name
+                                ? 'border-primary-600 bg-primary-50 ring-2 ring-primary-200 shadow-md'
+                                : 'border-gray-200 bg-gray-50 hover:border-gray-400 shadow-sm'
+                            }`}>
+                              <span className={`text-sm font-semibold ${
+                                selectedColor === color.name ? 'text-primary-700' : 'text-charcoal-600'
+                              }`}>{color.name.slice(0, 4)}</span>
+                            </div>
+                          )}
+                          <span className={`text-xs font-medium max-w-[4.5rem] truncate ${
+                            selectedColor === color.name ? 'text-primary-700' : 'text-charcoal-600'
+                          }`}>{color.name}</span>
                         </button>
                       ))}
                     </div>
@@ -421,6 +527,18 @@ export const ProductDetailPage = ({ productId }) => {
                               {question.question}
                             {question.required !== false && <span className="text-primary-600 ml-1">*</span>}
                           </label>
+                          {question.image && (
+                            <div className="max-w-sm">
+                              <div className="aspect-video bg-white rounded-xl border border-primary-200 overflow-hidden shadow-sm">
+                                <img
+                                  src={question.image}
+                                  alt="Customization reference"
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              </div>
+                            </div>
+                          )}
                           {question.type === 'select' && question.options && question.options.length > 0 ? (
                             <select
                               value={customizationSelections[index]?.answer || ''}
@@ -475,6 +593,18 @@ export const ProductDetailPage = ({ productId }) => {
                       </p>
                     </div>
                     
+                    {isTwoWayDelivery && (
+                      <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-lg p-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Package className="w-5 h-5 text-amber-600" />
+                          <h3 className="text-sm font-bold text-charcoal-900">Two-way Delivery</h3>
+                        </div>
+                        <p className="text-sm text-charcoal-700">
+                          We arrange pickup from your address first, then the seller ships the preserved product back.
+                        </p>
+                      </div>
+                    )}
+
                     {/* COD Info */}
                     {product.codAvailable && (
                       <div className="bg-gradient-to-br from-secondary-50 to-white border border-secondary-200 rounded-lg p-4">

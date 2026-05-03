@@ -28,7 +28,8 @@ export async function POST(request) {
     }
 
     const body = await request.json()
-    const { orderId } = body
+    const { orderId, direction } = body
+    const normalizedDirection = direction === 'inbound' ? 'inbound' : 'outbound'
 
     if (!orderId) {
       return NextResponse.json(
@@ -42,7 +43,7 @@ export async function POST(request) {
     // Fetch order from database (with all courier/shipment fields)
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, seller_id, shipment_id, awb_code, courier_name, tracking_url, status')
+      .select('id, buyer_id, seller_id, shipment_id, awb_code, courier_name, tracking_url, inbound_shipment_id, inbound_awb_code, inbound_courier_name, inbound_tracking_url, status')
       .eq('id', orderId)
       .single()
 
@@ -65,32 +66,37 @@ export async function POST(request) {
 
     // Verify user is the seller or admin
     const isSeller = order.seller_id === user.id
+    const isBuyer = order.buyer_id === user.id
     const isAdmin = user.user_type === 'Admin'
 
-    if (!isSeller && !isAdmin) {
+    if (!isSeller && !isBuyer && !isAdmin) {
       return NextResponse.json(
-        { error: 'Forbidden - Only seller or admin can generate labels' },
+        { error: 'Forbidden - You do not have access to this label' },
         { status: 403 }
       )
     }
 
     // Check if order has shipment_id
-    if (!order.shipment_id) {
+    const shipmentId = normalizedDirection === 'inbound' ? order.inbound_shipment_id : order.shipment_id
+
+    if (!shipmentId) {
       return NextResponse.json(
         { 
-          error: 'Shipment is yet to be created.',
+          error: normalizedDirection === 'inbound'
+            ? 'Pickup is yet to be created.'
+            : 'Shipment is yet to be created.',
           courierAssigned: false
         },
         { status: 400 }
       )
     }
 
-    console.log('Shipment ID:', order.shipment_id)
+    console.log('Shipment ID:', shipmentId)
 
     // Fetch shipment details from Shiprocket to get courier info and label URL
     let shipmentDetails
     try {
-      shipmentDetails = await getShipmentDetails(order.shipment_id)
+      shipmentDetails = await getShipmentDetails(shipmentId)
       console.log('📋 Shipment details response:', {
         shipmentId: shipmentDetails.shipmentId,
         awbCode: shipmentDetails.awbCode,
@@ -124,7 +130,7 @@ export async function POST(request) {
           error: 'Shipment is yet to be created.',
           courierAssigned: false,
           shiprocketDashboardUrl: 'https://app.shiprocket.in/seller',
-          shipmentId: order.shipment_id,
+          shipmentId: shipmentId,
           debugInfo: {
             courierName: shipmentDetails.courierName,
             awbCode: shipmentDetails.awbCode,
@@ -145,13 +151,27 @@ export async function POST(request) {
         courier_name: shipmentDetails.courierName
       })
       
+      const trackingUrl = shipmentDetails.awbCode
+        ? `https://shiprocket.co/tracking/${shipmentDetails.awbCode}`
+        : null
+
+      const updatePayload = normalizedDirection === 'inbound'
+        ? {
+            inbound_awb_code: shipmentDetails.awbCode,
+            inbound_courier_name: shipmentDetails.courierName,
+            inbound_tracking_url: trackingUrl,
+            updated_at: new Date().toISOString()
+          }
+        : {
+            awb_code: shipmentDetails.awbCode,
+            courier_name: shipmentDetails.courierName,
+            tracking_url: trackingUrl,
+            updated_at: new Date().toISOString()
+          }
+
       const { data: updateData, error: updateError } = await supabase
         .from('orders')
-        .update({
-          awb_code: shipmentDetails.awbCode,
-          courier_name: shipmentDetails.courierName,
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('id', orderId)
         .select()
       
@@ -163,7 +183,7 @@ export async function POST(request) {
         // Verify the update by fetching the order again
         const { data: verifyOrder } = await supabase
           .from('orders')
-          .select('courier_name, awb_code')
+          .select('courier_name, awb_code, inbound_courier_name, inbound_awb_code')
           .eq('id', orderId)
           .single()
         
@@ -185,7 +205,7 @@ export async function POST(request) {
     if (!labelUrl) {
       console.log('⚠️ Label URL not in shipment details, trying to fetch from Shiprocket...')
       try {
-        const labelData = await fetchShippingLabel(order.shipment_id)
+        const labelData = await fetchShippingLabel(shipmentId)
         labelUrl = labelData.labelUrl
         console.log('✅ Label fetched successfully:', labelUrl)
       } catch (error) {
@@ -197,7 +217,7 @@ export async function POST(request) {
             awbCode: shipmentDetails.awbCode,
             courierName: shipmentDetails.courierName,
             shiprocketDashboardUrl: 'https://app.shiprocket.in/seller',
-            shipmentId: order.shipment_id
+            shipmentId: shipmentId
           },
           { status: 400 }
         )
@@ -211,7 +231,7 @@ export async function POST(request) {
         {
           error: 'Shipment is yet to be created.',
           courierAssigned: false,
-          shipmentId: order.shipment_id
+          shipmentId: shipmentId
         },
         { status: 400 }
       )

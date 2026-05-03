@@ -38,7 +38,7 @@ export default function SellerDashboardPage() {
   const [tickets, setTickets] = useState([])
   
   // Order filters and expansion state
-  const [orderFilter, setOrderFilter] = useState('all') // all, pending, confirmed, dispatched, delivered, cancelled
+  const [orderFilter, setOrderFilter] = useState('all') // all, pending, confirmed, ready, dispatched, delivered, cancelled
   const [expandedOrders, setExpandedOrders] = useState(new Set()) // Track which orders are expanded
   const [ordersPage, setOrdersPage] = useState(1)
   const [ordersPageSize] = useState(20)
@@ -1011,6 +1011,9 @@ export default function SellerDashboardPage() {
                         <option value="all">All Orders ({ordersTotalCount})</option>
                         <option value="pending">Pending</option>
                         <option value="confirmed">Confirmed</option>
+                        <option value="pickup_dispatched">Pickup Dispatched</option>
+                        <option value="received_by_seller">Received by Seller</option>
+                        <option value="ready">Ready</option>
                         <option value="dispatched">Dispatched</option>
                         <option value="delivered">Delivered</option>
                         <option value="cancelled">Cancelled</option>
@@ -1084,12 +1087,23 @@ export default function SellerDashboardPage() {
                                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
                                         order.status === 'delivered' ? 'bg-green-100 text-green-700' :
                                         order.status === 'dispatched' ? 'bg-blue-100 text-blue-700' :
+                                        order.status === 'ready' ? 'bg-amber-100 text-amber-700' :
+                                        order.status === 'received_by_seller' ? 'bg-teal-100 text-teal-700' :
+                                        order.status === 'pickup_dispatched' ? 'bg-indigo-100 text-indigo-700' :
                                         order.status === 'confirmed' ? 'bg-indigo-100 text-indigo-700' :
                                         order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                                         'bg-gray-100 text-gray-700'
                                       }`}>
-                                        {order.status.toUpperCase()}
+                                        {({
+                                          'pickup_dispatched': 'PICKUP DISPATCHED',
+                                          'received_by_seller': 'RECEIVED'
+                                        })[order.status] || order.status.toUpperCase()}
                                       </span>
+                                      {order.two_way_delivery && (
+                                        <span className="px-2 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                          Two-way
+                                        </span>
+                                      )}
                                       {isExpanded ? (
                                         <ChevronUp className="w-4 h-4 text-gray-400" />
                                       ) : (
@@ -1156,7 +1170,173 @@ export default function SellerDashboardPage() {
                                       </button>
                                     )}
 
-                                    {order.status === 'confirmed' && (
+                                    {/* Two-way: Confirmed → Pickup Dispatched */}
+                                    {order.status === 'confirmed' && order.two_way_delivery && (
+                                      <>
+                                        {order.inbound_shipment_id && order.inbound_awb_code ? (
+                                          <button
+                                            onClick={async (e) => {
+                                              e.stopPropagation()
+                                              try {
+                                                const response = await apiService.request('/orders/shipping-label', {
+                                                  method: 'POST',
+                                                  body: JSON.stringify({ orderId: order.id, direction: 'inbound' })
+                                                })
+                                                if (response.labelUrl) {
+                                                  window.open(response.labelUrl, '_blank')
+                                                  toast.success('Pickup label opened!')
+                                                } else {
+                                                  toast.error('Pickup label is not ready yet.')
+                                                }
+                                              } catch (error) {
+                                                toast.error(error.message || 'Failed to get pickup label')
+                                              }
+                                            }}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1"
+                                          >
+                                            <Printer className="w-3 h-3" />
+                                            Pickup Label
+                                          </button>
+                                        ) : order.inbound_shipment_id ? (
+                                          <div className="space-y-2">
+                                            <p className="text-xs font-semibold text-blue-900">Request approved.</p>
+                                            <p className="text-xs text-blue-800">Pickup label will be created in 5-6 hours.</p>
+                                          </div>
+                                        ) : (
+                                          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 text-center">
+                                            Pickup is yet to be created.
+                                          </p>
+                                        )}
+                                        <button
+                                          onClick={async (e) => {
+                                            e.stopPropagation()
+                                            if (updatingOrders.has(order.id)) {
+                                              toast.error('Already updating...')
+                                              return
+                                            }
+                                            setUpdatingOrders(prev => new Set(prev).add(order.id))
+                                            try {
+                                              await apiService.request(`/orders/${order.id}`, {
+                                                method: 'PUT',
+                                                body: JSON.stringify({ status: 'pickup_dispatched' })
+                                              })
+                                              toast.success('Marked as pickup dispatched')
+                                              fetchDashboardData()
+                                            } catch (error) {
+                                              toast.error(error.message || 'Failed to update')
+                                            } finally {
+                                              setUpdatingOrders(prev => {
+                                                const newSet = new Set(prev)
+                                                newSet.delete(order.id)
+                                                return newSet
+                                              })
+                                            }
+                                          }}
+                                          disabled={updatingOrders.has(order.id)}
+                                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1"
+                                        >
+                                          <Truck className="w-3 h-3" />
+                                          {updatingOrders.has(order.id) ? 'Updating...' : 'Mark Pickup Dispatched'}
+                                        </button>
+                                        <p className="text-[11px] text-gray-600 text-center">
+                                          Click when the courier has picked up the item from the buyer.
+                                        </p>
+                                      </>
+                                    )}
+
+                                    {/* Two-way: Pickup Dispatched → Received by Seller */}
+                                    {order.status === 'pickup_dispatched' && order.two_way_delivery && (
+                                      <>
+                                        {order.inbound_tracking_url && (
+                                          <a
+                                            href={order.inbound_tracking_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            <ExternalLink className="w-3 h-3" />
+                                            Track Pickup
+                                          </a>
+                                        )}
+                                        <button
+                                          onClick={async (e) => {
+                                            e.stopPropagation()
+                                            if (updatingOrders.has(order.id)) {
+                                              toast.error('Already updating...')
+                                              return
+                                            }
+                                            setUpdatingOrders(prev => new Set(prev).add(order.id))
+                                            try {
+                                              await apiService.request(`/orders/${order.id}`, {
+                                                method: 'PUT',
+                                                body: JSON.stringify({ status: 'received_by_seller' })
+                                              })
+                                              toast.success('Marked as received')
+                                              fetchDashboardData()
+                                            } catch (error) {
+                                              toast.error(error.message || 'Failed to update')
+                                            } finally {
+                                              setUpdatingOrders(prev => {
+                                                const newSet = new Set(prev)
+                                                newSet.delete(order.id)
+                                                return newSet
+                                              })
+                                            }
+                                          }}
+                                          disabled={updatingOrders.has(order.id)}
+                                          className="bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1"
+                                        >
+                                          <CheckCircle className="w-3 h-3" />
+                                          {updatingOrders.has(order.id) ? 'Updating...' : 'Mark Received'}
+                                        </button>
+                                        <p className="text-[11px] text-gray-600 text-center">
+                                          Click when you have received the item from the buyer.
+                                        </p>
+                                      </>
+                                    )}
+
+                                    {/* Two-way: Received by Seller → Ready */}
+                                    {order.status === 'received_by_seller' && order.two_way_delivery && (
+                                      <>
+                                        <button
+                                          onClick={async (e) => {
+                                            e.stopPropagation()
+                                            if (updatingOrders.has(order.id)) {
+                                              toast.error('Already updating...')
+                                              return
+                                            }
+                                            setUpdatingOrders(prev => new Set(prev).add(order.id))
+                                            try {
+                                              await apiService.request(`/orders/${order.id}`, {
+                                                method: 'PUT',
+                                                body: JSON.stringify({ status: 'ready' })
+                                              })
+                                              toast.success('Marked ready — return shipment being created')
+                                              fetchDashboardData()
+                                            } catch (error) {
+                                              toast.error(error.message || 'Failed to mark ready')
+                                            } finally {
+                                              setUpdatingOrders(prev => {
+                                                const newSet = new Set(prev)
+                                                newSet.delete(order.id)
+                                                return newSet
+                                              })
+                                            }
+                                          }}
+                                          disabled={updatingOrders.has(order.id)}
+                                          className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1"
+                                        >
+                                          <CheckCircle className="w-3 h-3" />
+                                          {updatingOrders.has(order.id) ? 'Updating...' : 'Mark Ready'}
+                                        </button>
+                                        <p className="text-[11px] text-gray-600 text-center">
+                                          Return shipment is created once you mark the order ready.
+                                        </p>
+                                      </>
+                                    )}
+
+                                    {order.status === 'confirmed' && !order.two_way_delivery && (
                                       <>
                                         {order.shipment_id && order.awb_code ? (
                                           <button
@@ -1184,15 +1364,8 @@ export default function SellerDashboardPage() {
                                           </button>
                                         ) : order.shipment_id ? (
                                           <div className="space-y-2">
-                                            <p className="text-xs font-semibold text-blue-900">Order pushed to Shiprocket.</p>
-                                            <p className="text-xs text-blue-800">Assign courier in Shiprocket dashboard to generate AWB and label.</p>
-                                            <button
-                                              onClick={() => window.open('https://app.shiprocket.in/seller', '_blank')}
-                                              className="w-full inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-blue-300 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium"
-                                            >
-                                              <ExternalLink className="w-4 h-4" />
-                                              Open Shiprocket
-                                            </button>
+                                            <p className="text-xs font-semibold text-blue-900">Request approved.</p>
+                                            <p className="text-xs text-blue-800">Delivery label will be created in 5-6 hours.</p>
                                           </div>
                                         ) : (
                                           <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 text-center">
@@ -1201,6 +1374,48 @@ export default function SellerDashboardPage() {
                                         )}
                                         <p className="text-[11px] text-gray-600 text-center">
                                           Status moves to dispatched automatically after AWB assignment.
+                                        </p>
+                                      </>
+                                    )}
+
+                                    {order.status === 'ready' && (
+                                      <>
+                                        {order.shipment_id && order.awb_code ? (
+                                          <button
+                                            onClick={async (e) => {
+                                              e.stopPropagation()
+                                              try {
+                                                const response = await apiService.request('/orders/shipping-label', {
+                                                  method: 'POST',
+                                                  body: JSON.stringify({ orderId: order.id })
+                                                })
+                                                if (response.labelUrl) {
+                                                  window.open(response.labelUrl, '_blank')
+                                                  toast.success('Label opened!')
+                                                } else {
+                                                  toast.error('Shipment is yet to be created.')
+                                                }
+                                              } catch (error) {
+                                                toast.error(error.message || 'Failed to get label')
+                                              }
+                                            }}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1"
+                                          >
+                                            <Printer className="w-3 h-3" />
+                                            Print Label
+                                          </button>
+                                        ) : order.shipment_id ? (
+                                          <div className="space-y-2">
+                                            <p className="text-xs font-semibold text-blue-900">Request approved.</p>
+                                            <p className="text-xs text-blue-800">Delivery label will be created in 5-6 hours.</p>
+                                          </div>
+                                        ) : (
+                                          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 text-center">
+                                            Return shipment is being created.
+                                          </p>
+                                        )}
+                                        <p className="text-[11px] text-gray-600 text-center">
+                                          Status moves to dispatched after AWB assignment.
                                         </p>
                                       </>
                                     )}
@@ -1274,6 +1489,14 @@ export default function SellerDashboardPage() {
                                                 <span className="font-medium text-gray-900">₹{(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
                                               </div>
                                               
+                                              {(item.selected_size || item.selected_color) && (
+                                                <p className="text-xs text-gray-500 mt-0.5">
+                                                  {item.selected_size && <span>Size: {item.selected_size}</span>}
+                                                  {item.selected_size && item.selected_color && <span> · </span>}
+                                                  {item.selected_color && <span>Color: {item.selected_color}</span>}
+                                                </p>
+                                              )}
+                                              
                                               {item.gift_packaging && (
                                                 <div className="flex items-center mt-1">
                                                   <Package className="w-3 h-3 text-purple-600 mr-1" />
@@ -1325,6 +1548,38 @@ export default function SellerDashboardPage() {
                                           >
                                             <ExternalLink className="w-3 h-3 mr-1" />
                                             Track Shipment
+                                          </a>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {(order.inbound_awb_code || order.inbound_courier_name || order.inbound_tracking_url) && (
+                                    <div className="bg-white p-3 rounded-lg border border-amber-200">
+                                      <h5 className="font-semibold text-sm text-amber-900 mb-2 flex items-center">
+                                        <Truck className="w-4 h-4 mr-2" />
+                                        Pickup Details
+                                      </h5>
+                                      <div className="space-y-1 text-sm">
+                                        {order.inbound_courier_name && (
+                                          <p className="text-gray-700">
+                                            <span className="font-medium">Courier:</span> {order.inbound_courier_name}
+                                          </p>
+                                        )}
+                                        {order.inbound_awb_code && (
+                                          <p className="text-gray-700">
+                                            <span className="font-medium">AWB Code:</span> {order.inbound_awb_code}
+                                          </p>
+                                        )}
+                                        {order.inbound_tracking_url && (
+                                          <a
+                                            href={order.inbound_tracking_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center text-amber-600 hover:text-amber-800 font-medium"
+                                          >
+                                            <ExternalLink className="w-3 h-3 mr-1" />
+                                            Track Pickup
                                           </a>
                                         )}
                                       </div>
@@ -1411,7 +1666,90 @@ export default function SellerDashboardPage() {
                                       </button>
                                     )}
                                     
-                                    {order.status === 'confirmed' && (
+                                    {order.status === 'confirmed' && order.two_way_delivery && (
+                                      <div className="space-y-2">
+                                        {order.inbound_shipment_id && order.inbound_awb_code ? (
+                                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                                            <p className="text-xs font-semibold text-blue-900">📦 Pickup Label</p>
+                                            <div className="flex gap-2">
+                                              <button
+                                                onClick={async () => {
+                                                  try {
+                                                    const response = await apiService.request('/orders/shipping-label', {
+                                                      method: 'POST',
+                                                      body: JSON.stringify({ orderId: order.id, direction: 'inbound' })
+                                                    })
+                                                    if (response.labelUrl) {
+                                                      window.open(response.labelUrl, '_blank')
+                                                      toast.success('Pickup label opened!')
+                                                      fetchDashboardData()
+                                                    } else {
+                                                      toast.error('Pickup label is not ready yet.')
+                                                    }
+                                                  } catch (error) {
+                                                    toast.error(error.message || 'Failed to get pickup label')
+                                                  }
+                                                }}
+                                                className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                                              >
+                                                <Truck className="w-4 h-4" />
+                                                Print Pickup Label
+                                              </button>
+                                              <button
+                                                onClick={() => window.open('https://app.shiprocket.in/seller', '_blank')}
+                                                className="px-3 py-2 bg-white hover:bg-gray-50 border border-blue-300 text-blue-700 rounded-lg text-sm font-medium"
+                                              >
+                                                <ExternalLink className="w-4 h-4" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        ) : order.inbound_shipment_id ? (
+                                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                                            <p className="text-xs font-semibold text-blue-900">Request approved.</p>
+                                            <p className="text-xs text-blue-800">Delivery label will be created in 5-6 hours.</p>
+                                          </div>
+                                        ) : (
+                                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                            <p className="text-xs font-semibold text-amber-900">Pickup is yet to be created.</p>
+                                          </div>
+                                        )}
+                                        <button
+                                          onClick={async () => {
+                                            if (updatingOrders.has(order.id)) {
+                                              toast.error('Already updating...')
+                                              return
+                                            }
+                                            setUpdatingOrders(prev => new Set(prev).add(order.id))
+                                            try {
+                                              await apiService.request(`/orders/${order.id}`, {
+                                                method: 'PUT',
+                                                body: JSON.stringify({ status: 'ready' })
+                                              })
+                                              toast.success('Marked ready for return shipment')
+                                              fetchDashboardData()
+                                            } catch (error) {
+                                              toast.error(error.message || 'Failed to mark ready')
+                                            } finally {
+                                              setUpdatingOrders(prev => {
+                                                const newSet = new Set(prev)
+                                                newSet.delete(order.id)
+                                                return newSet
+                                              })
+                                            }
+                                          }}
+                                          disabled={updatingOrders.has(order.id)}
+                                          className="w-full bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                        >
+                                          <CheckCircle className="w-5 h-5" />
+                                          <span>{updatingOrders.has(order.id) ? 'Updating...' : 'Mark Ready'}</span>
+                                        </button>
+                                        <p className="text-xs text-gray-600 px-1">
+                                          Return shipment is created once you mark the order ready.
+                                        </p>
+                                      </div>
+                                    )}
+
+                                    {order.status === 'confirmed' && !order.two_way_delivery && (
                                       <div className="space-y-2">
                                         {order.shipment_id && order.awb_code ? (
                                           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
@@ -1450,19 +1788,65 @@ export default function SellerDashboardPage() {
                                           </div>
                                         ) : order.shipment_id ? (
                                           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
-                                            <p className="text-xs font-semibold text-blue-900">Order pushed to Shiprocket.</p>
-                                            <p className="text-xs text-blue-800">Assign courier in Shiprocket to generate AWB and label.</p>
-                                            <button
-                                              onClick={() => window.open('https://app.shiprocket.in/seller', '_blank')}
-                                              className="w-full inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-blue-300 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium"
-                                            >
-                                              <ExternalLink className="w-4 h-4" />
-                                              Open Shiprocket
-                                            </button>
+                                            <p className="text-xs font-semibold text-blue-900">Request approved.</p>
+                                            <p className="text-xs text-blue-800">Delivery label will be created in 5-6 hours.</p>
                                           </div>
                                         ) : (
                                           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                                             <p className="text-xs font-semibold text-amber-900">Shipment is yet to be created.</p>
+                                          </div>
+                                        )}
+                                        <p className="text-xs text-gray-600 px-1">
+                                          Status moves to dispatched automatically after AWB assignment.
+                                        </p>
+                                      </div>
+                                    )}
+
+                                    {order.status === 'ready' && (
+                                      <div className="space-y-2">
+                                        {order.shipment_id && order.awb_code ? (
+                                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                                            <p className="text-xs font-semibold text-blue-900">📦 Return Label</p>
+                                            <div className="flex gap-2">
+                                              <button
+                                                onClick={async () => {
+                                                  try {
+                                                    const response = await apiService.request('/orders/shipping-label', {
+                                                      method: 'POST',
+                                                      body: JSON.stringify({ orderId: order.id })
+                                                    })
+                                                    if (response.labelUrl) {
+                                                      window.open(response.labelUrl, '_blank')
+                                                      toast.success('Label opened!')
+                                                      fetchDashboardData()
+                                                    } else {
+                                                      toast.error('Shipment is yet to be created.')
+                                                    }
+                                                  } catch (error) {
+                                                    toast.error(error.message || 'Failed to get label')
+                                                  }
+                                                }}
+                                                className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                                              >
+                                                <Truck className="w-4 h-4" />
+                                                Print Label
+                                              </button>
+                                              <button
+                                                onClick={() => window.open('https://app.shiprocket.in/seller', '_blank')}
+                                                className="px-3 py-2 bg-white hover:bg-gray-50 border border-blue-300 text-blue-700 rounded-lg text-sm font-medium"
+                                              >
+                                                <ExternalLink className="w-4 h-4" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        ) : order.shipment_id ? (
+                                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                                            <p className="text-xs font-semibold text-blue-900">Request approved.</p>
+                                            <p className="text-xs text-blue-800">Delivery label will be created in 5-6 hours.</p>
+                                          </div>
+                                        ) : (
+                                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                            <p className="text-xs font-semibold text-amber-900">Return shipment is being created.</p>
                                           </div>
                                         )}
                                         <p className="text-xs text-gray-600 px-1">

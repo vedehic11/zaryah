@@ -43,6 +43,9 @@ export async function GET(request) {
         quantity,
         gift_packaging,
         customizations,
+        selected_size,
+        selected_color,
+        unit_price,
         created_at,
         products (
           id,
@@ -53,6 +56,7 @@ export async function GET(request) {
           stock,
           seller_id,
           instant_delivery,
+          two_way_delivery,
           sellers:seller_id (
             business_name,
             full_name
@@ -84,7 +88,7 @@ export async function GET(request) {
     // Convert to carts array
     const cartsArray = Object.values(itemsBySeller).map((sellerCart, index) => {
       const total = sellerCart.items.reduce((sum, item) => {
-        const price = item.products?.price || 0
+        const price = item.unit_price || item.products?.price || 0
         return sum + (price * item.quantity)
       }, 0)
 
@@ -129,7 +133,7 @@ export async function POST(request) {
     }
 
     const body = await request.json()
-    const { productId, quantity = 1, giftPackaging = false, customizations = [] } = body
+    const { productId, quantity = 1, giftPackaging = false, customizations = [], selectedSize = null, selectedColor = null, unitPrice = null } = body
 
     if (!productId) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
@@ -171,13 +175,26 @@ export async function POST(request) {
       cart = newCart
     }
 
-    // Check if item already exists in cart
-    const { data: existingItem } = await supabase
+    // Check if item already exists in cart (same product + size + color)
+    let existingQuery = supabase
       .from('cart_items')
       .select('id, quantity')
       .eq('cart_id', cart.id)
       .eq('product_id', productId)
-      .single()
+
+    if (selectedSize) {
+      existingQuery = existingQuery.eq('selected_size', selectedSize)
+    } else {
+      existingQuery = existingQuery.is('selected_size', null)
+    }
+
+    if (selectedColor) {
+      existingQuery = existingQuery.eq('selected_color', selectedColor)
+    } else {
+      existingQuery = existingQuery.is('selected_color', null)
+    }
+
+    const { data: existingItem } = await existingQuery.maybeSingle()
 
     if (existingItem) {
       // Update quantity
@@ -192,7 +209,8 @@ export async function POST(request) {
         .update({ 
           quantity: newQuantity,
           gift_packaging: giftPackaging,
-          customizations
+          customizations,
+          unit_price: unitPrice
         })
         .eq('id', existingItem.id)
         .select()
@@ -216,7 +234,10 @@ export async function POST(request) {
         product_id: productId,
         quantity,
         gift_packaging: giftPackaging,
-        customizations
+        customizations,
+        selected_size: selectedSize,
+        selected_color: selectedColor,
+        unit_price: unitPrice
       })
       .select()
       .single()

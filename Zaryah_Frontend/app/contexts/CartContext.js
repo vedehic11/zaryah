@@ -153,14 +153,18 @@ export const CartProvider = ({ children }) => {
           id: item.products?.id,
           name: item.products?.name,
           description: item.products?.description,
-          price: item.products?.price,
+          price: item.unit_price || item.products?.price,
           images: item.products?.images,
           stock: item.products?.stock,
           instant_delivery: item.products?.instant_delivery,
+          two_way_delivery: item.products?.two_way_delivery,
           quantity: item.quantity,
           giftPackaging: item.gift_packaging || false,
           customizations: item.customizations || [],
-          cartItemId: item.id
+          cartItemId: item.id,
+          selectedSize: item.selected_size || null,
+          selectedColor: item.selected_color || null,
+          unitPrice: item.unit_price || item.products?.price || 0
         })),
         total: cart.total,
         itemCount: cart.itemCount
@@ -268,7 +272,7 @@ export const CartProvider = ({ children }) => {
 
   // Add item to cart
   const addToCart = async (product, options = {}) => {
-    const { quantity = 1, giftPackaging = false, customizations = [] } = options;
+    const { quantity = 1, giftPackaging = false, customizations = [], selectedSize = null, selectedColor = null, unitPrice = null } = options;
     
     console.log('addToCart: Called with product:', product, 'options:', options);
     console.log('addToCart: User state:', user);
@@ -285,7 +289,10 @@ export const CartProvider = ({ children }) => {
           productId,
           quantity,
           giftPackaging,
-          customizations
+          customizations,
+          selectedSize,
+          selectedColor,
+          unitPrice
         });
         
         console.log('addToCart: Item added successfully, fetching updated cart...');
@@ -344,6 +351,8 @@ export const CartProvider = ({ children }) => {
         
         const existingItemIndex = guestCart.items.findIndex(
           item => (item.id || item._id) === productId && 
+          item.selectedSize === selectedSize &&
+          item.selectedColor === selectedColor &&
           JSON.stringify(item.customizations) === JSON.stringify(customizations)
         );
         
@@ -357,6 +366,10 @@ export const CartProvider = ({ children }) => {
             quantity,
             giftPackaging,
             customizations,
+            selectedSize,
+            selectedColor,
+            unitPrice: unitPrice || product.price,
+            price: unitPrice || product.price,
             cartItemId: Date.now() + Math.random()
           }];
         }

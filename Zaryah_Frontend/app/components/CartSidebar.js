@@ -87,13 +87,20 @@ export const CartSidebar = () => {
                       {/* Product Info */}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 truncate">{item.name}</h3>
+                        {(item.selectedSize || item.selectedColor) && (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {item.selectedSize && <span>Size: {item.selectedSize}</span>}
+                            {item.selectedSize && item.selectedColor && <span> · </span>}
+                            {item.selectedColor && <span>Color: {item.selectedColor}</span>}
+                          </p>
+                        )}
                         <div className="flex items-center space-x-2">
-                          <p className="text-sm font-bold text-gray-900">₹{item.price?.toLocaleString()}</p>
-                          {item.mrp && item.mrp > item.price && (
+                          <p className="text-sm font-bold text-gray-900">₹{(item.unitPrice || item.price)?.toLocaleString()}</p>
+                          {item.mrp && item.mrp > (item.unitPrice || item.price) && (
                             <>
                               <p className="text-xs text-gray-500 line-through">₹{item.mrp?.toLocaleString()}</p>
                               <span className="text-xs font-semibold text-orange-500">
-                                {Math.round(((item.mrp - item.price) / item.mrp) * 100)}% OFF
+                                {Math.round(((item.mrp - (item.unitPrice || item.price)) / item.mrp) * 100)}% OFF
                               </span>
                             </>
                           )}
