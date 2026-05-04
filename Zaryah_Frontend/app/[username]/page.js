@@ -26,6 +26,7 @@ export default function SellerProfilePage({ params }) {
   const [isOverlaySearchOpen, setIsOverlaySearchOpen] = useState(false)
   const [isSectionDrawerOpen, setIsSectionDrawerOpen] = useState(false)
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false)
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
   const overlaySearchInputRef = useRef(null)
   const { totalItems, setIsCartOpen } = useCart()
   const { wishlistCount } = useWishlist()
@@ -92,6 +93,10 @@ export default function SellerProfilePage({ params }) {
 
     window.addEventListener('zaryah:seller-search', handleSellerSearch)
     return () => window.removeEventListener('zaryah:seller-search', handleSellerSearch)
+  }, [username])
+
+  useEffect(() => {
+    setIsDescriptionExpanded(false)
   }, [username])
 
   const products = seller?.products || []
@@ -194,6 +199,8 @@ export default function SellerProfilePage({ params }) {
 
   const sellerUser = seller.users || {}
   const stats = seller.stats || {}
+  const sellerDescription = String(seller.business_description || '').trim()
+  const shouldShowDescriptionToggle = sellerDescription.length > 130
 
   return (
     <Layout>
@@ -438,10 +445,26 @@ export default function SellerProfilePage({ params }) {
                         )}
                       </div>
                       <p className="text-xs md:text-sm text-white/85 font-medium">@{seller.username}</p>
-                      {seller.business_description && (
-                        <p className="text-xs md:text-sm text-white/90 mt-1.5 max-w-3xl line-clamp-1 md:line-clamp-2">
-                          {seller.business_description}
-                        </p>
+                      {sellerDescription && (
+                        <div className="mt-1.5 max-w-3xl">
+                          <p
+                            className={`text-xs md:text-sm text-white/90 ${
+                              isDescriptionExpanded ? '' : 'line-clamp-1 md:line-clamp-2'
+                            }`}
+                          >
+                            {sellerDescription}
+                          </p>
+                          {shouldShowDescriptionToggle && (
+                            <button
+                              type="button"
+                              onClick={() => setIsDescriptionExpanded(prev => !prev)}
+                              className="mt-1 inline-flex text-[11px] md:text-xs font-semibold text-white hover:text-white/80 transition-colors"
+                              aria-expanded={isDescriptionExpanded}
+                            >
+                              {isDescriptionExpanded ? 'Read less' : 'Read more'}
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
