@@ -87,6 +87,7 @@ export const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
   const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { login, isLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -130,23 +131,28 @@ export const LoginPage = () => {
     
     if (!validateForm()) return
 
-    // Login with Supabase Auth
-    const success = await login(formData.email, formData.password, formData.userType)
-    
-    if (success) {
-      if (safeRedirectTarget) {
-        router.push(safeRedirectTarget)
-        return
-      }
+    setIsSubmitting(true)
+    try {
+      // Login with Supabase Auth
+      const success = await login(formData.email, formData.password, formData.userType)
+      
+      if (success) {
+        if (safeRedirectTarget) {
+          router.push(safeRedirectTarget)
+          return
+        }
 
-      // Redirect based on user type
-      if (formData.userType === 'Admin') {
-        router.push('/admin')
-      } else if (formData.userType === 'Seller') {
-        router.push('/seller')
-      } else {
-        router.push('/')
+        // Redirect based on user type
+        if (formData.userType === 'Admin') {
+          router.push('/admin')
+        } else if (formData.userType === 'Seller') {
+          router.push('/seller')
+        } else {
+          router.push('/')
+        }
       }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -310,10 +316,10 @@ export const LoginPage = () => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             type="submit"
-            disabled={isLoading}
+            disabled={isSubmitting}
             className="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 px-4 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+            {isSubmitting ? 'Signing in...' : 'Sign In'}
           </motion.button>
 
           {/* Links */}

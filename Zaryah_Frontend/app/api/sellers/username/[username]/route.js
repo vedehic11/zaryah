@@ -75,6 +75,7 @@ export async function GET(request, { params }) {
 				stock: product.stock,
 				customisable: product.customisable,
 				custom_questions: product.custom_questions,
+				customQuestions: product.custom_questions,
 				features: product.features || [],
 				delivery_time_min: product.delivery_time_min,
 				delivery_time_max: product.delivery_time_max,

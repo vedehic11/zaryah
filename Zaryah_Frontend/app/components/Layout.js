@@ -621,62 +621,28 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
       <CartSidebar />
 
       {/* Footer */}
-      <footer className="bg-neutral-50 border-t border-primary-100 mt-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-            {/* Brand */}
-            <div className="col-span-2 md:col-span-2 lg:col-span-2">
-              <div className="flex items-center mb-6">
-                <Image
-                  src={LOGO_SRC}
-                  alt="Zaryah"
-                  width={280}
-                  height={84}
-                  className="h-14 w-auto"
-                />
-              </div>
-              <p className="text-neutral-600 mb-6 lg:mb-8 max-w-md text-base lg:text-lg leading-relaxed">
-                Your path to meaningful connections through thoughtfully curated gifts. Every purchase tells a story 
-                and supports passionate artisans on their creative journey.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <div className="bg-secondary-100 text-secondary-700 px-3 lg:px-4 py-2 rounded-full text-sm lg:text-lg font-medium border border-secondary-200">
-                  🌿 Mindful Choices
-                </div>
-                <div className="bg-primary-100 text-primary-700 px-3 lg:px-4 py-2 rounded-full text-sm lg:text-lg font-medium border border-primary-200">
-                  ✨ Artisan Stories
-                </div>
-              </div>
+      <footer className="bg-neutral-50 border-t border-primary-100 mt-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-6">
+          <div className="max-w-2xl">
+            <div className="flex items-center mb-2">
+              <Image
+                src={LOGO_SRC}
+                alt="Zaryah"
+                width={280}
+                height={84}
+                className="h-12 w-auto"
+              />
             </div>
-
-            {/* Quick Links */}
-            <div>
-              <h3 className="font-semibold text-neutral-800 mb-4 lg:mb-6 text-lg lg:text-2xl">Explore</h3>
-              <ul className="space-y-3">
-                <li><Link href="/shop" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Curated Collections</Link></li>
-                <li><Link href="/gift-suggester" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Gift Guidance</Link></li>
-                <li><Link href="/hamper-builder" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Create Bundles</Link></li>
-                <li><Link href="/register" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Join as Artisan</Link></li>
-              </ul>
-            </div>
-
-            {/* Support */}
-            <div>
-              <h3 className="font-semibold text-neutral-800 mb-4 lg:mb-6 text-lg lg:text-2xl">Support</h3>
-              <ul className="space-y-3">
-                <li><Link href="/support" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Help Center</Link></li>
-                <li><Link href="/support" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Delivery Guide</Link></li>
-                <li><Link href="/support" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Care & Returns</Link></li>
-                <li><Link href="/support" className="text-neutral-600 hover:text-neutral-800 transition-colors text-sm lg:text-lg">Connect With Us</Link></li>
-              </ul>
-            </div>
+            <p className="text-neutral-600 text-sm lg:text-base leading-relaxed">
+              Thoughtful gifting that feels personal, supports independent artisans, and turns every purchase into a meaningful connection.
+            </p>
           </div>
 
-          <div className="border-t border-primary-100 mt-8 lg:mt-12 pt-6 lg:pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm lg:text-lg text-neutral-600 mb-4 md:mb-0 text-center md:text-left">
-              © 2024 Zaryah. Guiding paths to meaningful connections.
+          <div className="border-t border-primary-100 mt-4 pt-3 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-xs lg:text-sm text-neutral-600 mb-2 md:mb-0 text-center md:text-left">
+              © {new Date().getFullYear()} Zaryah. Curated with heart.
             </p>
-            <div className="flex items-center space-x-4 lg:space-x-6 text-sm lg:text-lg text-neutral-600">
+            <div className="flex items-center space-x-4 text-xs lg:text-sm text-neutral-600">
               <Link href="#" className="hover:text-neutral-800 transition-colors">Privacy Policy</Link>
               <Link href="#" className="hover:text-neutral-800 transition-colors">Terms of Service</Link>
             </div>

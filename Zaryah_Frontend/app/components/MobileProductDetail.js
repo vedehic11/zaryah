@@ -21,7 +21,48 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   const [customizationAnswers, setCustomizationAnswers] = useState({})
   const [customUploadStatus, setCustomUploadStatus] = useState({})
   const [activeTab, setActiveTab] = useState('details')
-  const sellerUsername = product?.seller?.username || product?.seller?.sellerUsername || null
+  const [sellerUsername, setSellerUsername] = useState(null)
+
+  // Derive seller username with fallback logic and fetch from API if needed
+  useEffect(() => {
+    const deriveSellerUsername = async () => {
+      // Try to get from product seller object
+      let username = product?.seller?.username || 
+                     product?.seller?.sellerUsername || 
+                     product?.seller?.seller_username
+      
+      if (username) {
+        console.log('✓ Using seller username from product:', username)
+        setSellerUsername(username)
+        return
+      }
+      
+      // If not available, fetch from sellers API
+      if (product?.seller?.id || product?.seller_id) {
+        try {
+          const sellerId = product?.seller?.id || product?.seller_id
+          const response = await fetch(`/api/sellers?id=${sellerId}`)
+          if (response.ok) {
+            const seller = await response.json()
+            if (seller.username) {
+              console.log('✓ Fetched seller username from API:', seller.username)
+              setSellerUsername(seller.username)
+              return
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch seller username:', err)
+        }
+      }
+      
+      console.warn('⚠ No seller username available')
+      setSellerUsername(null)
+    }
+    
+    if (product) {
+      deriveSellerUsername()
+    }
+  }, [product])
   const isTwoWayDelivery = Boolean(product?.twoWayDelivery || product?.two_way_delivery)
   const backTarget = String(searchParams.get('back') || '').trim()
   const safeBackTarget = backTarget.startsWith('/') ? backTarget : ''
@@ -71,6 +112,11 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     router.back()
   }
 
+  const goToSellerProfile = () => {
+    if (!sellerUsername) return
+    router.push(`/${sellerUsername}`)
+  }
+
   useEffect(() => {
     if (sizeOptions.length > 0) {
       setSelectedSize(sizeOptions[0])
@@ -86,9 +132,9 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
 
     setCurrentImageIndex(0)
 
-    if (product?.customisable && product?.customQuestions) {
+    if (product?.customisable && (product?.customQuestions || product?.custom_questions)) {
       console.log('Customization enabled:', product.customisable)
-      console.log('Custom questions:', product.customQuestions)
+      console.log('Custom questions:', product.customQuestions || product.custom_questions)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id])
@@ -110,10 +156,16 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     ? Math.round(((product.mrp - displayPrice) / product.mrp) * 100)
     : 0
 
+  const customizationQuestions = Array.isArray(product?.customQuestions)
+    ? product.customQuestions
+    : Array.isArray(product?.custom_questions)
+      ? product.custom_questions
+      : []
+
   const handleAddToCart = async () => {
     // Validate customization questions if product is customizable
-    if (product.customisable && product.customQuestions && product.customQuestions.length > 0) {
-      const unanswered = product.customQuestions.some((q, index) => {
+    if (product.customisable && customizationQuestions.length > 0) {
+      const unanswered = customizationQuestions.some((q, index) => {
         const questionType = q.answerType || q.type || 'text'
         const answer = customizationAnswers[index]
         if (questionType === 'photo') {
@@ -128,8 +180,8 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     }
     
     try {
-      const customizations = product.customisable && product.customQuestions 
-        ? product.customQuestions.map((q, index) => ({
+      const customizations = product.customisable && customizationQuestions.length > 0 
+        ? customizationQuestions.map((q, index) => ({
             question: q.question,
             answer: customizationAnswers[index],
             answerType: q.answerType || q.type || 'text'
@@ -248,6 +300,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
           </button>
           
           <button 
+            onClick={handleAddToCart}
             className="p-1.5 active:bg-primary-100 rounded-full transition-colors"
           >
             <ShoppingBag className="w-6 h-6 text-charcoal-800" strokeWidth={2} />
@@ -306,11 +359,11 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       <div className="bg-white px-4 py-3 border-b border-cream-200">
         <div className="flex items-start justify-between">
           <div className="flex-1 pr-3">
-            <h1 className="text-base font-bold text-primary-700 mb-1">
-              {product.seller?.businessName || 'Brand'}
-            </h1>
-            <p className="text-sm text-charcoal-700 leading-snug">
+            <h1 className="text-lg font-bold text-charcoal-900 mb-1">
               {product.name}
+            </h1>
+            <p className="text-xs text-charcoal-600">
+              {product.seller?.businessName || 'Brand'}
             </p>
           </div>
           <button className="p-2 -mr-2 active:bg-primary-50 rounded-full transition-colors">
@@ -318,35 +371,20 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
           </button>
         </div>
         
-        <div className="mt-2">
-          <span className="text-lg font-bold text-charcoal-900">MRP ₹{product.mrp?.toLocaleString() || displayPrice?.toLocaleString()}</span>
-        </div>
-      </div>
-
-      {/* Mega Deal Card */}
-      {product.mrp && product.mrp > displayPrice && (
-        <div className="bg-warm-50 px-4 py-3 mb-2 border-b border-secondary-100">
-          <div className="bg-gradient-to-r from-warm-100 to-cream-100 rounded-lg p-3 flex items-center justify-between border border-secondary-200 shadow-sm">
-            <div className="flex items-center space-x-3">
-              <div className="bg-gradient-to-r from-secondary-600 to-secondary-700 text-white text-xs font-bold px-2.5 py-1 rounded-md shadow-sm">
-                SPECIAL OFFER
-              </div>
-              <div>
-                <span className="text-lg font-bold text-charcoal-900">Get at ₹{displayPrice?.toLocaleString()}</span>
-              </div>
-            </div>
-            <div className="bg-gradient-to-r from-mint-600 to-mint-700 text-white text-xs font-bold px-3 py-1.5 rounded-md shadow-sm">
-              Save ₹{(product.mrp - displayPrice)?.toLocaleString()}
-            </div>
-          </div>
-          {discount > 0 && (
-            <p className="text-xs text-charcoal-600 mt-2">
-              With <span className="font-semibold">🏦 Bank Offer</span>
-              <button className="text-primary-700 ml-2 font-semibold">Details →</button>
-            </p>
+        <div className="mt-3 flex items-center gap-3">
+          {product.mrp && product.mrp > displayPrice ? (
+            <>
+              <span className="text-sm text-charcoal-600 line-through">₹{product.mrp?.toLocaleString()}</span>
+              <span className="text-2xl font-bold text-charcoal-900">₹{displayPrice?.toLocaleString()}</span>
+              <span className="bg-mint-100 text-mint-800 text-xs font-bold px-2.5 py-1 rounded-md">
+                {Math.round(((product.mrp - displayPrice) / product.mrp) * 100)}% off
+              </span>
+            </>
+          ) : (
+            <span className="text-2xl font-bold text-charcoal-900">₹{displayPrice?.toLocaleString()}</span>
           )}
         </div>
-      )}
+      </div>
 
       {/* Size Selection */}
       {sizeOptions.length > 0 && (
@@ -433,7 +471,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       </div>
 
       {/* Customization Info */}
-      {product.customisable && product.customQuestions && product.customQuestions.length > 0 && (
+      {product.customisable && customizationQuestions.length > 0 && (
         <div className="bg-gradient-to-br from-cream-50 to-primary-50 px-5 py-5 mb-2 border border-primary-200 rounded-2xl shadow-soft">
           <div className="flex items-start space-x-3 mb-4">
             <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -448,7 +486,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
           </div>
           
           <div className="space-y-4">
-            {product.customQuestions.map((item, index) => {
+            {customizationQuestions.map((item, index) => {
               const questionType = item.answerType || item.type || 'text'
               const handleInputChange = (value) => {
                 console.log(`Question ${index} answered:`, value)
@@ -807,8 +845,13 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
               )}
               
               <button
-                onClick={() => router.push(`/${product.seller?.username || '#'}`)}
-                className="w-full bg-primary-600 text-white py-2.5 rounded-lg font-semibold text-sm active:scale-95 transition-all"
+                onClick={goToSellerProfile}
+                disabled={!sellerUsername}
+                className={`w-full py-2.5 rounded-lg font-semibold text-sm active:scale-95 transition-all ${
+                  sellerUsername
+                    ? 'bg-primary-600 text-white shadow-md hover:bg-primary-700 hover:shadow-lg cursor-pointer'
+                    : 'bg-primary-500 text-white/70 cursor-not-allowed opacity-60'
+                }`}
               >
                 Visit Seller Profile
               </button>

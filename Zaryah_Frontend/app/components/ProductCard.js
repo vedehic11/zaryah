@@ -21,6 +21,11 @@ export const ProductCard = ({ product, backHref }) => {
   
   const productId = product.id || product._id
   const sellerUsername = product?.seller?.username || product?.seller_username || null
+  const customizationQuestions = Array.isArray(product?.customQuestions)
+    ? product.customQuestions
+    : Array.isArray(product?.custom_questions)
+      ? product.custom_questions
+      : []
   const normalizedBackHref = typeof backHref === 'string' && backHref.startsWith('/') ? backHref : ''
   const productHref = productId
     ? normalizedBackHref
@@ -46,6 +51,11 @@ export const ProductCard = ({ product, backHref }) => {
       return
     }
 
+    if (product.customisable && customizationQuestions.length > 0) {
+      toast.error('Please answer all customization questions before adding to cart')
+      return
+    }
+
     await addToCart(product)
   }
 
@@ -54,6 +64,11 @@ export const ProductCard = ({ product, backHref }) => {
     if (!checkAuthAndRedirect()) return;
     if (isOutOfStock) {
       toast.error('This product is out of stock')
+      return
+    }
+
+    if (product.customisable && customizationQuestions.length > 0) {
+      toast.error('Please answer all customization questions before adding to cart')
       return
     }
 

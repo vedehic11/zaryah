@@ -53,7 +53,48 @@ export const ProductDetailPage = ({ productId }) => {
   const [customizationSelections, setCustomizationSelections] = useState({});
   const [customUploadStatus, setCustomUploadStatus] = useState({})
   const [fetchedProduct, setFetchedProduct] = useState(null);
-  const sellerUsername = product?.seller?.username || product?.seller?.sellerUsername || null
+  const [sellerUsername, setSellerUsername] = useState(null);
+  
+  // Derive seller username with fallback logic and fetch from API if needed
+  useEffect(() => {
+    const deriveSellerUsername = async () => {
+      // Try to get from product seller object
+      let username = product?.seller?.username || 
+                     product?.seller?.sellerUsername || 
+                     product?.seller?.seller_username
+      
+      if (username) {
+        console.log('✓ Using seller username from product:', username)
+        setSellerUsername(username)
+        return
+      }
+      
+      // If not available, fetch from sellers API
+      if (product?.seller?.id || product?.seller_id) {
+        try {
+          const sellerId = product?.seller?.id || product?.seller_id
+          const response = await fetch(`/api/sellers?id=${sellerId}`)
+          if (response.ok) {
+            const seller = await response.json()
+            if (seller.username) {
+              console.log('✓ Fetched seller username from API:', seller.username)
+              setSellerUsername(seller.username)
+              return
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch seller username:', err)
+        }
+      }
+      
+      console.warn('⚠ No seller username available')
+      setSellerUsername(null)
+    }
+    
+    if (product) {
+      deriveSellerUsername()
+    }
+  }, [product])
   const isTwoWayDelivery = Boolean(product?.twoWayDelivery || product?.two_way_delivery)
   const canShowCod = Boolean(product?.codAvailable) && product?.seller?.allowCod !== false
   const backTarget = String(searchParams.get('back') || '').trim()

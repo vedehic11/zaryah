@@ -26,6 +26,7 @@ export async function GET(request, { params }) {
         *,
         sellers:seller_id (
           id,
+          username,
           business_name,
           full_name,
           business_description,
@@ -66,6 +67,13 @@ export async function GET(request, { params }) {
 
     // Format seller data
     const seller = product.sellers || {}
+    
+    console.log('Seller data from DB:', {
+      id: seller.id,
+      business_name: seller.business_name,
+      username: seller.username,
+      has_username: !!seller.username
+    })
 
     // Return formatted product with all necessary fields
     return NextResponse.json({
