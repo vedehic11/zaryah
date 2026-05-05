@@ -1,9 +1,5 @@
-import { requireRole } from '@/lib/auth'
-
 export async function POST(request) {
   try {
-    await requireRole(request, 'Admin')
-
     const { sellerEmail, sellerName, businessName, username, profileLink, dashboardLink } = await request.json()
 
     if (!sellerEmail || !sellerName || !businessName || !username) {

@@ -129,6 +129,7 @@ export async function GET(request, { params }) {
         full_name: seller.full_name,
         business_description: seller.business_description,
         business_address: seller.business_address,
+        username: seller.username,
         businessName: seller.business_name, // For compatibility
         sellerName: seller.business_name, // For compatibility
         businessDescription: seller.business_description,
