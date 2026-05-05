@@ -26,7 +26,6 @@ export default function SellerProfilePage({ params }) {
   const [isOverlaySearchOpen, setIsOverlaySearchOpen] = useState(false)
   const [isSectionDrawerOpen, setIsSectionDrawerOpen] = useState(false)
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false)
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
   const overlaySearchInputRef = useRef(null)
   const { totalItems, setIsCartOpen } = useCart()
   const { wishlistCount } = useWishlist()
@@ -95,10 +94,6 @@ export default function SellerProfilePage({ params }) {
     return () => window.removeEventListener('zaryah:seller-search', handleSellerSearch)
   }, [username])
 
-  useEffect(() => {
-    setIsDescriptionExpanded(false)
-  }, [username])
-
   const products = seller?.products || []
 
   const sectionOptions = useMemo(() => {
@@ -117,6 +112,27 @@ export default function SellerProfilePage({ params }) {
     () => sectionOptions.filter(section => !baseSections.includes(section)),
     [sectionOptions]
   )
+
+  const visibleSections = useMemo(() => {
+    if (extraSections.length === 0) {
+      return ['New Arrivals']
+    }
+
+    return ['All', 'New Arrivals', ...extraSections]
+  }, [extraSections])
+
+  useEffect(() => {
+    if (!products.length) return
+
+    if (extraSections.length === 0) {
+      setSelectedSection(prev => (prev === 'All' || !prev ? 'New Arrivals' : prev))
+      return
+    }
+
+    if (!sectionOptions.includes(selectedSection)) {
+      setSelectedSection('All')
+    }
+  }, [extraSections.length, products.length, sectionOptions, selectedSection])
 
   const filteredProducts = useMemo(() => {
     let normalizedProducts = [...products]
@@ -199,8 +215,7 @@ export default function SellerProfilePage({ params }) {
 
   const sellerUser = seller.users || {}
   const stats = seller.stats || {}
-  const sellerDescription = String(seller.business_description || '').trim()
-  const shouldShowDescriptionToggle = sellerDescription.length > 130
+  const aboutDescription = String(seller.business_description || seller.story || '').trim()
 
   return (
     <Layout>
@@ -438,34 +453,12 @@ export default function SellerProfilePage({ params }) {
                           {seller.business_name}
                         </h1>
                         {sellerUser.is_approved && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 text-charcoal-800 text-xs font-semibold">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 text-charcoal-800 text-xs font-semibold shrink-0 md:ml-1">
                             <CheckCircle className="w-3.5 h-3.5 text-success-600" />
                             Verified Seller
                           </span>
                         )}
                       </div>
-                      <p className="text-xs md:text-sm text-white/85 font-medium">@{seller.username}</p>
-                      {sellerDescription && (
-                        <div className="mt-1.5 max-w-3xl">
-                          <p
-                            className={`text-xs md:text-sm text-white/90 ${
-                              isDescriptionExpanded ? '' : 'line-clamp-1 md:line-clamp-2'
-                            }`}
-                          >
-                            {sellerDescription}
-                          </p>
-                          {shouldShowDescriptionToggle && (
-                            <button
-                              type="button"
-                              onClick={() => setIsDescriptionExpanded(prev => !prev)}
-                              className="mt-1 inline-flex text-[11px] md:text-xs font-semibold text-white hover:text-white/80 transition-colors"
-                              aria-expanded={isDescriptionExpanded}
-                            >
-                              {isDescriptionExpanded ? 'Read less' : 'Read more'}
-                            </button>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </div>
 
@@ -499,6 +492,53 @@ export default function SellerProfilePage({ params }) {
         </motion.section>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 md:mt-6 relative z-40">
+          <div className="mb-2">
+            <div className="flex items-center justify-end gap-3 mb-2">
+              <button
+                onClick={() => setIsSectionDrawerOpen(true)}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-primary-700 hover:text-primary-800 transition-colors"
+              >
+                <ListFilter className="w-4 h-4" />
+                <span>More Sections</span>
+              </button>
+            </div>
+
+            <div className="flex gap-4 overflow-x-auto pb-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {visibleSections.map(section => {
+                const isActive = selectedSection === section
+
+                return (
+                  <button
+                    key={section}
+                    onClick={() => setSelectedSection(section)}
+                    className="group shrink-0 w-[84px] sm:w-[92px] text-center"
+                    aria-pressed={isActive}
+                    aria-label={section}
+                  >
+                    <span
+                      className={`mx-auto flex h-[74px] w-[74px] items-center justify-center rounded-full p-1 transition-all ${
+                        isActive
+                          ? 'bg-gradient-to-br from-primary-600 via-secondary-600 to-primary-700 shadow-lg shadow-primary-500/25'
+                          : 'bg-gradient-to-br from-amber-200 via-white to-cream-200 group-hover:from-primary-300 group-hover:via-white group-hover:to-secondary-200'
+                      }`}
+                    >
+                      <span className={`flex h-full w-full items-center justify-center rounded-full border-2 ${
+                        isActive ? 'border-white bg-charcoal-900 text-white' : 'border-white bg-white text-primary-600'
+                      }`}>
+                        <Package className="w-7 h-7" />
+                      </span>
+                    </span>
+                    <span className={`mt-1.5 block min-h-[1.4rem] px-1 text-[11px] font-semibold leading-tight uppercase line-clamp-2 ${
+                      isActive ? 'text-charcoal-900' : 'text-charcoal-700'
+                    }`}>
+                      {section}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 md:gap-8">
             <motion.section
               initial={{ opacity: 0, y: 20 }}
@@ -507,32 +547,6 @@ export default function SellerProfilePage({ params }) {
               id="seller-products"
               className="rounded-3xl bg-white border border-cream-200 shadow-soft p-4 md:p-6"
             >
-              <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-5 scrollbar-hide">
-                {baseSections.map(section => {
-                  const isActive = selectedSection === section
-                  return (
-                    <button
-                      key={section}
-                      onClick={() => setSelectedSection(section)}
-                      className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${
-                        isActive
-                          ? 'bg-charcoal-900 text-white border-charcoal-900'
-                          : 'bg-white text-charcoal-700 border-cream-300 hover:border-primary-300 hover:text-primary-700'
-                      }`}
-                    >
-                      {section}
-                    </button>
-                  )
-                })}
-                <button
-                  onClick={() => setIsSectionDrawerOpen(true)}
-                  className="whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold border border-cream-300 bg-white text-charcoal-700 hover:border-primary-300 hover:text-primary-700 transition-colors inline-flex items-center gap-2"
-                >
-                  <ListFilter className="w-4 h-4" />
-                  <span>More Sections</span>
-                </button>
-              </div>
-
               {isSectionDrawerOpen && (
                 <div className="fixed inset-0 z-50">
                   <button
@@ -637,8 +651,8 @@ export default function SellerProfilePage({ params }) {
             >
               <div className="rounded-3xl border border-cream-200 bg-gradient-to-br from-white to-cream-50 p-5 shadow-soft">
                 <h3 className="text-lg font-serif font-bold text-charcoal-900 mb-2">About This Studio</h3>
-                {seller.story ? (
-                  <p className="text-sm text-charcoal-700 leading-relaxed">{seller.story}</p>
+                {aboutDescription ? (
+                  <p className="text-sm text-charcoal-700 leading-relaxed">{aboutDescription}</p>
                 ) : (
                   <p className="text-sm text-charcoal-600 leading-relaxed">
                     Every product in this page is crafted by {seller.business_name}. Explore their collection and follow for new drops.
