@@ -92,6 +92,11 @@ export async function POST(request, { params }) {
     if (isApproved && updatedSeller) {
       try {
         // Call email service API
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://zaryah.com'
+        const sellerUsername = updatedSeller.username || updatedSeller.business_name.toLowerCase().replace(/\s+/g, '-')
+        const profileLink = `${baseUrl}/${sellerUsername}`
+        const dashboardLink = `${baseUrl}/seller/dashboard`
+        
         const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/email/send-approval`, {
           method: 'POST',
           headers: {
@@ -101,7 +106,9 @@ export async function POST(request, { params }) {
             sellerEmail: updatedSeller.users.email,
             sellerName: updatedSeller.full_name,
             businessName: updatedSeller.business_name,
-            username: updatedSeller.username || updatedSeller.business_name.toLowerCase().replace(/\s+/g, '-')
+            username: sellerUsername,
+            profileLink: profileLink,
+            dashboardLink: dashboardLink
           })
         })
 

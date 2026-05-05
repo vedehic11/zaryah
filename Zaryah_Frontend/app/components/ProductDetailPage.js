@@ -55,6 +55,7 @@ export const ProductDetailPage = ({ productId }) => {
   const [fetchedProduct, setFetchedProduct] = useState(null);
   const sellerUsername = product?.seller?.username || product?.seller?.sellerUsername || null
   const isTwoWayDelivery = Boolean(product?.twoWayDelivery || product?.two_way_delivery)
+  const canShowCod = Boolean(product?.codAvailable) && product?.seller?.allowCod !== false
   const backTarget = String(searchParams.get('back') || '').trim()
   const safeBackTarget = backTarget.startsWith('/') ? backTarget : ''
 
@@ -689,7 +690,7 @@ export const ProductDetailPage = ({ productId }) => {
                     )}
 
                     {/* COD Info */}
-                    {product.codAvailable && (
+                    {canShowCod && (
                       <div className="bg-gradient-to-br from-secondary-50 to-white border border-secondary-200 rounded-lg p-4">
                         <div className="flex items-center space-x-2 mb-2">
                           <Package className="w-5 h-5 text-secondary-600" />
@@ -792,7 +793,7 @@ export const ProductDetailPage = ({ productId }) => {
                       </p>
                     </div>
                   </div>
-                  {product.codAvailable && (
+                  {canShowCod && (
                     <div className="flex items-center space-x-3">
                       <Package className="w-5 h-5 text-secondary-700" />
                       <div>
@@ -1011,7 +1012,7 @@ export const ProductDetailPage = ({ productId }) => {
                             </p>
                           </div>
                         )}
-                        {product.codAvailable && (
+                        {canShowCod && (
                           <div>
                             <p className="text-sm text-charcoal-600 mb-1">Cash on Delivery</p>
                             <p className="font-semibold text-charcoal-900">Available (₹10 extra)</p>

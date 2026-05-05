@@ -160,6 +160,7 @@ export default function SellerDashboardPage() {
     facebook: '',
     x: '',
     linkedin: '',
+    allow_cod: true,
     account_holder_name: '',
     upi_id: '',
     id_type: '',
@@ -523,6 +524,7 @@ export default function SellerDashboardPage() {
           facebook: response.facebook || '',
           x: response.x || '',
           linkedin: response.linkedin || '',
+          allow_cod: response.allow_cod !== undefined ? Boolean(response.allow_cod) : true,
           account_holder_name: response.account_holder_name || '',
           upi_id: response.upi_id || '',
           id_type: response.id_type || '',
@@ -636,6 +638,7 @@ export default function SellerDashboardPage() {
           facebook: profileData.facebook,
           x: profileData.x,
           linkedin: profileData.linkedin,
+          allow_cod: profileData.allow_cod,
           account_holder_name: profileData.account_holder_name,
           upi_id: profileData.upi_id,
           id_type: profileData.id_type,
@@ -899,7 +902,7 @@ export default function SellerDashboardPage() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
                     {products.map((product) => (
                       <div key={product.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                         <div className="aspect-square bg-gray-100 relative">
@@ -1060,7 +1063,7 @@ export default function SellerDashboardPage() {
                             <div key={order.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                               {/* Compact Header - Always Visible */}
                               <div className="p-4">
-                                <div className="flex items-start justify-between gap-4">
+                                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                                   {/* Left side - Order Info (Clickable) */}
                                   <div 
                                     className="flex-1 cursor-pointer hover:bg-gray-50 -m-4 p-4 rounded transition-colors"
@@ -1129,7 +1132,7 @@ export default function SellerDashboardPage() {
                                   </div>
 
                                   {/* Right side - Actions */}
-                                  <div className="flex flex-col gap-2 min-w-[120px]">
+                                  <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 md:w-auto md:min-w-[120px] md:grid-cols-1">
                                     {order.status === 'pending' && (
                                       <button
                                         onClick={async (e) => {
@@ -2491,6 +2494,23 @@ export default function SellerDashboardPage() {
                           </a>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(profileData.allow_cod)}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, allow_cod: e.target.checked }))}
+                          className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        <span className="space-y-1">
+                          <span className="block text-sm font-semibold text-gray-900">Allow Cash on Delivery</span>
+                          <span className="block text-sm text-gray-600">
+                            Enable this to let customers choose COD for your products. Disable it to hide COD at checkout.
+                          </span>
+                        </span>
+                      </label>
                     </div>
 
                     {/* Business Information */}

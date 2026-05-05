@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useCart } from '../contexts/CartContext'
@@ -63,6 +63,25 @@ export default function CheckoutPage() {
 
   // Calculate delivery charge dynamically when address changes
   const hasTwoWayDelivery = cart.some(item => item.two_way_delivery || item.twoWayDelivery)
+  const canUseCod = useMemo(() => {
+    if (!cart.length) {
+      return false
+    }
+
+    return cart.every(item => item.codAvailable !== false && item.sellerAllowCod !== false)
+  }, [cart])
+
+  const codUnavailableReason = !canUseCod
+    ? 'This seller does not support Cash on Delivery.'
+    : !process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+      ? 'Online payment is not available at the moment.'
+      : ''
+
+  useEffect(() => {
+    if (!canUseCod && paymentMethod === 'cod') {
+      setPaymentMethod(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ? 'online' : 'cod')
+    }
+  }, [canUseCod, paymentMethod])
 
   useEffect(() => {
     const calculateDeliveryCharge = async () => {
@@ -656,11 +675,19 @@ export default function CheckoutPage() {
                 </div>
 
                 <div
-                  onClick={() => setPaymentMethod('cod')}
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    paymentMethod === 'cod'
-                      ? 'border-primary-600 bg-primary-50'
-                      : 'border-gray-200 hover:border-primary-300'
+                  onClick={() => {
+                    if (!canUseCod) {
+                      toast.error(codUnavailableReason)
+                      return
+                    }
+                    setPaymentMethod('cod')
+                  }}
+                  className={`p-4 border-2 rounded-lg transition-all ${
+                    !canUseCod
+                      ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
+                      : paymentMethod === 'cod'
+                      ? 'border-primary-600 bg-primary-50 cursor-pointer'
+                      : 'border-gray-200 hover:border-primary-300 cursor-pointer'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -668,10 +695,12 @@ export default function CheckoutPage() {
                       <Package className="w-5 h-5 text-secondary-600" />
                       <div>
                         <p className="font-semibold text-charcoal-900">Cash on Delivery</p>
-                        <p className="text-sm text-charcoal-600">Pay when you receive (₹10 extra)</p>
+                        <p className="text-sm text-charcoal-600">
+                          {canUseCod ? 'Pay when you receive (₹10 extra)' : 'Unavailable for this seller'}
+                        </p>
                       </div>
                     </div>
-                    {paymentMethod === 'cod' && (
+                    {paymentMethod === 'cod' && canUseCod && (
                       <CheckCircle className="w-6 h-6 text-primary-600" />
                     )}
                   </div>
@@ -779,6 +808,15 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              {!canUseCod && (
+                <div className="mt-3 p-3 bg-amber-50 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800">
+                    Cash on Delivery is disabled by this seller.
+                  </p>
+                </div>
+              )}
+
               {dynamicDeliveryCharge !== null && selectedAddress && (
                 <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                   <div className="flex items-start gap-2">
@@ -815,7 +853,7 @@ export default function CheckoutPage() {
 
               <button
                 onClick={handlePlaceOrder}
-                disabled={!selectedAddress || isProcessing}
+                disabled={!selectedAddress || isProcessing || (paymentMethod === 'cod' && !canUseCod)}
                 className="w-full mt-6 bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 {isProcessing ? 'Processing...' : 'Place Order'}

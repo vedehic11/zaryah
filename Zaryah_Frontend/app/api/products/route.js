@@ -40,7 +40,8 @@ export async function GET(request) {
           username,
           city,
           business_address,
-          business_description
+          business_description,
+          allow_cod
         ),
         product_ratings (
           rating
@@ -137,7 +138,8 @@ export async function GET(request) {
           username: seller.username,
           city: seller.city,
           businessAddress: seller.business_address,
-          businessDescription: seller.business_description
+          businessDescription: seller.business_description,
+          allowCod: seller.allow_cod !== false
         }
       }
     })

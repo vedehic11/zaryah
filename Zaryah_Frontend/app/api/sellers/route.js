@@ -583,6 +583,7 @@ export async function PUT(request) {
     
     const allowedSellerFields = [
       'cover_photo', 'business_description', 'story', 'featured_story', 'instagram', 'facebook', 'x', 'linkedin',
+      'allow_cod',
       'primary_mobile', 'business_address', 'city', 'alternate_mobile',
       'account_holder_name', 'upi_id', 'account_number', 'ifsc_code', 'id_type', 'id_number'
     ]

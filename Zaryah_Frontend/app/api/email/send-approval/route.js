@@ -4,7 +4,7 @@ export async function POST(request) {
   try {
     await requireRole(request, 'Admin')
 
-    const { sellerEmail, sellerName, businessName, username } = await request.json()
+    const { sellerEmail, sellerName, businessName, username, profileLink, dashboardLink } = await request.json()
 
     if (!sellerEmail || !sellerName || !businessName || !username) {
       return Response.json(
@@ -12,6 +12,12 @@ export async function POST(request) {
         { status: 400 }
       )
     }
+
+    const appUrl = profileLink ? profileLink.replace(`/${username}`, '') : 'https://zaryah.com'
+    const defaultProfileLink = `${appUrl}/${username}`
+    const defaultDashboardLink = `${appUrl}/seller/dashboard`
+    const finalProfileLink = profileLink || defaultProfileLink
+    const finalDashboardLink = dashboardLink || defaultDashboardLink
 
     // Check if Resend API key is configured
     const resendApiKey = process.env.RESEND_API_KEY
@@ -27,8 +33,9 @@ export async function POST(request) {
       console.log('')
       console.log(`Great news! Your seller account for "${businessName}" has been approved.`)
       console.log('')
-      console.log(`You can now access your seller dashboard and start listing your products:`)
-      console.log(`https://zaryah.com/${username}`)
+      console.log(`Your Zaryah username: ${username}`)
+      console.log(`Your shop profile: ${finalProfileLink}`)
+      console.log(`Seller dashboard: ${finalDashboardLink}`)
       console.log('')
       console.log(`What you can do now:`)
       console.log(`- Add your products to your store`)
@@ -131,22 +138,35 @@ export async function POST(request) {
               
               <p>Great news! Your seller account for "<strong>${businessName}</strong>" has been approved by our admin team.</p>
               
-              <p>You can now access your seller dashboard and start listing your products:</p>
+              <p><strong>Your Zaryah Username:</strong> <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">${username}</code></p>
               
-              <div style="text-align: center;">
-                <a href="https://zaryah.com/${username}" class="button">Go to Your Dashboard</a>
+              <div class="features" style="background: #f0f7ff; border-left: 4px solid #FF6B6B;">
+                <h3 style="margin-top: 0; color: #FF6B6B;">📍 Important Links</h3>
+                <div class="feature-item">
+                  <strong>Your Shop Profile:</strong><br>
+                  <a href="${finalProfileLink}" style="color: #FF6B6B; text-decoration: none;">${finalProfileLink}</a><br>
+                  <span style="font-size: 12px; color: #666;">(This is what customers see when they visit your store)</span>
+                </div>
+                <div class="feature-item">
+                  <strong>Seller Dashboard Login:</strong><br>
+                  <a href="${finalDashboardLink}" style="color: #FF6B6B; text-decoration: none;">${finalDashboardLink}</a><br>
+                  <span style="font-size: 12px; color: #666;">(Manage your products, orders, and store settings)</span>
+                </div>
+              </div>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${finalDashboardLink}" class="button">Access Your Seller Dashboard</a>
               </div>
               
               <div class="features">
-                <h3 style="margin-top: 0;">What you can do now:</h3>
+                <h3 style="margin-top: 0;">📊 What you can do now:</h3>
+                <div class="feature-item">✅ Log in to your seller dashboard</div>
                 <div class="feature-item">✅ Add your products to your store</div>
-                <div class="feature-item">✅ Customize your shop profile</div>
+                <div class="feature-item">✅ Customize your shop profile and description</div>
                 <div class="feature-item">✅ Upload product photos and descriptions</div>
                 <div class="feature-item">✅ Start receiving orders from customers</div>
                 <div class="feature-item">✅ Track your sales and analytics</div>
               </div>
-              
-              <p>Your custom shop URL is: <strong>https://zaryah.com/${username}</strong></p>
               
               <p>If you have any questions or need assistance getting started, feel free to contact our support team.</p>
               

@@ -30,7 +30,8 @@ export async function GET(request, { params }) {
           full_name,
           business_description,
           business_address,
-          city
+          city,
+          allow_cod
         ),
         product_ratings (
           id,
@@ -132,7 +133,8 @@ export async function GET(request, { params }) {
         sellerName: seller.business_name, // For compatibility
         businessDescription: seller.business_description,
         businessAddress: seller.business_address,
-        city: seller.city
+        city: seller.city,
+        allowCod: seller.allow_cod !== false
       },
       // Ratings with user info
       ratings: ratings.map(r => ({

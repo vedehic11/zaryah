@@ -567,7 +567,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
             </div>
           )}
           
-          {product.codAvailable && (
+          {Boolean(product?.codAvailable) && product?.seller?.allowCod !== false && (
             <div className="flex items-start space-x-3">
               <Package className="w-5 h-5 text-secondary-700 mt-0.5" strokeWidth={1.5} />
               <div className="flex-1">

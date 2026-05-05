@@ -57,9 +57,11 @@ export async function GET(request) {
           seller_id,
           instant_delivery,
           two_way_delivery,
+          cod_available,
           sellers:seller_id (
             business_name,
-            full_name
+            full_name,
+            allow_cod
           )
         )
       `)
@@ -79,6 +81,7 @@ export async function GET(request) {
         itemsBySeller[sellerId] = {
           seller_id: sellerId,
           seller_name: item.products?.sellers?.business_name || item.products?.sellers?.full_name || 'Unknown Seller',
+          seller_allow_cod: item.products?.sellers?.allow_cod !== false,
           items: []
         }
       }
@@ -97,6 +100,7 @@ export async function GET(request) {
         buyer_id: cart.buyer_id,
         seller_id: sellerCart.seller_id,
         seller_name: sellerCart.seller_name,
+        seller_allow_cod: sellerCart.seller_allow_cod,
         items: sellerCart.items,
         total,
         itemCount: sellerCart.items.reduce((sum, item) => sum + item.quantity, 0)

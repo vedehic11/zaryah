@@ -371,7 +371,7 @@ export async function POST(request) {
       console.log(`Fetching product: ${item.productId}`)
       const { data: product, error: productError } = await supabase
         .from('products')
-        .select('price, seller_id, stock, two_way_delivery')
+        .select('price, seller_id, stock, two_way_delivery, cod_available, sellers:seller_id(allow_cod)')
         .eq('id', item.productId)
         .single()
 
@@ -389,6 +389,13 @@ export async function POST(request) {
 
       if (product.two_way_delivery) {
         hasTwoWayDelivery = true
+      }
+
+      if (paymentMethod === 'cod' && (product.cod_available === false || product.sellers?.allow_cod === false)) {
+        const codReason = product.sellers?.allow_cod === false
+          ? 'Cash on Delivery is disabled for this seller'
+          : 'Cash on Delivery is disabled for this product'
+        return NextResponse.json({ error: codReason }, { status: 400 })
       }
 
       if (product.stock < item.quantity) {

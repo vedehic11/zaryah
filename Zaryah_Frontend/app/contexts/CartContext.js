@@ -149,6 +149,7 @@ export const CartProvider = ({ children }) => {
         id: cart.id,
         seller_id: cart.seller_id,
         seller_name: cart.seller_name,
+        seller_allow_cod: cart.seller_allow_cod !== false,
         items: cart.items.map(item => ({
           id: item.products?.id,
           name: item.products?.name,
@@ -164,7 +165,9 @@ export const CartProvider = ({ children }) => {
           cartItemId: item.id,
           selectedSize: item.selected_size || null,
           selectedColor: item.selected_color || null,
-          unitPrice: item.unit_price || item.products?.price || 0
+          unitPrice: item.unit_price || item.products?.price || 0,
+          codAvailable: item.products?.cod_available !== false,
+          sellerAllowCod: cart.seller_allow_cod !== false
         })),
         total: cart.total,
         itemCount: cart.itemCount
