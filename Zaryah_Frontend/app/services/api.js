@@ -379,16 +379,30 @@ class ApiService {
     return this.request('/seller-sections', { method: 'GET' })
   }
 
-  async createSellerSection(name) {
+  async createSellerSection(name, imageUrl = '') {
     return this.request('/seller-sections', {
       method: 'POST',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({
+        name,
+        image_url: imageUrl || undefined,
+      }),
     })
   }
 
   async deleteSellerSection(id) {
     return this.request(`/seller-sections?id=${encodeURIComponent(id)}`, {
       method: 'DELETE',
+    })
+  }
+
+  async updateSellerSection(id, name = '', imageUrl = '') {
+    const body = {}
+    if (name) body.name = name
+    if (imageUrl) body.image_url = imageUrl
+    
+    return this.request(`/seller-sections?id=${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
     })
   }
 

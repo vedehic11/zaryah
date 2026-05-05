@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, Play, Star, ShoppingBag, Gift, Package, Scale, Sparkles } from 'lucide-react'
-import { InstantDeliveryBadge } from './InstantDeliveryBadge'
+// Instant delivery option removed — badge not used in product card
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useWishlist } from '../contexts/WishlistContext'
@@ -124,10 +124,7 @@ export const ProductCard = ({ product, backHref }) => {
           {/* Feature Badges */}
           <div className="absolute top-2 left-2 sm:top-4 sm:left-4 flex flex-col gap-2">
             {/* Instant Delivery Badge (only if seller and buyer are from the same city) */}
-            {product.instantDelivery && user && user.city && product.seller && product.seller.city &&
-              user.city.trim().toLowerCase() === product.seller.city.trim().toLowerCase() && (
-                <InstantDeliveryBadge />
-            )}
+            {/* Instant delivery option removed */}
 
             {(product.two_way_delivery || product.twoWayDelivery) && (
               <div className="bg-amber-600/90 backdrop-blur-sm text-white px-2 py-1 rounded-full shadow-soft flex items-center space-x-1">

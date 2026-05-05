@@ -28,7 +28,7 @@ export async function GET(request) {
 
     const { data, error } = await supabase
       .from('seller_sections')
-      .select('id, name, created_at')
+      .select('id, name, image_url, created_at')
       .eq('seller_id', seller.id)
       .order('created_at', { ascending: true })
 
@@ -58,6 +58,7 @@ export async function POST(request) {
     const seller = await getAuthenticatedSeller(request)
     const body = await request.json()
     const sectionName = normalizeSectionName(body?.name)
+    const imageUrl = String(body?.image_url || body?.imageUrl || '').trim()
 
     if (!sectionName) {
       return NextResponse.json({ error: 'Section name is required' }, { status: 400 })
@@ -89,9 +90,10 @@ export async function POST(request) {
       .from('seller_sections')
       .insert({
         seller_id: seller.id,
-        name: sectionName
+        name: sectionName,
+        ...(imageUrl ? { image_url: imageUrl } : {})
       })
-      .select('id, name, created_at')
+      .select('id, name, image_url, created_at')
       .single()
 
     if (error) {
@@ -138,6 +140,86 @@ export async function DELETE(request) {
     }
 
     return NextResponse.json({ success: true })
+  } catch (error) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    if (error.message === 'Forbidden') {
+      return NextResponse.json({ error: 'Only sellers can manage sections' }, { status: 403 })
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// PUT /api/seller-sections?id=<uuid> - update seller section
+export async function PUT(request) {
+  try {
+    const seller = await getAuthenticatedSeller(request)
+    const { searchParams } = new URL(request.url)
+    const id = String(searchParams.get('id') || '').trim()
+    const body = await request.json()
+    const sectionName = normalizeSectionName(body?.name)
+    const imageUrl = String(body?.image_url || body?.imageUrl || '').trim()
+
+    if (!id) {
+      return NextResponse.json({ error: 'Section id is required' }, { status: 400 })
+    }
+
+    if (sectionName && sectionName.length > 50) {
+      return NextResponse.json({ error: 'Section name must be 50 characters or fewer' }, { status: 400 })
+    }
+
+    // Check if section belongs to this seller
+    const { data: existingSection, error: checkError } = await supabase
+      .from('seller_sections')
+      .select('id')
+      .eq('id', id)
+      .eq('seller_id', seller.id)
+      .single()
+
+    if (checkError || !existingSection) {
+      return NextResponse.json({ error: 'Section not found' }, { status: 404 })
+    }
+
+    // Check if new name already exists for this seller (if name is being changed)
+    if (sectionName) {
+      const { data: duplicate, error: dupError } = await supabase
+        .from('seller_sections')
+        .select('id')
+        .eq('seller_id', seller.id)
+        .ilike('name', sectionName)
+        .neq('id', id)
+        .single()
+
+      if (duplicate && !dupError) {
+        return NextResponse.json({ error: 'Another section with this name already exists' }, { status: 409 })
+      }
+    }
+
+    const updateData = {}
+    if (sectionName) updateData.name = sectionName
+    if (imageUrl) updateData.image_url = imageUrl
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
+    }
+
+    const { data, error } = await supabase
+      .from('seller_sections')
+      .update(updateData)
+      .eq('id', id)
+      .eq('seller_id', seller.id)
+      .select('id, name, image_url, created_at')
+      .single()
+
+    if (error) {
+      if (error.code === '42P01') {
+        return NextResponse.json({ error: 'seller_sections table is missing.' }, { status: 500 })
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json(data)
   } catch (error) {
     if (error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

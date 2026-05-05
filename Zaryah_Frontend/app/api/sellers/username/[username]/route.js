@@ -110,11 +110,26 @@ export async function GET(request, { params }) {
 				: 0
 		}
 
+		// Fetch seller sections with images
+		const { data: sections, error: sectionsError } = await supabase
+			.from('seller_sections')
+			.select('id, name, image_url, created_at')
+			.eq('seller_id', seller.id)
+			.order('created_at', { ascending: true })
+
+		const sellerSections = (sections || []).map(section => ({
+			id: section.id,
+			name: section.name,
+			imageUrl: section.image_url,
+			image_url: section.image_url
+		}))
+
 		// Combine seller and user data for response
 		const responseData = {
 			...seller,
 			users: user, // Include user data
 			products: productsWithRatings,
+			sections: sellerSections,
 			stats
 		}
 

@@ -36,7 +36,7 @@ export default function AddProductPage() {
     deliveryTimeMin: '',
     deliveryTimeMax: '',
     deliveryTimeUnit: 'days',
-    instantDelivery: false,
+    // instantDelivery option removed
     twoWayDelivery: false,
     material: '',
     careInstructions: '',
@@ -727,17 +727,6 @@ export default function AddProductPage() {
               </div>
 
               <div className="flex items-center space-x-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="instantDelivery"
-                    checked={formData.instantDelivery}
-                    onChange={handleInputChange}
-                    className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <span className="text-sm text-gray-700">Instant Delivery Available</span>
-                </label>
-
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="checkbox"

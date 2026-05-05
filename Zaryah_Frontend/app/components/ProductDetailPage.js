@@ -25,7 +25,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
-import { InstantDeliveryBadge, DeliveryTimeEstimate } from './InstantDeliveryBadge'
+// Instant delivery option removed — badge component no longer used here
 import { useAuth } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -481,9 +481,7 @@ export const ProductDetailPage = ({ productId }) => {
                             <span className="text-charcoal-600">({product.ratingCount} {product.ratingCount === 1 ? 'review' : 'reviews'})</span>
                           )}
                         </div>
-                        {product.instantDelivery && (
-                          <InstantDeliveryBadge product={product} />
-                        )}
+                        {/* Instant delivery option removed */}
                         {product.customisable && (
                           <div className="bg-secondary-600 text-white px-3 py-1 rounded-full shadow-sm flex items-center space-x-1.5\">
                             <Sparkles className="w-4 h-4\" />
@@ -1044,15 +1042,7 @@ export const ProductDetailPage = ({ productId }) => {
                               : '2-5 days'}
                           </p>
                         </div>
-                        {product.instantDelivery && (
-                          <div>
-                            <p className="text-sm text-charcoal-600 mb-1">Instant Delivery</p>
-                            <p className="font-semibold text-green-600 flex items-center space-x-1">
-                              <CheckCircle className="w-4 h-4" />
-                              <span>Available for your location</span>
-                            </p>
-                          </div>
-                        )}
+                        {/* Instant delivery option removed */}
                         {canShowCod && (
                           <div>
                             <p className="text-sm text-charcoal-600 mb-1">Cash on Delivery</p>

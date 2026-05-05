@@ -17,6 +17,8 @@ import toast from 'react-hot-toast'
 import Link from 'next/link'
 import Image from 'next/image'
 
+const DEFAULT_SECTION_IMAGE = '/assets/logo.png'
+
 export default function SellerDashboardPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
@@ -32,8 +34,14 @@ export default function SellerDashboardPage() {
   const [products, setProducts] = useState([])
   const [sellerSections, setSellerSections] = useState([])
   const [newSectionName, setNewSectionName] = useState('')
+  const [newSectionImageUrl, setNewSectionImageUrl] = useState('')
+  const [sectionImageUploading, setSectionImageUploading] = useState(false)
   const [addingSection, setAddingSection] = useState(false)
   const [deletingSectionId, setDeletingSectionId] = useState(null)
+  const [editingSectionId, setEditingSectionId] = useState(null)
+  const [editingSectionName, setEditingSectionName] = useState('')
+  const [editingSectionImageUrl, setEditingSectionImageUrl] = useState('')
+  const [editingSectionImageUploading, setEditingSectionImageUploading] = useState(false)
   const [orders, setOrders] = useState([])
   const [tickets, setTickets] = useState([])
   
@@ -447,6 +455,48 @@ export default function SellerDashboardPage() {
     }
   }
 
+  const handleSectionImageUpload = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please upload a JPG, PNG, or WebP image')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Section image must be 5MB or smaller')
+      return
+    }
+
+    try {
+      setSectionImageUploading(true)
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'seller-section-images')
+      formData.append('useSupabase', 'false')
+
+      const response = await apiService.request('/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response?.url) {
+        throw new Error('Failed to upload section image')
+      }
+
+      setNewSectionImageUrl(response.url)
+      toast.success('Section image uploaded')
+    } catch (error) {
+      console.error('Failed to upload section image:', error)
+      toast.error(error.message || 'Failed to upload section image')
+    } finally {
+      setSectionImageUploading(false)
+      event.target.value = ''
+    }
+  }
+
   const handleAddSection = async () => {
     const normalized = String(newSectionName || '').trim().replace(/\s+/g, ' ')
     if (!normalized) {
@@ -466,8 +516,9 @@ export default function SellerDashboardPage() {
 
     try {
       setAddingSection(true)
-      await apiService.createSellerSection(normalized)
+      await apiService.createSellerSection(normalized, newSectionImageUrl)
       setNewSectionName('')
+      setNewSectionImageUrl('')
       await loadSellerSections()
       toast.success('Section added')
     } catch (error) {
@@ -487,6 +538,80 @@ export default function SellerDashboardPage() {
       toast.error(error.message || 'Failed to remove section')
     } finally {
       setDeletingSectionId(null)
+    }
+  }
+
+  const handleEditSectionStart = (section) => {
+    setEditingSectionId(section.id)
+    setEditingSectionName(section.name)
+    setEditingSectionImageUrl(section.image_url || '')
+  }
+
+  const handleEditSectionImageUpload = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please upload a JPG, PNG, or WebP image')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Section image must be 5MB or smaller')
+      return
+    }
+
+    try {
+      setEditingSectionImageUploading(true)
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'seller-section-images')
+      formData.append('useSupabase', 'false')
+
+      const response = await apiService.request('/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response?.url) {
+        throw new Error('Failed to upload section image')
+      }
+
+      setEditingSectionImageUrl(response.url)
+      toast.success('Section image updated')
+    } catch (error) {
+      console.error('Failed to upload section image:', error)
+      toast.error(error.message || 'Failed to upload section image')
+    } finally {
+      setEditingSectionImageUploading(false)
+      event.target.value = ''
+    }
+  }
+
+  const handleUpdateSection = async () => {
+    if (!editingSectionId) return
+
+    const normalized = String(editingSectionName || '').trim().replace(/\s+/g, ' ')
+    if (!normalized) {
+      toast.error('Enter a section name')
+      return
+    }
+
+    if (normalized.length > 50) {
+      toast.error('Section name must be 50 characters or fewer')
+      return
+    }
+
+    try {
+      await apiService.updateSellerSection(editingSectionId, normalized, editingSectionImageUrl)
+      setEditingSectionId(null)
+      setEditingSectionName('')
+      setEditingSectionImageUrl('')
+      await loadSellerSections()
+      toast.success('Section updated')
+    } catch (error) {
+      toast.error(error.message || 'Failed to update section')
     }
   }
 
@@ -833,9 +958,27 @@ export default function SellerDashboardPage() {
                         sellerSections.map(section => (
                           <span
                             key={section.id}
-                            className="inline-flex items-center gap-1 rounded-full bg-white border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700"
+                            className="inline-flex items-center gap-2 rounded-full bg-white border border-gray-300 pl-1 pr-3 py-1 text-xs font-medium text-gray-700"
                           >
+                            <span className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-gray-100 border border-gray-200">
+                              <Image
+                                src={section.image_url || DEFAULT_SECTION_IMAGE}
+                                alt={section.name}
+                                width={24}
+                                height={24}
+                                className="h-full w-full object-cover"
+                              />
+                            </span>
                             {section.name}
+                            <button
+                              type="button"
+                              onClick={() => handleEditSectionStart(section)}
+                              disabled={editingSectionId === section.id}
+                              className="text-gray-400 hover:text-primary-600 disabled:opacity-50"
+                              aria-label={`Edit ${section.name} section`}
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteSection(section.id)}
@@ -850,6 +993,110 @@ export default function SellerDashboardPage() {
                       ) : (
                         <p className="text-xs text-gray-500">No custom sections yet. Add one below.</p>
                       )}
+                    </div>
+
+                    {editingSectionId && (
+                      <div className="mb-3 rounded-lg border border-solid border-primary-200 bg-primary-50 p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-sm font-semibold text-gray-900">Edit Section</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingSectionId(null)
+                              setEditingSectionName('')
+                              setEditingSectionImageUrl('')
+                            }}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-gray-100 border border-gray-200">
+                              <Image
+                                src={editingSectionImageUrl || DEFAULT_SECTION_IMAGE}
+                                alt="Editing section preview"
+                                width={56}
+                                height={56}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs font-semibold text-gray-900">Section image</p>
+                              <p className="text-xs text-gray-500">Click to change image</p>
+                            </div>
+                            <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60">
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                className="hidden"
+                                onChange={handleEditSectionImageUpload}
+                                disabled={editingSectionImageUploading}
+                              />
+                              <Upload className="w-4 h-4" />
+                              {editingSectionImageUploading ? 'Uploading...' : 'Change'}
+                            </label>
+                          </div>
+                          <input
+                            type="text"
+                            value={editingSectionName}
+                            onChange={(e) => setEditingSectionName(e.target.value)}
+                            placeholder="Section name"
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                            maxLength="50"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={handleUpdateSection}
+                              disabled={editingSectionImageUploading}
+                              className="flex-1 rounded-lg bg-primary-600 px-3 py-2 text-xs font-medium text-white hover:bg-primary-700 disabled:opacity-60"
+                            >
+                              Save Changes
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingSectionId(null)
+                                setEditingSectionName('')
+                                setEditingSectionImageUrl('')
+                              }}
+                              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="mb-3 rounded-lg border border-dashed border-gray-300 bg-white p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-gray-100 border border-gray-200">
+                          <Image
+                            src={newSectionImageUrl || DEFAULT_SECTION_IMAGE}
+                            alt="New section preview"
+                            width={56}
+                            height={56}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-gray-900">Section image</p>
+                          <p className="text-xs text-gray-500">Optional. If you skip it, the default placeholder is used.</p>
+                        </div>
+                        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60">
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            className="hidden"
+                            onChange={handleSectionImageUpload}
+                            disabled={sectionImageUploading}
+                          />
+                          <Upload className="w-4 h-4" />
+                          {sectionImageUploading ? 'Uploading...' : (newSectionImageUrl ? 'Change image' : 'Add image')}
+                        </label>
+                      </div>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <input
@@ -2637,7 +2884,7 @@ export default function SellerDashboardPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {profileData?.instagram && (
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                            <label className="inline-flex text-sm font-medium text-gray-700 mb-1 items-center gap-2">
                               <Instagram className="w-4 h-4 text-pink-500" />
                               Instagram
                             </label>
@@ -2648,7 +2895,7 @@ export default function SellerDashboardPage() {
                         )}
                         {profileData?.facebook && (
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                            <label className="inline-flex text-sm font-medium text-gray-700 mb-1 items-center gap-2">
                               <Facebook className="w-4 h-4 text-blue-600" />
                               Facebook
                             </label>
@@ -2659,7 +2906,7 @@ export default function SellerDashboardPage() {
                         )}
                         {profileData?.x && (
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                            <label className="inline-flex text-sm font-medium text-gray-700 mb-1 items-center gap-2">
                               <Twitter className="w-4 h-4 text-gray-900" />
                               X (Twitter)
                             </label>
@@ -2670,7 +2917,7 @@ export default function SellerDashboardPage() {
                         )}
                         {profileData?.linkedin && (
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                            <label className="inline-flex text-sm font-medium text-gray-700 mb-1 items-center gap-2">
                               <Linkedin className="w-4 h-4 text-blue-700" />
                               LinkedIn
                             </label>
@@ -2853,7 +3100,7 @@ export default function SellerDashboardPage() {
                       
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                          <label className="inline-flex text-sm font-medium text-gray-700 mb-2 items-center gap-2">
                             <Instagram className="w-4 h-4" />
                             Instagram
                           </label>
@@ -2867,7 +3114,7 @@ export default function SellerDashboardPage() {
                         </div>
                         
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                          <label className="inline-flex text-sm font-medium text-gray-700 mb-2 items-center gap-2">
                             <Facebook className="w-4 h-4" />
                             Facebook
                           </label>
@@ -2881,7 +3128,7 @@ export default function SellerDashboardPage() {
                         </div>
                         
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                          <label className="inline-flex text-sm font-medium text-gray-700 mb-2 items-center gap-2">
                             <Twitter className="w-4 h-4" />
                             X (Twitter)
                           </label>
@@ -2895,7 +3142,7 @@ export default function SellerDashboardPage() {
                         </div>
                         
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                          <label className="inline-flex text-sm font-medium text-gray-700 mb-2 items-center gap-2">
                             <Linkedin className="w-4 h-4" />
                             LinkedIn
                           </label>

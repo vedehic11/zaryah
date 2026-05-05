@@ -216,6 +216,18 @@ export default function SellerProfilePage({ params }) {
   const sellerUser = seller.users || {}
   const stats = seller.stats || {}
   const aboutDescription = String(seller.business_description || seller.story || '').trim()
+  const sellerSections = seller.sections || []
+  const DEFAULT_SECTION_IMAGE = '/assets/logo.png'
+
+  const getSelectedSectionImage = () => {
+    if (selectedSection === 'All' || selectedSection === 'New Arrivals') {
+      return null
+    }
+    const section = sellerSections.find(s => String(s.name || '').trim() === selectedSection)
+    return section?.image_url || section?.imageUrl || null
+  }
+
+  const selectedSectionImage = getSelectedSectionImage()
 
   return (
     <Layout>
@@ -506,6 +518,8 @@ export default function SellerProfilePage({ params }) {
             <div className="flex gap-4 overflow-x-auto pb-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {visibleSections.map(section => {
                 const isActive = selectedSection === section
+                const sectionData = sellerSections.find(s => String(s.name || '').trim() === section)
+                const sectionImage = sectionData?.image_url || sectionData?.imageUrl
 
                 return (
                   <button
@@ -516,17 +530,31 @@ export default function SellerProfilePage({ params }) {
                     aria-label={section}
                   >
                     <span
-                      className={`mx-auto flex h-[74px] w-[74px] items-center justify-center rounded-full p-1 transition-all ${
+                      className={`mx-auto flex h-[74px] w-[74px] items-center justify-center rounded-full p-1 transition-all overflow-hidden ${
                         isActive
                           ? 'bg-gradient-to-br from-primary-600 via-secondary-600 to-primary-700 shadow-lg shadow-primary-500/25'
                           : 'bg-gradient-to-br from-amber-200 via-white to-cream-200 group-hover:from-primary-300 group-hover:via-white group-hover:to-secondary-200'
                       }`}
                     >
-                      <span className={`flex h-full w-full items-center justify-center rounded-full border-2 ${
-                        isActive ? 'border-white bg-charcoal-900 text-white' : 'border-white bg-white text-primary-600'
-                      }`}>
-                        <Package className="w-7 h-7" />
-                      </span>
+                      {sectionImage ? (
+                        <div className="relative h-full w-full">
+                          <Image
+                            src={sectionImage}
+                            alt={section}
+                            fill
+                            className="object-cover"
+                          />
+                          {isActive && (
+                            <div className="absolute inset-0 bg-charcoal-900/40" />
+                          )}
+                        </div>
+                      ) : (
+                        <span className={`flex h-full w-full items-center justify-center rounded-full border-2 ${
+                          isActive ? 'border-white bg-charcoal-900 text-white' : 'border-white bg-white text-primary-600'
+                        }`}>
+                          <Package className="w-7 h-7" />
+                        </span>
+                      )}
                     </span>
                     <span className={`mt-1.5 block min-h-[1.4rem] px-1 text-[11px] font-semibold leading-tight uppercase line-clamp-2 ${
                       isActive ? 'text-charcoal-900' : 'text-charcoal-700'
@@ -538,6 +566,28 @@ export default function SellerProfilePage({ params }) {
               })}
             </div>
           </div>
+
+          {selectedSectionImage && (
+            <motion.div
+              key={`section-${selectedSection}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative h-48 md:h-64 rounded-3xl overflow-hidden mb-6 shadow-soft border border-cream-200"
+            >
+              <Image
+                src={selectedSectionImage}
+                alt={selectedSection}
+                fill
+                className="object-cover"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-charcoal-900/70 via-charcoal-900/20 to-transparent flex items-end p-6">
+                <h2 className="text-3xl md:text-4xl font-serif font-bold text-white">
+                  {selectedSection}
+                </h2>
+              </div>
+            </motion.div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 md:gap-8">
             <motion.section
