@@ -17,6 +17,7 @@ export async function POST(request) {
 
     // Check if Resend API key is configured
     const resendApiKey = process.env.RESEND_API_KEY
+    const contactEmail = process.env.GMAIL_USER || 'vedehic@gmail.com'
 
     if (!resendApiKey) {
       console.warn('RESEND_API_KEY not configured. Email would be sent to:', sellerEmail)
@@ -59,8 +60,9 @@ export async function POST(request) {
         'Authorization': `Bearer ${resendApiKey}`
       },
       body: JSON.stringify({
-        from: 'Zaryah <onboarding@zaryah.com>', // Replace with your verified domain
+        from: process.env.RESEND_FROM_EMAIL || 'Zaryah <onboarding@resend.dev>',
         to: [sellerEmail],
+        reply_to: contactEmail,
         subject: 'Congratulations! Your Zaryah seller account is approved',
         html: `
           <!DOCTYPE html>
