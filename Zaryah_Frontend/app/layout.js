@@ -1,5 +1,6 @@
 import { Inter, Poppins, Playfair_Display } from 'next/font/google'
 import './globals.css'
+import { Analytics } from '@vercel/analytics/react'
 import { AuthProvider } from './contexts/AuthContext'
 import { AppProvider } from './contexts/AppContext'
 import { AddressProvider } from './contexts/AddressContext'
@@ -81,6 +82,7 @@ export default function RootLayout({ children }) {
             </AddressProvider>
           </RealtimeProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   )
