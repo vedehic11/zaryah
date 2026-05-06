@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
@@ -56,6 +56,7 @@ export default function SellerDashboardPage() {
   
   // Wallet state
   const [wallet, setWallet] = useState(null)
+  const [walletOrders, setWalletOrders] = useState([])
   const [transactions, setTransactions] = useState([])
   const [withdrawals, setWithdrawals] = useState([])
   const [showWithdrawalForm, setShowWithdrawalForm] = useState(false)
@@ -97,11 +98,12 @@ export default function SellerDashboardPage() {
 
   // Log pending breakdown when modal opens
   useEffect(() => {
-    if (showPendingBreakdown && orders.length > 0) {
+    if (showPendingBreakdown && (walletOrders.length > 0 || orders.length > 0)) {
       console.log('\n🔍 === PENDING BALANCE BREAKDOWN MODAL OPENED ===')
       console.log(`📊 Total Pending Balance from Wallet: ₹${wallet?.pending_balance?.toLocaleString() || '0.00'}`)
+      const walletSourceOrders = walletOrders.length > 0 ? walletOrders : orders
       
-      const pendingOrders = orders.filter(o => 
+      const pendingOrders = walletSourceOrders.filter(o => 
         ['pending', 'confirmed', 'dispatched'].includes(o.status) && 
         (o.payment_status === 'paid' || o.payment_method === 'cod')
       )
@@ -120,7 +122,8 @@ export default function SellerDashboardPage() {
         const totalForOrder = sellerShare + giftFees
         calculatedTotal += totalForOrder
         
-        console.log(`\n  Order ${index + 1}: #${order.order_number}`)
+        const displayOrderId = order.order_number ? `#${order.order_number}` : `#${String(order.id || '').slice(0, 8) || 'N/A'}`
+        console.log(`\n  Order ${index + 1}: ${displayOrderId}`)
         console.log(`    Status: ${order.status} | Payment: ${order.payment_method} (${order.payment_status})`)
         console.log(`    Items: ${order.order_items?.length || 0}`)
         order.order_items?.forEach((item, i) => {
@@ -145,7 +148,122 @@ export default function SellerDashboardPage() {
       }
       console.log('=== END BREAKDOWN ===\n')
     }
-  }, [showPendingBreakdown, orders, wallet])
+  }, [showPendingBreakdown, walletOrders, orders, wallet])
+
+  const getDisplayOrderId = (order) => {
+    if (order?.order_number) return `#${order.order_number}`
+    if (order?.id) return `#${String(order.id).slice(0, 8)}`
+    return '#N/A'
+  }
+  const isPendingWalletOrder = (order) => {
+    const normalizedStatus = String(order.status || '').toLowerCase()
+    const isTerminal =
+      normalizedStatus === 'delivered' ||
+      normalizedStatus === 'cancelled' ||
+      normalizedStatus.includes('rto') ||
+      normalizedStatus.includes('return')
+
+    return !isTerminal &&
+      (order.payment_status === 'paid' || order.payment_method === 'cod')
+  }
+  const walletSourceOrders = walletOrders.length > 0 ? walletOrders : orders
+  const withdrawnTotal = useMemo(() => {
+    return (withdrawals || [])
+      .filter((withdrawal) => withdrawal.status === 'completed')
+      .reduce((sum, withdrawal) => sum + parseFloat(withdrawal.amount || 0), 0)
+  }, [withdrawals])
+  const deliveredTotal = useMemo(() => {
+    return walletSourceOrders
+      .filter(order => order.status === 'delivered')
+      .reduce((sum, order) => {
+        const productSubtotal = order.order_items?.reduce((itemSum, item) => 
+          itemSum + (item.quantity * item.price), 0
+        ) || 0
+        const giftFees = order.order_items?.reduce((giftSum, item) => 
+          giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
+        ) || 0
+        const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+        return sum + sellerShare + giftFees
+      }, 0)
+  }, [walletSourceOrders])
+  const pendingTotal = useMemo(() => {
+    return walletSourceOrders
+      .filter(isPendingWalletOrder)
+      .reduce((sum, order) => {
+        const productSubtotal = order.order_items?.reduce((itemSum, item) => 
+          itemSum + (item.quantity * item.price), 0
+        ) || 0
+        const giftFees = order.order_items?.reduce((giftSum, item) => 
+          giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
+        ) || 0
+        const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+        return sum + sellerShare + giftFees
+      }, 0)
+  }, [walletSourceOrders])
+  const availableComputed = useMemo(() => {
+    return deliveredTotal - withdrawnTotal
+  }, [deliveredTotal, withdrawnTotal])
+
+  useEffect(() => {
+    if (activeTab !== 'wallet') {
+      return
+    }
+
+    const pendingCount = walletSourceOrders.filter(isPendingWalletOrder).length
+    const deliveredCount = walletSourceOrders.filter(order => order.status === 'delivered').length
+    const completedWithdrawalsCount = (withdrawals || []).filter(w => w.status === 'completed').length
+
+    console.log('🧾 WALLET COMPUTED TOTALS')
+    console.log('  walletSourceOrders:', walletSourceOrders.length)
+    console.log('  pendingOrders:', pendingCount)
+    console.log('  deliveredOrders:', deliveredCount)
+    console.log('  deliveredTotal:', deliveredTotal.toFixed(2))
+    console.log('  pendingTotal:', pendingTotal.toFixed(2))
+    console.log('  withdrawnTotal:', withdrawnTotal.toFixed(2))
+    console.log('  availableComputed:', availableComputed.toFixed(2))
+    console.log('  completedWithdrawals:', completedWithdrawalsCount)
+    console.log('  api.wallet.pending_balance:', wallet?.pending_balance || 0)
+    console.log('  api.wallet.available_balance:', wallet?.available_balance || 0)
+  }, [activeTab, walletSourceOrders, withdrawals, deliveredTotal, pendingTotal, withdrawnTotal, availableComputed, wallet])
+  const normalizedTransactions = useMemo(() => {
+    const baseTransactions = (transactions || []).filter((txn) => txn.type !== 'debit_withdrawal')
+    const orderCreditsByOrderId = new Map()
+    const otherTransactions = []
+    const orderStatusById = new Map(
+      walletSourceOrders.map(order => [order.id, order.status])
+    )
+
+    baseTransactions.forEach((txn) => {
+      const isOrderCredit = txn.order_id && (txn.type === 'credit_pending' || txn.type === 'credit_available')
+
+      if (!isOrderCredit) {
+        otherTransactions.push(txn)
+        return
+      }
+
+      const existing = orderCreditsByOrderId.get(txn.order_id)
+      if (!existing || (existing.type === 'credit_pending' && txn.type === 'credit_available')) {
+        orderCreditsByOrderId.set(txn.order_id, txn)
+      }
+    })
+
+    const combined = [...orderCreditsByOrderId.values(), ...otherTransactions]
+      .filter((txn) => {
+        const description = (txn.description || '').toLowerCase()
+        if (description.includes('cancel') || description.includes('rto') || description.includes('return')) {
+          return false
+        }
+
+        if (!txn.order_id) return true
+        const status = String(orderStatusById.get(txn.order_id) || '').toLowerCase()
+        if (!status) return true
+        if (status === 'cancelled' || status.includes('rto') || status.includes('return')) {
+          return false
+        }
+        return true
+      })
+    return combined.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+  }, [transactions, walletSourceOrders])
   
   // Profile settings state
   const [showEditProfile, setShowEditProfile] = useState(false)
@@ -276,14 +394,15 @@ export default function SellerDashboardPage() {
       }
 
       // Fetch all data in parallel for better performance
-      const [productsData, ordersData, walletData] = await Promise.allSettled([
+      const [productsData, ordersData, walletData, allOrdersData] = await Promise.allSettled([
         apiService.getProducts({ sellerId: user.id }),
         apiService.getSellerOrdersPaginated({
           page: ordersPage,
           pageSize: ordersPageSize,
           status: orderFilter
         }).catch(() => ({ orders: [], pagination: null })),
-        apiService.getWallet().catch(() => ({ wallet: null, transactions: [], withdrawals: [] }))
+        apiService.getWallet().catch(() => ({ wallet: null, transactions: [], withdrawals: [] })),
+        apiService.getOrdersForSeller().catch(() => [])
       ])
 
       // Fetch seller profile only when needed
@@ -329,6 +448,9 @@ export default function SellerDashboardPage() {
       setOrders(orders)
       setOrdersTotalPages(pagination?.totalPages || 1)
       setOrdersTotalCount(pagination?.totalCount || orders.length)
+
+      const allSellerOrders = allOrdersData.status === 'fulfilled' ? (allOrdersData.value || []) : []
+      setWalletOrders(allSellerOrders)
         
       // Calculate stats using the fetched orders
       const pendingCount = orders.filter(o => 
@@ -381,7 +503,7 @@ export default function SellerDashboardPage() {
       })
       
       // Validate wallet calculations
-      const pendingOrders = orders.filter(o => 
+      const pendingOrders = allSellerOrders.filter(o => 
         (o.status === 'pending' || o.status === 'confirmed' || o.status === 'dispatched') &&
         (o.payment_status === 'paid' || o.payment_method === 'cod')
       )
@@ -2361,7 +2483,7 @@ export default function SellerDashboardPage() {
                       <CheckCircle className="w-6 h-6" />
                     </div>
                     <p className="text-primary-100 text-sm font-medium mb-1">Available Balance</p>
-                    <p className="text-3xl font-bold">₹{wallet?.available_balance?.toLocaleString() || '0.00'}</p>
+                    <p className="text-3xl font-bold">₹{availableComputed.toLocaleString()}</p>
                     <p className="text-primary-100 text-xs mt-2">Ready to withdraw • Click for details</p>
                   </div>
 
@@ -2375,11 +2497,11 @@ export default function SellerDashboardPage() {
                       <AlertTriangle className="w-6 h-6" />
                     </div>
                     <p className="text-secondary-50 text-sm font-medium mb-1">Pending Balance</p>
-                    <p className="text-3xl font-bold">₹{wallet?.pending_balance?.toLocaleString() || '0.00'}</p>
+                    <p className="text-3xl font-bold">₹{pendingTotal.toLocaleString()}</p>
                     <p className="text-secondary-50 text-xs mt-2">Awaiting order delivery • Click for details</p>
                   </div>
 
-                  {/* Total Earned */}
+                  {/* Withdrawn Amount */}
                   <div 
                     onClick={() => setShowRevenueBreakdown(true)}
                     className="bg-gradient-to-br from-gray-800 to-black rounded-xl p-6 text-white shadow-lg border border-gray-700 cursor-pointer hover:shadow-xl transition-all transform hover:scale-105"
@@ -2388,9 +2510,9 @@ export default function SellerDashboardPage() {
                       <TrendingUp className="w-8 h-8" />
                       <Star className="w-6 h-6" />
                     </div>
-                    <p className="text-gray-200 text-sm font-medium mb-1">Total Earned</p>
-                    <p className="text-3xl font-bold">₹{wallet?.total_earned?.toLocaleString() || '0.00'}</p>
-                    <p className="text-gray-200 text-xs mt-2">Lifetime earnings (97.5% after commission) • Click for details</p>
+                    <p className="text-gray-200 text-sm font-medium mb-1">Withdrawn Amount</p>
+                    <p className="text-3xl font-bold">₹{withdrawnTotal.toLocaleString()}</p>
+                    <p className="text-gray-200 text-xs mt-2">Completed withdrawals • Click for details</p>
                   </div>
                 </div>
 
@@ -2423,7 +2545,7 @@ export default function SellerDashboardPage() {
                       }
                       setShowWithdrawalForm(!showWithdrawalForm)
                     }}
-                    disabled={!wallet || parseFloat(wallet.available_balance) <= 0 || isKycMissing}
+                    disabled={!wallet || availableComputed <= 0 || isKycMissing}
                     className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-semibold transition-colors"
                   >
                     <ArrowUpCircle className="w-5 h-5" />
@@ -2449,7 +2571,7 @@ export default function SellerDashboardPage() {
                             value={withdrawalData.amount}
                             onChange={(e) => setWithdrawalData({...withdrawalData, amount: e.target.value})}
                             min="1"
-                            max={wallet?.available_balance || 0}
+                            max={availableComputed || 0}
                             className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                             placeholder="Enter amount"
                           />
@@ -2479,7 +2601,7 @@ export default function SellerDashboardPage() {
                                 toast.error('Please enter a valid withdrawal amount')
                                 return
                               }
-                              if (amount > parseFloat(wallet?.available_balance || 0)) {
+                              if (amount > availableComputed) {
                                 toast.error('Insufficient available balance')
                                 return
                               }
@@ -2581,36 +2703,43 @@ export default function SellerDashboardPage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Transaction History</h3>
                   <div className="space-y-2">
-                    {(transactions || []).filter((txn) => txn.type !== 'debit_withdrawal').length > 0 ? (
-                      (transactions || []).filter((txn) => txn.type !== 'debit_withdrawal').map((txn) => (
+                    {normalizedTransactions.length > 0 ? (
+                      normalizedTransactions.map((txn) => {
+                        const isPendingCredit = txn.type === 'credit_pending'
+                        const isCredit = txn.type.includes('credit')
+                        const orderRef = txn.order_id ? `#${String(txn.order_id).slice(0, 8)}` : null
+
+                        return (
                         <div key={txn.id} className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <div className={`p-2 rounded-full ${
-                              txn.type.includes('credit') ? 'bg-green-100' : 'bg-red-100'
+                              isPendingCredit ? 'bg-yellow-100' : isCredit ? 'bg-green-100' : 'bg-red-100'
                             }`}>
-                              {txn.type.includes('credit') ? (
-                                <ArrowDownCircle className={`w-5 h-5 ${txn.type.includes('credit') ? 'text-green-600' : 'text-red-600'}`} />
+                              {isCredit ? (
+                                <ArrowDownCircle className={`w-5 h-5 ${isPendingCredit ? 'text-yellow-700' : 'text-green-600'}`} />
                               ) : (
                                 <ArrowUpCircle className="w-5 h-5 text-red-600" />
                               )}
                             </div>
                             <div>
                               <p className="font-medium text-gray-900">{txn.description || txn.type.replace(/_/g, ' ')}</p>
+                              {orderRef && <p className="text-xs text-gray-500">Order: {orderRef}</p>}
                               <p className="text-sm text-gray-500">{new Date(txn.created_at).toLocaleString()}</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className={`font-semibold ${txn.type.includes('credit') ? 'text-green-600' : 'text-red-600'}`}>
-                              {txn.type.includes('credit') ? '+' : '-'}₹{Math.abs(txn.amount).toLocaleString()}
+                            <p className={`font-semibold ${isPendingCredit ? 'text-yellow-700' : isCredit ? 'text-green-600' : 'text-red-600'}`}>
+                              {isCredit ? '+' : '-'}₹{Math.abs(txn.amount).toLocaleString()}
                             </p>
-                            <p className="text-xs text-gray-500 capitalize">{txn.status}</p>
+                            <p className="text-xs text-gray-500 capitalize">{isPendingCredit ? 'pending delivery' : txn.status}</p>
                           </div>
                         </div>
-                      ))
+                        )
+                      })
                     ) : (
                       <div className="text-center py-8 text-gray-500">
                         <FileText className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                        <p>No non-withdrawal transactions yet</p>
+                        <p>No eligible transactions yet</p>
                       </div>
                     )}
                   </div>
@@ -3259,12 +3388,13 @@ export default function SellerDashboardPage() {
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
                 {/* Summary */}
                 <div className="bg-secondary-50 border-l-4 border-secondary-500 p-4 mb-6 rounded">
-                  <h4 className="font-semibold text-secondary-900">Total Pending Balance: ₹{wallet?.pending_balance?.toLocaleString() || '0.00'}</h4>
+                  <h4 className="font-semibold text-secondary-900">Total Pending Balance: ₹{pendingTotal.toLocaleString()}</h4>
                 </div>
 
                 {/* Orders Table */}
-                {orders && orders.length > 0 && (
-                  <div className="overflow-x-auto">\n                    <table className="w-full">
+                {walletSourceOrders && walletSourceOrders.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
                       <thead className="bg-gray-50 border-b-2 border-gray-200">
                         <tr>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Order ID</th>
@@ -3277,11 +3407,8 @@ export default function SellerDashboardPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
-                        {orders
-                          .filter(order => 
-                            ['pending', 'confirmed', 'dispatched'].includes(order.status) && 
-                            (order.payment_status === 'paid' || order.payment_method === 'cod')
-                          )
+                        {walletSourceOrders
+                          .filter(isPendingWalletOrder)
                           .map(order => {
                             const productSubtotal = order.order_items?.reduce((sum, item) => 
                               sum + (item.quantity * item.price), 0
@@ -3294,7 +3421,7 @@ export default function SellerDashboardPage() {
 
                             return (
                               <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-4 py-3 text-sm font-medium text-gray-900">#{order.order_number}</td>
+                                <td className="px-4 py-3 text-sm font-medium text-gray-900">{getDisplayOrderId(order)}</td>
                                 <td className="px-4 py-3 text-sm text-gray-600">
                                   {new Date(order.created_at).toLocaleDateString('en-IN', {
                                     day: 'numeric',
@@ -3333,11 +3460,8 @@ export default function SellerDashboardPage() {
                             Total Pending:
                           </td>
                           <td colSpan="2" className="px-4 py-3 text-right text-lg font-bold text-secondary-600">
-                            ₹{orders
-                              .filter(order => 
-                                ['pending', 'confirmed', 'dispatched'].includes(order.status) && 
-                                (order.payment_status === 'paid' || order.payment_method === 'cod')
-                              )
+                            ₹{walletSourceOrders
+                              .filter(isPendingWalletOrder)
                               .reduce((sum, order) => {
                                 const productSubtotal = order.order_items?.reduce((itemSum, item) => 
                                   itemSum + (item.quantity * item.price), 0
@@ -3357,19 +3481,16 @@ export default function SellerDashboardPage() {
                   </div>
                 )}
 
-                {orders?.filter(order => 
-                  ['pending', 'confirmed', 'dispatched'].includes(order.status) && 
-                  (order.payment_status === 'paid' || order.payment_method === 'cod')
-                ).length === 0 && (
+                {walletSourceOrders?.filter(isPendingWalletOrder).length === 0 && (
                   <div className="text-center py-12">
                     <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-500 text-lg">No pending orders found</p>
                     <p className="text-gray-400 text-sm mt-2">Orders awaiting delivery will appear here</p>
-                    {wallet?.pending_balance > 0 && (
+                    {pendingTotal > 0 && (
                       <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-left max-w-md mx-auto">
                         <p className="text-red-900 font-semibold text-sm">⚠️ Data Mismatch Detected</p>
                         <p className="text-red-700 text-xs mt-2">
-                          Your wallet shows ₹{wallet.pending_balance.toLocaleString()} pending balance, but no pending orders were found. 
+                          Your wallet shows ₹{pendingTotal.toLocaleString()} pending balance, but no pending orders were found. 
                           This could indicate:
                         </p>
                         <ul className="text-red-700 text-xs mt-2 space-y-1 list-disc list-inside">
@@ -3387,10 +3508,7 @@ export default function SellerDashboardPage() {
 
                 {/* Show mismatch warning if calculated total doesn't match wallet */}
                 {(() => {
-                  const pendingOrders = orders?.filter(order => 
-                    ['pending', 'confirmed', 'dispatched'].includes(order.status) && 
-                    (order.payment_status === 'paid' || order.payment_method === 'cod')
-                  ) || []
+                  const pendingOrders = walletSourceOrders?.filter(isPendingWalletOrder) || []
                   
                   const calculatedTotal = pendingOrders.reduce((sum, order) => {
                     const productSubtotal = order.order_items?.reduce((itemSum, item) => 
@@ -3403,7 +3521,7 @@ export default function SellerDashboardPage() {
                     return sum + sellerShare + giftFees
                   }, 0)
                   
-                  const walletPending = wallet?.pending_balance || 0
+                  const walletPending = pendingTotal
                   const difference = Math.abs(calculatedTotal - walletPending)
                   
                   if (pendingOrders.length > 0 && difference > 0.01) {
@@ -3464,7 +3582,7 @@ export default function SellerDashboardPage() {
 
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
                 {/* Orders Table */}
-                {orders && orders.length > 0 && (
+                {walletSourceOrders && walletSourceOrders.length > 0 && (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-gray-50 border-b-2 border-gray-200">
@@ -3479,7 +3597,7 @@ export default function SellerDashboardPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
-                        {orders
+                        {walletSourceOrders
                           .filter(order => order.status === 'delivered')
                           .map(order => {
                             const productSubtotal = order.order_items?.reduce((sum, item) => 
@@ -3493,7 +3611,7 @@ export default function SellerDashboardPage() {
 
                             return (
                               <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-4 py-3 text-sm font-medium text-gray-900">#{order.order_number}</td>
+                                <td className="px-4 py-3 text-sm font-medium text-gray-900">{getDisplayOrderId(order)}</td>
                                 <td className="px-4 py-3 text-sm text-gray-600">
                                   {order.delivered_at ? new Date(order.delivered_at).toLocaleDateString('en-IN', {
                                     day: 'numeric',
@@ -3523,33 +3641,59 @@ export default function SellerDashboardPage() {
                           })}
                       </tbody>
                       <tfoot className="bg-gray-50 border-t-2 border-gray-200">
-                        <tr>
-                          <td colSpan="4" className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                            Total Available:
-                          </td>
-                          <td colSpan="2" className="px-4 py-3 text-right text-lg font-bold text-primary-600">
-                            ₹{orders
-                              .filter(order => order.status === 'delivered')
-                              .reduce((sum, order) => {
-                                const productSubtotal = order.order_items?.reduce((itemSum, item) => 
-                                  itemSum + (item.quantity * item.price), 0
-                                ) || 0
-                                const giftFees = order.order_items?.reduce((giftSum, item) => 
-                                  giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
-                                ) || 0
-                                const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
-                                return sum + sellerShare + giftFees
-                              }, 0)
-                              .toLocaleString()}
-                          </td>
-                          <td></td>
-                        </tr>
+                        {(() => {
+                          const deliveredTotal = walletSourceOrders
+                            .filter(order => order.status === 'delivered')
+                            .reduce((sum, order) => {
+                              const productSubtotal = order.order_items?.reduce((itemSum, item) => 
+                                itemSum + (item.quantity * item.price), 0
+                              ) || 0
+                              const giftFees = order.order_items?.reduce((giftSum, item) => 
+                                giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
+                              ) || 0
+                              const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+                              return sum + sellerShare + giftFees
+                            }, 0)
+                          const availableTotal = deliveredTotal - withdrawnTotal
+
+                          return (
+                            <>
+                              <tr>
+                                <td colSpan="4" className="px-4 py-2 text-right text-sm font-semibold text-gray-700">
+                                  Delivered Total:
+                                </td>
+                                <td colSpan="2" className="px-4 py-2 text-right text-sm font-semibold text-gray-700">
+                                  ₹{deliveredTotal.toLocaleString()}
+                                </td>
+                                <td></td>
+                              </tr>
+                              <tr>
+                                <td colSpan="4" className="px-4 py-2 text-right text-sm font-semibold text-gray-700">
+                                  Withdrawn:
+                                </td>
+                                <td colSpan="2" className="px-4 py-2 text-right text-sm font-semibold text-gray-700">
+                                  -₹{withdrawnTotal.toLocaleString()}
+                                </td>
+                                <td></td>
+                              </tr>
+                              <tr>
+                                <td colSpan="4" className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                                  Total Available:
+                                </td>
+                                <td colSpan="2" className="px-4 py-3 text-right text-lg font-bold text-primary-600">
+                                  ₹{availableTotal.toLocaleString()}
+                                </td>
+                                <td></td>
+                              </tr>
+                            </>
+                          )
+                        })()}
                       </tfoot>
                     </table>
                   </div>
                 )}
 
-                {orders?.filter(order => order.status === 'delivered').length === 0 && (
+                {walletSourceOrders?.filter(order => order.status === 'delivered').length === 0 && (
                   <div className="text-center py-12">
                     <Wallet className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-500 text-lg">No available balance yet</p>
@@ -3559,7 +3703,7 @@ export default function SellerDashboardPage() {
 
                 {/* Summary - How it's calculated */}
                 <div className="bg-primary-50 border-l-4 border-primary-500 p-4 mt-6 rounded">
-                  <h4 className="font-semibold text-primary-900 mb-2">Available Balance: ₹{wallet?.available_balance?.toLocaleString() || '0.00'}</h4>
+                  <h4 className="font-semibold text-primary-900 mb-2">Available Balance: ₹{availableComputed.toLocaleString()}</h4>
                   <p className="text-sm text-primary-700 mb-3">
                     This is money you can withdraw right now. It comes from delivered orders minus any withdrawals you've made.
                   </p>
@@ -3578,7 +3722,7 @@ export default function SellerDashboardPage() {
           </div>
         )}
 
-        {/* Revenue Breakdown Modal */}
+        {/* Withdrawn Amount Breakdown Modal */}
         {showRevenueBreakdown && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <motion.div
@@ -3589,7 +3733,7 @@ export default function SellerDashboardPage() {
               <div className="bg-gradient-to-r from-gray-800 to-black px-6 py-4 flex justify-between items-center">
                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
                   <TrendingUp className="w-6 h-6" />
-                  Total Revenue Breakdown
+                  Withdrawn Amount Breakdown
                 </h3>
                 <button
                   onClick={() => setShowRevenueBreakdown(false)}
@@ -3600,99 +3744,51 @@ export default function SellerDashboardPage() {
               </div>
 
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-                {/* Orders Table */}
-                {orders && orders.length > 0 && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 border-b-2 border-gray-200">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Order ID</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Delivered Date</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Product Amount</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Your Earnings (97.5%)</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Gift Fees</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Commission (2.5%)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {orders
-                          .filter(order => order.status === 'delivered')
-                          .map(order => {
-                            const productSubtotal = order.order_items?.reduce((sum, item) => 
-                              sum + (item.quantity * item.price), 0
-                            ) || 0
-                            const giftFees = order.order_items?.reduce((sum, item) => 
-                              sum + (item.gift_packaging ? 10 * item.quantity : 0), 0
-                            ) || 0
-                            const earnings = parseFloat((productSubtotal * 0.975).toFixed(2))
-                            const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
-
-                            return (
-                              <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-4 py-3 text-sm font-medium text-gray-900">#{order.order_number}</td>
-                                <td className="px-4 py-3 text-sm text-gray-600">
-                                  {order.delivered_at ? new Date(order.delivered_at).toLocaleDateString('en-IN', {
-                                    day: 'numeric',
-                                    month: 'short',
-                                    year: 'numeric'
-                                  }) : 'N/A'}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
-                                  ₹{productSubtotal.toLocaleString()}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-right font-semibold text-gray-900">
-                                  ₹{earnings.toLocaleString()}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-right font-semibold text-blue-600">
-                                  {giftFees > 0 ? `₹${giftFees} 🎁` : '-'}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-right text-gray-500">
-                                  -₹{commission.toLocaleString()}
-                                </td>
-                              </tr>
-                            )
-                          })}
-                      </tbody>
-                      <tfoot className="bg-gray-50 border-t-2 border-gray-200">
-                        <tr>
-                          <td colSpan="3" className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                            Total Revenue:
-                          </td>
-                          <td colSpan="2" className="px-4 py-3 text-right text-lg font-bold text-gray-900">
-                            ₹{orders
-                              .filter(order => order.status === 'delivered')
-                              .reduce((sum, order) => {
-                                const productSubtotal = order.order_items?.reduce((itemSum, item) => 
-                                  itemSum + (item.quantity * item.price), 0
-                                ) || 0
-                                const giftFees = order.order_items?.reduce((giftSum, item) => 
-                                  giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
-                                ) || 0
-                                const earnings = parseFloat((productSubtotal * 0.975).toFixed(2))
-                                return sum + earnings + giftFees
-                              }, 0)
-                              .toLocaleString()}
-                          </td>
-                          <td></td>
-                        </tr>
-                      </tfoot>
-                    </table>
+                {withdrawals && withdrawals.length > 0 ? (
+                  <div className="space-y-3">
+                    {withdrawals.map((withdrawal) => (
+                      <div key={withdrawal.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-gray-900">₹{withdrawal.amount?.toLocaleString()}</p>
+                            <p className="text-sm text-gray-500">{new Date(withdrawal.requested_at).toLocaleDateString()}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                              withdrawal.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              withdrawal.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              withdrawal.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {withdrawal.status}
+                            </span>
+                            {withdrawal.status === 'completed' && (
+                              <div className="text-xs text-gray-600 mt-1 space-y-1">
+                                <p>
+                                  Internal Transaction ID: {withdrawal.transaction_id || 'N/A'}
+                                </p>
+                                <p>
+                                  Manual Transaction ID / UTR: {withdrawal.manual_transaction_id || 'Not provided yet'}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-
-                {orders?.filter(order => order.status === 'delivered').length === 0 && (
+                ) : (
                   <div className="text-center py-12">
                     <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 text-lg">No delivered orders yet</p>
-                    <p className="text-gray-400 text-sm mt-2">Completed orders will appear here</p>
+                    <p className="text-gray-500 text-lg">No withdrawals yet</p>
+                    <p className="text-gray-400 text-sm mt-2">Completed withdrawals will appear here</p>
                   </div>
                 )}
 
-                {/* Summary - How it's calculated */}
                 <div className="bg-gray-50 border-l-4 border-gray-800 p-4 mt-6 rounded">
-                  <h4 className="font-semibold text-gray-900 mb-2">Total Earned: ₹{wallet?.total_earned?.toLocaleString() || '0.00'}</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">Withdrawn Amount: ₹{withdrawnTotal.toLocaleString()}</h4>
                   <p className="text-sm text-gray-700 mb-3">
-                    This includes all delivered orders. You receive 97.5% of the product amount (2.5% platform commission).
+                    This is the total of completed withdrawal requests.
                   </p>
                 </div>
               </div>
