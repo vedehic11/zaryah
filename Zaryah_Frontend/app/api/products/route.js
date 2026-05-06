@@ -120,6 +120,8 @@ export async function GET(request) {
         color_options: product.color_options || [],
         colorOptions: product.color_options || [],
         legal_disclaimer: product.legal_disclaimer,
+        size_chart_url: product.size_chart_url,
+        sizeChartUrl: product.size_chart_url,
         is_genuine: product.is_genuine,
         is_quality_checked: product.is_quality_checked,
         status: product.status,
@@ -209,6 +211,7 @@ export async function POST(request) {
       cod_available: formData.get('codAvailable') === 'true',
       two_way_delivery: formData.get('twoWayDelivery') === 'true',
       legal_disclaimer: formData.get('legalDisclaimer') || null,
+      size_chart_url: formData.get('sizeChartUrl') || null,
       seller_id: user.user_type === 'Seller' ? user.id : formData.get('sellerId'),
       status: 'approved'
     }

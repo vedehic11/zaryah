@@ -118,6 +118,8 @@ export const ProductDetailPage = ({ productId }) => {
       ? product.color_options
       : []
 
+  const sizeChartUrl = product?.sizeChartUrl || product?.size_chart_url
+
   const selectedSizePrice = sizePriceOptions.find(option => option?.label === selectedSize)?.price
   const displayPrice = selectedSizePrice !== undefined && selectedSizePrice !== null
     ? Number(selectedSizePrice)
@@ -871,10 +873,11 @@ export const ProductDetailPage = ({ productId }) => {
             {/* Tabs */}
             <div className="bg-white rounded-2xl shadow-soft border border-primary-100 overflow-hidden">
               <div className="flex border-b border-gray-200 overflow-x-auto">
-                {[
+                [
                   { key: 'description', label: 'Description' },
                   { key: 'details', label: 'Product Details' },
                   { key: 'material', label: 'Material & Care' },
+                  ...(sizeChartUrl ? [{ key: 'sizeChart', label: 'Size Chart' }] : []),
                   { 
                     key: 'reviews', 
                     label: 'Reviews',
@@ -1068,6 +1071,23 @@ export const ProductDetailPage = ({ productId }) => {
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {activeTab === 'sizeChart' && sizeChartUrl && (
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-semibold text-charcoal-900">Size Chart</h3>
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                      <div className="relative w-full max-w-2xl mx-auto aspect-[4/5] bg-white rounded-lg overflow-hidden">
+                        <Image
+                          src={sizeChartUrl}
+                          alt="Size chart"
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-sm text-charcoal-600">Use this chart to pick the right size.</p>
                   </div>
                 )}
 

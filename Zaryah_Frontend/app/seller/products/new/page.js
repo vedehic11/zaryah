@@ -21,6 +21,7 @@ export default function AddProductPage() {
   const router = useRouter()
   const { user } = useAuth()
   const fileInputRef = useRef(null)
+  const sizeChartInputRef = useRef(null)
   const colorImageInputRefs = useRef({})
 
   const [formData, setFormData] = useState({
@@ -45,7 +46,8 @@ export default function AddProductPage() {
     returnDays: '7',
     codAvailable: true,
     legalDisclaimer: '',
-    sizeOptions: ''
+    sizeOptions: '',
+    sizeChartUrl: ''
   })
 
   const [images, setImages] = useState([])
@@ -54,6 +56,7 @@ export default function AddProductPage() {
   const [sizePriceOptions, setSizePriceOptions] = useState([{ label: '', price: '' }])
   const [colorOptions, setColorOptions] = useState([{ name: '', image: '' }])
   const [colorImageUploading, setColorImageUploading] = useState({})
+  const [sizeChartUploading, setSizeChartUploading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const [sectionOptions, setSectionOptions] = useState(['Featured', 'Trending', 'New Arrivals', 'Best Sellers'])
@@ -134,7 +137,8 @@ export default function AddProductPage() {
       returnDays: '0',
       codAvailable: true,
       legalDisclaimer: 'Actual product packaging may contain more information. Please read labels carefully before consuming.',
-      sizeOptions: 'Pack'
+      sizeOptions: 'Pack',
+      sizeChartUrl: ''
     })
     
     setFeatures([
@@ -314,6 +318,57 @@ export default function AddProductPage() {
       }
       return updated
     })
+  }
+
+  const handleSizeChartUpload = async (file) => {
+    if (!file) return
+
+    const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
+    const isValidSize = file.size <= 5 * 1024 * 1024
+
+    if (!isValidType) {
+      toast.error('Only JPG, PNG, GIF, or WebP images are allowed')
+      return
+    }
+
+    if (!isValidSize) {
+      toast.error('Image must be 5MB or smaller')
+      return
+    }
+
+    setSizeChartUploading(true)
+
+    try {
+      const uploadData = new FormData()
+      uploadData.append('file', file)
+      uploadData.append('folder', 'product-size-charts')
+
+      const response = await apiService.request('/upload', {
+        method: 'POST',
+        body: uploadData
+      })
+
+      if (!response?.url) {
+        throw new Error('Failed to upload image')
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        sizeChartUrl: response.url
+      }))
+      toast.success('Size chart uploaded')
+    } catch (error) {
+      toast.error(error.message || 'Failed to upload image')
+    } finally {
+      setSizeChartUploading(false)
+    }
+  }
+
+  const handleSizeChartRemove = () => {
+    setFormData(prev => ({
+      ...prev,
+      sizeChartUrl: ''
+    }))
   }
 
   const validate = () => {
@@ -827,6 +882,51 @@ export default function AddProductPage() {
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 mt-2">Use the same price for multiple sizes if needed.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Size Chart (optional)
+                </label>
+                <input
+                  ref={sizeChartInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleSizeChartUpload(e.target.files?.[0])}
+                  className="hidden"
+                />
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => sizeChartInputRef.current?.click()}
+                    disabled={sizeChartUploading}
+                    className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    {sizeChartUploading ? 'Uploading...' : (formData.sizeChartUrl ? 'Change Size Chart' : 'Upload Size Chart')}
+                  </button>
+                  {formData.sizeChartUrl && (
+                    <button
+                      type="button"
+                      onClick={handleSizeChartRemove}
+                      className="text-sm text-red-600 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                {formData.sizeChartUrl && (
+                  <div className="mt-3 max-w-md">
+                    <div className="aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                      <img
+                        src={formData.sizeChartUrl}
+                        alt="Size chart"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Displayed on the product page for buyers.</p>
+                  </div>
+                )}
               </div>
 
               <div>

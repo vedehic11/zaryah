@@ -51,9 +51,11 @@ export default function EditSellerProductPage() {
   const [sectionOptions, setSectionOptions] = useState(DEFAULT_SECTION_OPTIONS)
   const [hasCustomSections, setHasCustomSections] = useState(false)
   const colorImageInputRefs = useRef({})
+  const sizeChartInputRef = useRef(null)
   const [sizePriceOptions, setSizePriceOptions] = useState([{ label: '', price: '' }])
   const [colorOptions, setColorOptions] = useState([{ name: '', image: '' }])
   const [colorImageUploading, setColorImageUploading] = useState({})
+  const [sizeChartUploading, setSizeChartUploading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -69,6 +71,7 @@ export default function EditSellerProductPage() {
     material: '',
     care_instructions: '',
     legal_disclaimer: '',
+    size_chart_url: '',
     size_options: '',
     cod_available: true,
     // instant_delivery removed
@@ -151,6 +154,7 @@ export default function EditSellerProductPage() {
           material: toInputValue(productData.material),
           care_instructions: toInputValue(productData.care_instructions),
           legal_disclaimer: toInputValue(productData.legal_disclaimer),
+          size_chart_url: toInputValue(productData.size_chart_url || productData.sizeChartUrl),
           size_options: toInputValue(productData.size_options),
           cod_available: Boolean(productData.cod_available),
           customisable: Boolean(productData.customisable),
@@ -309,6 +313,57 @@ export default function EditSellerProductPage() {
     })
   }
 
+  const handleSizeChartUpload = async (file) => {
+    if (!file) return
+
+    const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
+    const isValidSize = file.size <= 5 * 1024 * 1024
+
+    if (!isValidType) {
+      toast.error('Only JPG, PNG, GIF, or WebP images are allowed')
+      return
+    }
+
+    if (!isValidSize) {
+      toast.error('Image must be 5MB or smaller')
+      return
+    }
+
+    setSizeChartUploading(true)
+
+    try {
+      const uploadData = new FormData()
+      uploadData.append('file', file)
+      uploadData.append('folder', 'product-size-charts')
+
+      const response = await apiService.request('/upload', {
+        method: 'POST',
+        body: uploadData
+      })
+
+      if (!response?.url) {
+        throw new Error('Failed to upload image')
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        size_chart_url: response.url
+      }))
+      toast.success('Size chart uploaded')
+    } catch (error) {
+      toast.error(error.message || 'Failed to upload image')
+    } finally {
+      setSizeChartUploading(false)
+    }
+  }
+
+  const handleSizeChartRemove = () => {
+    setFormData(prev => ({
+      ...prev,
+      size_chart_url: ''
+    }))
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
 
@@ -375,6 +430,7 @@ export default function EditSellerProductPage() {
         material: formData.material.trim() || null,
         care_instructions: formData.care_instructions.trim() || null,
         legal_disclaimer: formData.legal_disclaimer.trim() || null,
+        size_chart_url: formData.size_chart_url.trim() || null,
         size_options: derivedSizeOptions.length > 0
           ? derivedSizeOptions
           : formData.size_options
@@ -517,6 +573,44 @@ export default function EditSellerProductPage() {
                 ))}
               </div>
               <p className="text-xs text-gray-500 mt-2">Leave blank if this product has no size-based pricing.</p>
+            </div>
+            <div className="block md:col-span-2">
+              <span className="block text-sm font-medium text-gray-700 mb-2">Size chart (optional)</span>
+              <input
+                ref={sizeChartInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(event) => handleSizeChartUpload(event.target.files?.[0])}
+                className="hidden"
+              />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => sizeChartInputRef.current?.click()}
+                  disabled={sizeChartUploading}
+                  className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  <ImageIcon className="w-4 h-4" />
+                  {sizeChartUploading ? 'Uploading...' : (formData.size_chart_url ? 'Change Size Chart' : 'Upload Size Chart')}
+                </button>
+                {formData.size_chart_url && (
+                  <button
+                    type="button"
+                    onClick={handleSizeChartRemove}
+                    className="text-sm text-red-600 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              {formData.size_chart_url && (
+                <div className="mt-3 max-w-md">
+                  <div className="relative aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                    <Image src={formData.size_chart_url} alt="Size chart" fill className="object-contain" />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Shown on the product page for buyers.</p>
+                </div>
+              )}
             </div>
             <label className="block">
               <span className="block text-sm font-medium text-gray-700 mb-1">Delivery min</span>

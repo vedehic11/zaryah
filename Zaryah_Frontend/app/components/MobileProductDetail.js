@@ -85,6 +85,8 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       ? product.color_options
       : []
 
+  const sizeChartUrl = product?.sizeChartUrl || product?.size_chart_url
+
   const selectedSizePrice = sizePriceOptions.find(option => option?.label === selectedSize)?.price
   const displayPrice = selectedSizePrice !== undefined && selectedSizePrice !== null
     ? Number(selectedSizePrice)
@@ -707,6 +709,22 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
               <p className="text-sm text-charcoal-700 leading-relaxed">
                 {product.description}
               </p>
+
+              {sizeChartUrl && (
+                <div className="pt-4 border-t border-cream-200">
+                  <h4 className="text-sm font-bold text-charcoal-900 mb-3">Size Chart</h4>
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                    <div className="relative w-full aspect-[4/5] bg-white rounded-lg overflow-hidden">
+                      <Image
+                        src={sizeChartUrl}
+                        alt="Size chart"
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {/* Product Specifications */}
               <div className="pt-4 border-t border-cream-200">
