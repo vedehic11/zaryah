@@ -85,7 +85,11 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       ? product.color_options
       : []
 
-  const sizeChartUrl = product?.sizeChartUrl || product?.size_chart_url
+  const sizeCharts = Array.isArray(product?.sizeCharts)
+    ? product.sizeCharts
+    : Array.isArray(product?.size_charts)
+      ? product.size_charts
+      : []
 
   const selectedSizePrice = sizePriceOptions.find(option => option?.label === selectedSize)?.price
   const displayPrice = selectedSizePrice !== undefined && selectedSizePrice !== null
@@ -710,18 +714,23 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                 {product.description}
               </p>
 
-              {sizeChartUrl && (
+              {sizeCharts.length > 0 && (
                 <div className="pt-4 border-t border-cream-200">
-                  <h4 className="text-sm font-bold text-charcoal-900 mb-3">Size Chart</h4>
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                    <div className="relative w-full aspect-[4/5] bg-white rounded-lg overflow-hidden">
-                      <Image
-                        src={sizeChartUrl}
-                        alt="Size chart"
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
+                  <h4 className="text-sm font-bold text-charcoal-900 mb-3">Reference Charts</h4>
+                  <div className="space-y-4">
+                    {sizeCharts.map((chart, index) => (
+                      <div key={`chart-${index}`} className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                        <p className="text-xs font-medium text-charcoal-700 mb-2">{chart.label}</p>
+                        <div className="relative w-full aspect-[4/5] bg-white rounded-lg overflow-hidden">
+                          <Image
+                            src={chart.url}
+                            alt={chart.label}
+                            fill
+                            className="object-contain"
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

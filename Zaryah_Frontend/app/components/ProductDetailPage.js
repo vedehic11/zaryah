@@ -118,7 +118,14 @@ export const ProductDetailPage = ({ productId }) => {
       ? product.color_options
       : []
 
-  const sizeChartUrl = product?.sizeChartUrl || product?.size_chart_url
+  const sizeCharts = Array.isArray(product?.sizeCharts)
+    ? product.sizeCharts
+    : Array.isArray(product?.size_charts)
+      ? product.size_charts
+      : []
+  
+  // For backward compatibility, check for old format
+  const hasCharts = sizeCharts.length > 0 || (product?.sizeChartUrl || product?.size_chart_url)
 
   const selectedSizePrice = sizePriceOptions.find(option => option?.label === selectedSize)?.price
   const displayPrice = selectedSizePrice !== undefined && selectedSizePrice !== null
@@ -873,11 +880,11 @@ export const ProductDetailPage = ({ productId }) => {
             {/* Tabs */}
             <div className="bg-white rounded-2xl shadow-soft border border-primary-100 overflow-hidden">
               <div className="flex border-b border-gray-200 overflow-x-auto">
-                [
+                {[
                   { key: 'description', label: 'Description' },
                   { key: 'details', label: 'Product Details' },
                   { key: 'material', label: 'Material & Care' },
-                  ...(sizeChartUrl ? [{ key: 'sizeChart', label: 'Size Chart' }] : []),
+                  ...(hasCharts ? [{ key: 'charts', label: 'Reference Charts' }] : []),
                   { 
                     key: 'reviews', 
                     label: 'Reviews',
@@ -1074,20 +1081,26 @@ export const ProductDetailPage = ({ productId }) => {
                   </div>
                 )}
 
-                {activeTab === 'sizeChart' && sizeChartUrl && (
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-semibold text-charcoal-900">Size Chart</h3>
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                      <div className="relative w-full max-w-2xl mx-auto aspect-[4/5] bg-white rounded-lg overflow-hidden">
-                        <Image
-                          src={sizeChartUrl}
-                          alt="Size chart"
-                          fill
-                          className="object-contain"
-                        />
+                {activeTab === 'charts' && hasCharts && (
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-semibold text-charcoal-900">Reference Charts</h3>
+                    {sizeCharts.length > 0 ? (
+                      <div className="space-y-6">
+                        {sizeCharts.map((chart, index) => (
+                          <div key={`chart-${index}`} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                            <h4 className="text-lg font-medium text-charcoal-800 mb-4">{chart.label}</h4>
+                            <div className="relative w-full max-w-2xl mx-auto aspect-[4/5] bg-white rounded-lg overflow-hidden">
+                              <Image
+                                src={chart.url}
+                                alt={chart.label}
+                                fill
+                                className="object-contain"
+                              />
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                    <p className="text-sm text-charcoal-600">Use this chart to pick the right size.</p>
+                    ) : null}
                   </div>
                 )}
 

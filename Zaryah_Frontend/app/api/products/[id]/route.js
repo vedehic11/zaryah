@@ -119,8 +119,11 @@ export async function GET(request, { params }) {
       colorOptions: product.color_options || [],
       legal_disclaimer: product.legal_disclaimer,
       legalDisclaimer: product.legal_disclaimer,
-      size_chart_url: product.size_chart_url,
-      sizeChartUrl: product.size_chart_url,
+      size_charts: product.size_charts || [],
+      sizeCharts: product.size_charts || [],
+      // Backward compatibility: if no size_charts, provide empty array (old size_chart_url is deprecated)
+      size_chart_url: null,
+      sizeChartUrl: null,
       is_genuine: product.is_genuine,
       isGenuine: product.is_genuine,
       is_quality_checked: product.is_quality_checked,

@@ -120,8 +120,11 @@ export async function GET(request) {
         color_options: product.color_options || [],
         colorOptions: product.color_options || [],
         legal_disclaimer: product.legal_disclaimer,
-        size_chart_url: product.size_chart_url,
-        sizeChartUrl: product.size_chart_url,
+        size_charts: product.size_charts || [],
+        sizeCharts: product.size_charts || [],
+        // Backward compatibility
+        size_chart_url: null,
+        sizeChartUrl: null,
         is_genuine: product.is_genuine,
         is_quality_checked: product.is_quality_checked,
         status: product.status,
@@ -211,9 +214,30 @@ export async function POST(request) {
       cod_available: formData.get('codAvailable') === 'true',
       two_way_delivery: formData.get('twoWayDelivery') === 'true',
       legal_disclaimer: formData.get('legalDisclaimer') || null,
-      size_chart_url: formData.get('sizeChartUrl') || null,
+      size_charts: [],
       seller_id: user.user_type === 'Seller' ? user.id : formData.get('sellerId'),
       status: 'approved'
+    }
+
+    // Handle size_charts (new format) or fallback to size_chart_url (old format)
+    const sizeChartsStr = formData.get('sizeCharts')
+    if (sizeChartsStr) {
+      try {
+        const parsed = JSON.parse(sizeChartsStr)
+        if (Array.isArray(parsed)) {
+          productData.size_charts = parsed.filter(chart => chart.label && chart.url)
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse sizeCharts:', parseError)
+      }
+    }
+    
+    // Fallback: if no size_charts, check for old size_chart_url format
+    if (productData.size_charts.length === 0) {
+      const oldSizeChartUrl = formData.get('sizeChartUrl')
+      if (oldSizeChartUrl) {
+        productData.size_charts = [{ label: 'Size Chart', url: oldSizeChartUrl }]
+      }
     }
 
     // Handle size_options
