@@ -118,14 +118,28 @@ export const ProductDetailPage = ({ productId }) => {
       ? product.color_options
       : []
 
-  const sizeCharts = Array.isArray(product?.sizeCharts)
-    ? product.sizeCharts
-    : Array.isArray(product?.size_charts)
-      ? product.size_charts
-      : []
-  
-  // For backward compatibility, check for old format
-  const hasCharts = sizeCharts.length > 0 || (product?.sizeChartUrl || product?.size_chart_url)
+  const parseSizeCharts = (p) => {
+    try {
+      if (Array.isArray(p?.sizeCharts)) return p.sizeCharts
+      if (typeof p?.sizeCharts === 'string') {
+        const parsed = JSON.parse(p.sizeCharts)
+        if (Array.isArray(parsed)) return parsed
+      }
+      if (Array.isArray(p?.size_charts)) return p.size_charts
+      if (typeof p?.size_charts === 'string') {
+        const parsed = JSON.parse(p.size_charts)
+        if (Array.isArray(parsed)) return parsed
+      }
+    } catch (err) {
+      console.error('Failed to parse size_charts for product', err)
+    }
+    return []
+  }
+
+  const sizeCharts = parseSizeCharts(product)
+
+  // Only consider charts if the new `size_charts` array (or its string) is present
+  const hasCharts = sizeCharts.length > 0
 
   const selectedSizePrice = sizePriceOptions.find(option => option?.label === selectedSize)?.price
   const displayPrice = selectedSizePrice !== undefined && selectedSizePrice !== null
@@ -1085,22 +1099,34 @@ export const ProductDetailPage = ({ productId }) => {
                   <div className="space-y-6">
                     <h3 className="text-xl font-semibold text-charcoal-900">Reference Charts</h3>
                     {sizeCharts.length > 0 ? (
-                      <div className="space-y-6">
-                        {sizeCharts.map((chart, index) => (
-                          <div key={`chart-${index}`} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                            <h4 className="text-lg font-medium text-charcoal-800 mb-4">{chart.label}</h4>
+                          <div className="space-y-6">
+                            {sizeCharts.map((chart, index) => (
+                              <div key={`chart-${index}`} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                                <h4 className="text-lg font-medium text-charcoal-800 mb-4">{chart.label}</h4>
+                                <div className="relative w-full max-w-2xl mx-auto aspect-[4/5] bg-white rounded-lg overflow-hidden">
+                                  <Image
+                                    src={chart.url}
+                                    alt={chart.label}
+                                    fill
+                                    className="object-contain"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (product?.sizeChartUrl || product?.size_chart_url) ? (
+                          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                            <h4 className="text-lg font-medium text-charcoal-800 mb-4">Size Chart</h4>
                             <div className="relative w-full max-w-2xl mx-auto aspect-[4/5] bg-white rounded-lg overflow-hidden">
                               <Image
-                                src={chart.url}
-                                alt={chart.label}
+                                src={product.sizeChartUrl || product.size_chart_url}
+                                alt="Size Chart"
                                 fill
                                 className="object-contain"
                               />
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    ) : null}
+                        ) : null}
                   </div>
                 )}
 

@@ -85,11 +85,25 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       ? product.color_options
       : []
 
-  const sizeCharts = Array.isArray(product?.sizeCharts)
-    ? product.sizeCharts
-    : Array.isArray(product?.size_charts)
-      ? product.size_charts
-      : []
+  const parseSizeCharts = (p) => {
+    try {
+      if (Array.isArray(p?.sizeCharts)) return p.sizeCharts
+      if (typeof p?.sizeCharts === 'string') {
+        const parsed = JSON.parse(p.sizeCharts)
+        if (Array.isArray(parsed)) return parsed
+      }
+      if (Array.isArray(p?.size_charts)) return p.size_charts
+      if (typeof p?.size_charts === 'string') {
+        const parsed = JSON.parse(p.size_charts)
+        if (Array.isArray(parsed)) return parsed
+      }
+    } catch (err) {
+      console.error('Failed to parse size_charts for product', err)
+    }
+    return []
+  }
+
+  const sizeCharts = parseSizeCharts(product)
 
   const selectedSizePrice = sizePriceOptions.find(option => option?.label === selectedSize)?.price
   const displayPrice = selectedSizePrice !== undefined && selectedSizePrice !== null
@@ -714,7 +728,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                 {product.description}
               </p>
 
-              {sizeCharts.length > 0 && (
+              {sizeCharts.length > 0 ? (
                 <div className="pt-4 border-t border-cream-200">
                   <h4 className="text-sm font-bold text-charcoal-900 mb-3">Reference Charts</h4>
                   <div className="space-y-4">
@@ -733,7 +747,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                     ))}
                   </div>
                 </div>
-              )}
+              ) : null}
               
               {/* Product Specifications */}
               <div className="pt-4 border-t border-cream-200">
