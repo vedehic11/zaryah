@@ -524,11 +524,26 @@ export default function AddProductPage() {
       }
 
       toast.loading('Processing product...', { id: toastId })
-      
-      const data = await response.json()
+
+      // Safely parse response: prefer JSON, but fall back to plain text
+      let data = null
+      try {
+        const contentType = response.headers.get('content-type') || ''
+        if (contentType.includes('application/json')) {
+          data = await response.json()
+        } else {
+          const text = await response.text()
+          data = text
+        }
+      } catch (parseError) {
+        console.error('Failed to parse response body:', parseError)
+        const text = await response.text().catch(() => '')
+        data = text || null
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || data.details || 'Failed to create product')
+        const errMsg = (data && typeof data === 'object' && (data.error || data.details)) || (typeof data === 'string' && data) || 'Failed to create product'
+        throw new Error(errMsg)
       }
 
       toast.success('Product created successfully!', { id: toastId })
