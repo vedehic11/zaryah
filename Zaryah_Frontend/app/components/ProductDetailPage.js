@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Heart, 
@@ -22,6 +22,7 @@ import {
   RotateCcw,
   AlertCircle,
   ChevronLeft,
+  ChevronRight,
   Image as ImageIcon
 } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
@@ -54,6 +55,55 @@ export const ProductDetailPage = ({ productId }) => {
   const [customUploadStatus, setCustomUploadStatus] = useState({})
   const [fetchedProduct, setFetchedProduct] = useState(null);
   const [sellerUsername, setSellerUsername] = useState(null);
+  const pointerStartX = useRef(null)
+  const isPointerDown = useRef(false)
+  const thumbsRef = useRef(null)
+
+  const handlePointerDown = (e) => {
+    isPointerDown.current = true
+    pointerStartX.current = e.clientX ?? (e.touches?.[0]?.clientX ?? null)
+  }
+
+  const handlePointerMove = (e) => {
+    // no-op; we only need start and end for simple swipe detection
+  }
+
+  const handlePointerUp = (e) => {
+    if (!isPointerDown.current || pointerStartX.current == null) return
+    const clientX = e.clientX ?? (e.changedTouches?.[0]?.clientX ?? null)
+    if (clientX == null) {
+      isPointerDown.current = false
+      pointerStartX.current = null
+      return
+    }
+    const delta = pointerStartX.current - clientX
+    const threshold = 60
+    if (Math.abs(delta) > threshold) {
+      if (delta > 0) {
+        setActiveImageIndex((i) => Math.min(displayImages.length - 1, i + 1))
+      } else {
+        setActiveImageIndex((i) => Math.max(0, i - 1))
+      }
+    }
+    isPointerDown.current = false
+    pointerStartX.current = null
+  }
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'ArrowLeft') setActiveImageIndex((i) => Math.max(0, i - 1))
+      if (e.key === 'ArrowRight') setActiveImageIndex((i) => Math.min(displayImages.length - 1, i + 1))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [displayImages.length])
+
+  const scrollThumbs = (dir = 1) => {
+    const el = thumbsRef.current
+    if (!el) return
+    const amount = Math.max(120, Math.floor(el.clientWidth * 0.7))
+    el.scrollBy({ left: dir * amount, behavior: 'smooth' })
+  }
   
   // Derive seller username with fallback logic and fetch from API if needed
   useEffect(() => {
@@ -440,15 +490,45 @@ export const ProductDetailPage = ({ productId }) => {
               {/* Product Images */}
               <div className="bg-white rounded-2xl shadow-soft border border-primary-100 p-8 h-fit lg:sticky lg:top-24">
                 <div className="space-y-4">
-                  <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden relative">
+                  <div
+                    className="aspect-square bg-gray-100 rounded-xl overflow-hidden relative"
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
+                    onTouchStart={(e) => handlePointerDown(e.touches?.[0] ?? e)}
+                    onTouchEnd={(e) => handlePointerUp(e.changedTouches?.[0] ?? e)}
+                  >
                     {displayImages.length > 0 ? (
-                      <Image
-                        src={displayImages[activeImageIndex] || displayImages[0]}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                        priority
-                      />
+                      <>
+                        <Image
+                          src={displayImages[activeImageIndex] || displayImages[0]}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          priority
+                        />
+
+                        {/* Prev / Next Controls */}
+                        {displayImages.length > 1 && (
+                          <>
+                            <button
+                              onClick={() => setActiveImageIndex((i) => Math.max(0, i - 1))}
+                              aria-label="Previous image"
+                              className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur rounded-full p-2 shadow-md"
+                            >
+                              <ChevronLeft className="w-5 h-5 text-charcoal-800" />
+                            </button>
+                            <button
+                              onClick={() => setActiveImageIndex((i) => Math.min(displayImages.length - 1, i + 1))}
+                              aria-label="Next image"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur rounded-full p-2 shadow-md"
+                            >
+                              <ChevronRight className="w-5 h-5 text-charcoal-800" />
+                            </button>
+                          </>
+                        )}
+                      </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">
                         <Package className="w-16 h-16" />
@@ -458,24 +538,46 @@ export const ProductDetailPage = ({ productId }) => {
                   
                   {/* Additional Images */}
                   {displayImages.length > 1 && (
-                    <div className="grid grid-cols-4 gap-2">
-                      {displayImages.slice(0, 4).map((image, index) => (
+                    <div className="relative">
+                      <div className="flex items-center">
                         <button
-                          key={`${image}-${index}`}
                           type="button"
-                          onClick={() => setActiveImageIndex(index)}
-                          className={`aspect-square bg-gray-100 rounded-lg overflow-hidden relative border-2 transition-colors ${
-                            activeImageIndex === index ? 'border-primary-600' : 'border-transparent'
-                          }`}
+                          onClick={() => scrollThumbs(-1)}
+                          aria-label="Scroll thumbnails left"
+                          className="hidden lg:inline-flex items-center justify-center p-2 bg-white rounded-full shadow-sm mr-2"
                         >
-                          <Image
-                            src={image}
-                            alt={`${product.name} ${index + 1}`}
-                            fill
-                            className="object-cover"
-                          />
+                          <ChevronLeft className="w-5 h-5 text-charcoal-700" />
                         </button>
-                      ))}
+
+                        <div ref={thumbsRef} className="flex gap-2 overflow-x-auto snap-x snap-mandatory py-2 scrollbar-hide">
+                          {displayImages.map((image, index) => (
+                            <button
+                              key={`${image}-${index}`}
+                              type="button"
+                              onClick={() => setActiveImageIndex(index)}
+                              className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden relative snap-center transition-all ${
+                                activeImageIndex === index ? 'ring-2 ring-primary-600' : 'ring-0'
+                              }`}
+                            >
+                              <Image
+                                src={image}
+                                alt={`${product.name} ${index + 1}`}
+                                fill
+                                className="object-cover"
+                              />
+                            </button>
+                          ))}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => scrollThumbs(1)}
+                          aria-label="Scroll thumbnails right"
+                          className="hidden lg:inline-flex items-center justify-center p-2 bg-white rounded-full shadow-sm ml-2"
+                        >
+                          <ChevronRight className="w-5 h-5 text-charcoal-700" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

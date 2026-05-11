@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { ChevronLeft, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles, Star, Image as ImageIcon } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles, Star, Image as ImageIcon } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCart } from '../contexts/CartContext'
 import { toast } from 'react-hot-toast'
@@ -15,6 +15,8 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   const searchParams = useSearchParams()
   const { addToCart } = useCart()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const touchStartX = useRef(null)
+  const touchCurrentX = useRef(null)
   const [selectedSize, setSelectedSize] = useState(null)
   const [selectedColor, setSelectedColor] = useState(null)
   const [isWishlisted, setIsWishlisted] = useState(false)
@@ -22,6 +24,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   const [customUploadStatus, setCustomUploadStatus] = useState({})
   const [activeTab, setActiveTab] = useState('details')
   const [sellerUsername, setSellerUsername] = useState(null)
+  const thumbsRefMobile = useRef(null)
 
   // Derive seller username with fallback logic and fetch from API if needed
   useEffect(() => {
@@ -329,7 +332,35 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       </div>
 
       {/* Image Carousel */}
-      <div className="relative bg-white">
+      <div
+        className="relative bg-white"
+        onTouchStart={(e) => {
+          touchStartX.current = e.touches?.[0]?.clientX ?? null
+          touchCurrentX.current = null
+        }}
+        onTouchMove={(e) => {
+          touchCurrentX.current = e.touches?.[0]?.clientX ?? null
+        }}
+        onTouchEnd={() => {
+          try {
+            if (touchStartX.current == null || touchCurrentX.current == null) return
+            const delta = touchStartX.current - touchCurrentX.current
+            const threshold = 50
+            if (Math.abs(delta) > threshold) {
+              if (delta > 0) {
+                // swipe left -> next
+                setCurrentImageIndex((idx) => Math.min(displayImages.length - 1, idx + 1))
+              } else {
+                // swipe right -> prev
+                setCurrentImageIndex((idx) => Math.max(0, idx - 1))
+              }
+            }
+          } finally {
+            touchStartX.current = null
+            touchCurrentX.current = null
+          }
+        }}
+      >
         <div className="aspect-square overflow-hidden relative">
           <Image
             src={displayImages[currentImageIndex] || '/placeholder-product.png'}
@@ -339,12 +370,27 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
             priority
           />
         </div>
+        {/* Prev / Next Controls */}
+        {displayImages.length > 1 && (
+          <>
+            <button
+              onClick={() => setCurrentImageIndex((i) => Math.max(0, i - 1))}
+              aria-label="Previous image"
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur rounded-full p-2 shadow-md"
+            >
+              <ChevronLeft className="w-5 h-5 text-charcoal-800" />
+            </button>
+            <button
+              onClick={() => setCurrentImageIndex((i) => Math.min(displayImages.length - 1, i + 1))}
+              aria-label="Next image"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur rounded-full p-2 shadow-md"
+            >
+              <ChevronRight className="w-5 h-5 text-charcoal-800" />
+            </button>
+          </>
+        )}
         
-        {/* View Similar Button - Bottom Left */}
-        <button className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-soft border border-primary-200 flex items-center space-x-2 active:scale-95 transition-transform">
-          <Package className="w-4 h-4 text-primary-700" />
-          <span className="text-sm font-semibold text-gray-900">View Similar</span>
-        </button>
+        
 
         {/* Rating Badge - Bottom Right */}
         {product.averageRating > 0 && (
@@ -371,6 +417,26 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                 }`}
               />
             ))}
+          </div>
+        )}
+        {/* Thumbnail slider below images */}
+        {displayImages.length > 1 && (
+          <div className="mt-3 px-4">
+            <div className="flex items-center">
+              <div ref={thumbsRefMobile} className="flex gap-2 overflow-x-auto snap-x snap-mandatory py-2 scrollbar-hide">
+                {displayImages.map((img, i) => (
+                  <button
+                    key={`${img}-${i}`}
+                    onClick={() => setCurrentImageIndex(i)}
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden snap-center transition-all ${
+                      i === currentImageIndex ? 'ring-2 ring-primary-600' : 'ring-0'
+                    }`}
+                  >
+                    <img src={img} alt={`${product.name} thumb ${i + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -481,7 +547,6 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
 
       {/* Price & Delivery Info */}
       <div className="bg-warm-50 px-4 py-4 mb-2 space-y-2 border-b border-secondary-100">
-        <div className="text-lg font-bold text-charcoal-900">₹{displayPrice?.toLocaleString()}</div>
         <div className="text-sm text-charcoal-600">
           Delivery by <span className="font-semibold text-charcoal-900">{deliveryDateStr}</span> - 422001
         </div>
