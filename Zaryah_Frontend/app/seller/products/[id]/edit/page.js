@@ -50,8 +50,11 @@ export default function EditSellerProductPage() {
   const [product, setProduct] = useState(null)
   const [sectionOptions, setSectionOptions] = useState(DEFAULT_SECTION_OPTIONS)
   const [hasCustomSections, setHasCustomSections] = useState(false)
+  const imageInputRef = useRef(null)
   const colorImageInputRefs = useRef({})
   const sizeChartInputRefs = useRef({})
+  const [images, setImages] = useState([])
+  const [imageUploading, setImageUploading] = useState(false)
   const [sizePriceOptions, setSizePriceOptions] = useState([{ label: '', price: '' }])
   const [colorOptions, setColorOptions] = useState([{ name: '', image: '' }])
   const [colorImageUploading, setColorImageUploading] = useState({})
@@ -139,6 +142,7 @@ export default function EditSellerProductPage() {
         setLoading(true)
         const productData = await apiService.getProduct(productId)
         setProduct(productData)
+        setImages(Array.isArray(productData.images) ? productData.images : productData.image ? [productData.image] : [])
         setFormData({
           name: toInputValue(productData.name),
           description: toInputValue(productData.description),
@@ -321,6 +325,72 @@ export default function EditSellerProductPage() {
     })
   }
 
+  const handleImageUpload = async (fileList) => {
+    const files = Array.from(fileList || [])
+    if (files.length === 0) return
+
+    const validFiles = files.filter(file => {
+      const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
+      const isValidSize = file.size <= 5 * 1024 * 1024
+
+      if (!isValidType) {
+        toast.error(`${file.name} is not a valid image format`)
+        return false
+      }
+
+      if (!isValidSize) {
+        toast.error(`${file.name} exceeds 5MB limit`)
+        return false
+      }
+
+      return true
+    })
+
+    if (validFiles.length === 0) return
+
+    setImageUploading(true)
+
+    try {
+      const uploadedUrls = []
+
+      for (const file of validFiles) {
+        const uploadData = new FormData()
+        uploadData.append('file', file)
+        uploadData.append('folder', 'products')
+
+        const response = await apiService.request('/upload', {
+          method: 'POST',
+          body: uploadData
+        })
+
+        if (!response?.url) {
+          throw new Error(`Failed to upload ${file.name}`)
+        }
+
+        uploadedUrls.push(response.url)
+      }
+
+      setImages(prev => {
+        const next = [...prev, ...uploadedUrls]
+        return next.slice(0, 5)
+      })
+
+      toast.success('Image(s) uploaded')
+    } catch (error) {
+      console.error('Failed to upload product image(s):', error)
+      toast.error(error.message || 'Failed to upload image(s)')
+    } finally {
+      setImageUploading(false)
+      if (imageInputRef.current) {
+        imageInputRef.current.value = ''
+      }
+    }
+  }
+
+  const removeImage = (index) => {
+    setImages(prev => prev.filter((_, i) => i !== index))
+  }
+
   const handleSizeChartUpload = async (index, file) => {
     if (!file) return
 
@@ -474,7 +544,8 @@ export default function EditSellerProductPage() {
         two_way_delivery: formData.two_way_delivery,
         return_available: formData.return_available,
         exchange_available: formData.exchange_available,
-        return_days: formData.return_days === '' ? null : Number(formData.return_days)
+        return_days: formData.return_days === '' ? null : Number(formData.return_days),
+        images: images.slice(0, 5)
       }
 
       await apiService.updateProduct(productId, payload)
@@ -513,6 +584,56 @@ export default function EditSellerProductPage() {
 
         <form onSubmit={handleSubmit} className="bg-white shadow-sm border border-gray-200 rounded-2xl p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="block md:col-span-2">
+              <div className="flex items-center justify-between mb-3">
+                <span className="block text-sm font-medium text-gray-700">Product images</span>
+                <button
+                  type="button"
+                  onClick={() => imageInputRef.current?.click()}
+                  disabled={imageUploading}
+                  className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm font-medium disabled:opacity-50"
+                >
+                  <Plus className="w-4 h-4" />
+                  {imageUploading ? 'Uploading...' : 'Add images'}
+                </button>
+              </div>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(event) => handleImageUpload(event.target.files)}
+                className="hidden"
+              />
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {images.map((image, index) => (
+                  <div key={`${image}-${index}`} className="relative group">
+                    <div className="relative h-28 w-full rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                      <Image src={image} alt={`Product image ${index + 1}`} fill className="object-cover" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    {index === 0 && (
+                      <span className="absolute bottom-2 left-2 bg-primary-600 text-white text-xs px-2 py-1 rounded">
+                        Primary
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {images.length === 0 && (
+                  <div className="col-span-full rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
+                    No images yet. Click "Add images" to upload more.
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">You can keep the current photos and add more. Up to 5 images total.</p>
+            </div>
+
             <label className="block">
               <span className="block text-sm font-medium text-gray-700 mb-1">Product name</span>
               <input name="name" value={formData.name} onChange={handleChange} className="w-full rounded-lg border border-gray-300 px-3 py-2" required />
@@ -804,20 +925,6 @@ export default function EditSellerProductPage() {
               </label>
             ))}
           </div>
-
-          {Array.isArray(product?.images) && product.images.length > 0 && (
-            <div>
-              <h2 className="text-sm font-medium text-gray-700 mb-2">Current images</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {product.images.map((image, index) => (
-                  <div key={`${image}-${index}`} className="relative h-28 w-full rounded-lg overflow-hidden border border-gray-200">
-                    <Image src={image} alt={`Product image ${index + 1}`} fill className="object-cover" />
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500 mt-2">Image replacement is not enabled on this screen yet, but existing images are preserved.</p>
-            </div>
-          )}
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <Link href="/seller/dashboard" className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
