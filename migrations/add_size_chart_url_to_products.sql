@@ -1,2 +1,0 @@
-ALTER TABLE products
-ADD COLUMN IF NOT EXISTS size_chart_url TEXT;
