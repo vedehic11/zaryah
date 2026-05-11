@@ -60,6 +60,9 @@ export default function AddProductPage() {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const [sectionOptions, setSectionOptions] = useState(['Featured', 'Trending', 'New Arrivals', 'Best Sellers'])
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [availableProducts, setAvailableProducts] = useState([])
+  const [importLoading, setImportLoading] = useState(false)
 
   const categories = [
     'Resin Art',
@@ -114,53 +117,122 @@ export default function AddProductPage() {
     loadSections()
   }, [user])
 
-  const fillDemoData = () => {
-    setFormData({
-      name: 'Artisan Chocolate Gift Box',
-      description: 'Premium handcrafted chocolates made with organic ingredients. Perfect for gifting on special occasions. Each piece is carefully crafted by our expert chocolatiers using traditional methods.',
-      price: '899',
-      mrp: '1099',
-      category: 'Sweets',
-      section: sectionOptions[0] || 'Featured',
-      weight: '500',
-      stock: '25',
-      customisable: true,
-      deliveryTimeMin: '2',
-      deliveryTimeMax: '5',
-      deliveryTimeUnit: 'days',
-      instantDelivery: false,
-      twoWayDelivery: false,
-      material: 'Premium milk chocolate with organic ingredients',
-      careInstructions: 'Store in a cool, dry place away from sunlight. Best consumed within 30 days of opening.',
-      returnAvailable: false,
-      exchangeAvailable: true,
-      returnDays: '0',
-      codAvailable: true,
-      legalDisclaimer: 'Actual product packaging may contain more information. Please read labels carefully before consuming.',
-      sizeOptions: 'Pack'
-    })
-    
-    setFeatures([
-      'Sugar-free option available',
-      'Organic cocoa beans',
-      'Handmade with love',
-      'Beautiful gift packaging included'
-    ])
+  const fetchSellerProducts = async () => {
+    try {
+      setImportLoading(true)
+      const products = await apiService.getProducts({ sellerId: user?.id })
+      // Filter out draft products and sort by creation date (newest first)
+      const productList = (products || []).filter(p => p.id).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      setAvailableProducts(productList)
+    } catch (error) {
+      console.error('Error fetching products:', error)
+      toast.error('Failed to load your products')
+    } finally {
+      setImportLoading(false)
+    }
+  }
 
-    setSizePriceOptions([
-      { label: 'Pack', price: '899' }
-    ])
+  const handleOpenImportModal = () => {
+    if (availableProducts.length === 0) {
+      fetchSellerProducts()
+    }
+    setShowImportModal(true)
+  }
 
-    setColorOptions([
-      { name: 'Classic', image: '' }
-    ])
-    
-    setCustomQuestions([
-      { question: 'Any dietary restrictions?', required: false, answerType: 'text' },
-      { question: 'Message for the card?', required: true, answerType: 'text' }
-    ])
-    
-    toast.success('Demo data filled!')
+  const handleImportFromProduct = (sourceProduct) => {
+    // Import basic product information
+    setFormData(prev => ({
+      ...prev,
+      name: sourceProduct.name || '',
+      description: sourceProduct.description || '',
+      price: sourceProduct.price || '',
+      mrp: sourceProduct.mrp || sourceProduct.price || '',
+      category: sourceProduct.category || '',
+      section: sourceProduct.section || '',
+      weight: sourceProduct.weight || '',
+      stock: sourceProduct.stock || '',
+      customisable: sourceProduct.customisable || false,
+      deliveryTimeMin: sourceProduct.delivery_time_min || sourceProduct.deliveryTimeMin || '',
+      deliveryTimeMax: sourceProduct.delivery_time_max || sourceProduct.deliveryTimeMax || '',
+      deliveryTimeUnit: sourceProduct.delivery_time_unit || sourceProduct.deliveryTimeUnit || 'days',
+      instantDelivery: sourceProduct.instant_delivery || sourceProduct.instantDelivery || false,
+      twoWayDelivery: sourceProduct.two_way_delivery || sourceProduct.twoWayDelivery || false,
+      material: sourceProduct.material || '',
+      careInstructions: sourceProduct.care_instructions || sourceProduct.careInstructions || '',
+      returnAvailable: sourceProduct.return_available || sourceProduct.returnAvailable || false,
+      exchangeAvailable: sourceProduct.exchange_available || sourceProduct.exchangeAvailable || false,
+      returnDays: sourceProduct.return_days || sourceProduct.returnDays || '',
+      codAvailable: sourceProduct.cod_available !== undefined ? sourceProduct.cod_available : sourceProduct.codAvailable !== undefined ? sourceProduct.codAvailable : true,
+      legalDisclaimer: sourceProduct.legal_disclaimer || sourceProduct.legalDisclaimer || '',
+      sizeOptions: sourceProduct.size_options || sourceProduct.sizeOptions || ''
+    }))
+
+    // Import reference charts
+    if (sourceProduct.size_charts && Array.isArray(sourceProduct.size_charts)) {
+      setSizeCharts(sourceProduct.size_charts.map(chart => ({
+        label: chart.label || '',
+        urls: Array.isArray(chart.urls) ? chart.urls : (chart.url ? [chart.url] : [])
+      })))
+    } else if (sourceProduct.sizeCharts && Array.isArray(sourceProduct.sizeCharts)) {
+      setSizeCharts(sourceProduct.sizeCharts.map(chart => ({
+        label: chart.label || '',
+        urls: Array.isArray(chart.urls) ? chart.urls : (chart.url ? [chart.url] : [])
+      })))
+    }
+
+    // Import features
+    if (sourceProduct.features && Array.isArray(sourceProduct.features)) {
+      setFeatures(sourceProduct.features.filter(f => f && String(f).trim()).slice(0, 10))
+    }
+
+    // Import customization questions
+    if (sourceProduct.custom_questions && Array.isArray(sourceProduct.custom_questions)) {
+      setCustomQuestions(sourceProduct.custom_questions.map(q => ({
+        question: q.question || '',
+        required: q.required || false,
+        answerType: q.answerType || q.type || 'text'
+      })))
+    } else if (sourceProduct.customQuestions && Array.isArray(sourceProduct.customQuestions)) {
+      setCustomQuestions(sourceProduct.customQuestions.map(q => ({
+        question: q.question || '',
+        required: q.required || false,
+        answerType: q.answerType || q.type || 'text'
+      })))
+    }
+
+    // Import size pricing options
+    if (sourceProduct.size_price_options && Array.isArray(sourceProduct.size_price_options)) {
+      setSizePriceOptions(sourceProduct.size_price_options.map(o => ({
+        label: o.label || '',
+        price: o.price || ''
+      })))
+    } else if (sourceProduct.sizePriceOptions && Array.isArray(sourceProduct.sizePriceOptions)) {
+      setSizePriceOptions(sourceProduct.sizePriceOptions.map(o => ({
+        label: o.label || '',
+        price: o.price || ''
+      })))
+    }
+
+    // Import color options
+    if (sourceProduct.color_options && Array.isArray(sourceProduct.color_options)) {
+      setColorOptions(sourceProduct.color_options.map(c => ({
+        name: c.name || '',
+        image: c.image || ''
+      })))
+    } else if (sourceProduct.colorOptions && Array.isArray(sourceProduct.colorOptions)) {
+      setColorOptions(sourceProduct.colorOptions.map(c => ({
+        name: c.name || '',
+        image: c.image || ''
+      })))
+    }
+
+    // Import images
+    if (sourceProduct.images && Array.isArray(sourceProduct.images)) {
+      setImages(sourceProduct.images.slice(0, 5))
+    }
+
+    toast.success(`Imported all info from "${sourceProduct.name}"!`)
+    setShowImportModal(false)
   }
 
   const handleInputChange = (e) => {
@@ -335,7 +407,7 @@ export default function AddProductPage() {
       return
     }
 
-    setSizeChartUploading(prev => ({ ...prev, [index]: true }))
+    setSizeChartUploading(prev => ({ ...prev, [`${index}-upload`]: true }))
 
     try {
       const uploadData = new FormData()
@@ -351,17 +423,40 @@ export default function AddProductPage() {
         throw new Error('Failed to upload image')
       }
 
+      // Ensure the chart at this index exists and has urls array
       setSizeCharts(prev => {
         const updated = [...prev]
-        updated[index] = { ...updated[index], url: response.url }
+        if (!updated[index]) {
+          updated[index] = { label: '', urls: [] }
+        }
+        if (!Array.isArray(updated[index].urls)) {
+          updated[index].urls = []
+        }
+        // Check if URL already exists to prevent duplicates
+        if (!updated[index].urls.includes(response.url)) {
+          updated[index].urls.push(response.url)
+        }
         return updated
       })
-      toast.success('Chart uploaded')
+      
+      toast.success('Chart image added')
     } catch (error) {
       toast.error(error.message || 'Failed to upload image')
     } finally {
-      setSizeChartUploading(prev => ({ ...prev, [index]: false }))
+      // Clear the file input value to prevent double-adding
+      if (sizeChartInputRefs.current[index]) {
+        sizeChartInputRefs.current[index].value = ''
+      }
+      setSizeChartUploading(prev => ({ ...prev, [`${index}-upload`]: false }))
     }
+  }
+
+  const handleRemoveSizeChartImage = (chartIndex, imageIndex) => {
+    setSizeCharts(prev => {
+      const updated = [...prev]
+      updated[chartIndex].urls = updated[chartIndex].urls.filter((_, i) => i !== imageIndex)
+      return updated
+    })
   }
 
   const handleSizeChartRemove = (index) => {
@@ -374,7 +469,7 @@ export default function AddProductPage() {
   }
 
   const addSizeChart = () => {
-    setSizeCharts(prev => [...prev, { label: '', url: '' }])
+    setSizeCharts(prev => [...prev, { label: '', urls: [] }])
   }
 
   const handleSizeChartLabelChange = (index, value) => {
@@ -427,10 +522,17 @@ export default function AddProductPage() {
         formDataToSend.append(key, formData[key])
       })
 
-      // Images
+      // Images: keep uploaded files separate from imported image URLs
+      const importedImageUrls = images.filter(image => typeof image === 'string')
       images.forEach(image => {
-        formDataToSend.append('images', image)
+        if (typeof image !== 'string') {
+          formDataToSend.append('images', image)
+        }
       })
+
+      if (importedImageUrls.length > 0) {
+        formDataToSend.append('importedImages', JSON.stringify(importedImageUrls))
+      }
 
       // Features (filter empty)
       const validFeatures = features.filter(f => f.trim())
@@ -476,13 +578,15 @@ export default function AddProductPage() {
         formDataToSend.append('colorOptions', JSON.stringify(validColorOptions))
       }
 
-      // Filter valid size charts (must have label and URL)
+      // Filter valid size charts (must have label and at least one image URL)
       const validSizeCharts = sizeCharts
         .map(chart => ({
           label: String(chart.label || '').trim(),
-          url: String(chart.url || '').trim()
+          urls: Array.isArray(chart.urls)
+            ? chart.urls.map(url => String(url || '').trim()).filter(Boolean)
+            : (chart.url ? [String(chart.url || '').trim()] : [])
         }))
-        .filter(chart => chart.label && chart.url)
+        .filter(chart => chart.label && chart.urls.length > 0)
 
       if (validSizeCharts.length > 0) {
         formDataToSend.append('sizeCharts', JSON.stringify(validSizeCharts))
@@ -574,12 +678,12 @@ export default function AddProductPage() {
               <p className="text-gray-600 mt-2">Create a new product listing for your store</p>
             </div>
             <button
-              onClick={fillDemoData}
+              onClick={handleOpenImportModal}
               type="button"
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
             >
               <Package className="w-4 h-4" />
-              <span>Fill Demo Data</span>
+              <span>Import from Previous</span>
             </button>
           </div>
         </div>
@@ -747,7 +851,7 @@ export default function AddProductPage() {
                     <div key={index} className="relative group">
                       <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                         <img
-                          src={URL.createObjectURL(image)}
+                          src={typeof image === 'string' ? image : URL.createObjectURL(image)}
                           alt={`Product ${index + 1}`}
                           className="w-full h-full object-cover"
                         />
@@ -939,7 +1043,7 @@ export default function AddProductPage() {
                     <span>Add Chart</span>
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 mb-3">Add labeled reference charts like Size Chart, Fabric Chart, Care Chart, etc.</p>
+                <p className="text-xs text-gray-500 mb-3">Add labeled reference charts like Size Chart, Fabric Chart, Care Chart, etc. You can add multiple images per chart.</p>
                 <div className="space-y-4">
                   {sizeCharts.map((chart, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4">
@@ -969,36 +1073,37 @@ export default function AddProductPage() {
                           onChange={(e) => handleSizeChartUpload(index, e.target.files?.[0])}
                           className="hidden"
                         />
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => sizeChartInputRefs.current[index]?.click()}
-                            disabled={sizeChartUploading[index]}
-                            className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                          >
-                            <ImageIcon className="w-4 h-4" />
-                            {sizeChartUploading[index] ? 'Uploading...' : (chart.url ? 'Change Image' : 'Upload Image')}
-                          </button>
-                          {chart.url && (
-                            <button
-                              type="button"
-                              onClick={() => handleSizeChartRemove(index)}
-                              className="text-sm text-red-600 hover:text-red-700"
-                            >
-                              Remove
-                            </button>
-                          )}
-                        </div>
-                        {chart.url && (
-                          <div className="mt-3 max-w-xs">
-                            <div className="aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                              <img
-                                src={chart.url}
-                                alt={chart.label || 'Chart'}
-                                className="w-full h-full object-contain"
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500 mt-2">Displayed on the product page for buyers.</p>
+                        <button
+                          type="button"
+                          onClick={() => sizeChartInputRefs.current[index]?.click()}
+                          disabled={sizeChartUploading[`${index}-upload`]}
+                          className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          <ImageIcon className="w-4 h-4" />
+                          {sizeChartUploading[`${index}-upload`] ? 'Uploading...' : 'Add Image'}
+                        </button>
+                        <p className="text-xs text-gray-500 mt-2">Upload multiple images to show different angles or variations.</p>
+                        
+                        {chart.urls && chart.urls.length > 0 && (
+                          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {chart.urls.map((url, imgIndex) => (
+                              <div key={imgIndex} className="relative group">
+                                <div className="aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                  <img
+                                    src={url}
+                                    alt={`${chart.label} - Image ${imgIndex + 1}`}
+                                    className="w-full h-full object-contain"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveSizeChartImage(index, imgIndex)}
+                                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
@@ -1339,6 +1444,88 @@ export default function AddProductPage() {
             </button>
           </div>
         </form>
+
+        {/* Import Modal */}
+        {showImportModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="border-b border-gray-200 p-6 flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Import from Previous Product</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowImportModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {importLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <p className="text-gray-600">Loading your products...</p>
+                  </div>
+                ) : availableProducts.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">You don't have any previous products to import from yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {availableProducts.map((product) => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => handleImportFromProduct(product)}
+                        className="w-full text-left border border-gray-200 rounded-lg p-4 hover:border-primary-500 hover:bg-primary-50 transition-all group"
+                      >
+                        <div className="flex items-start space-x-4">
+                          {product.images && product.images.length > 0 && (
+                            <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
+                              <img
+                                src={product.images[0]}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate group-hover:text-primary-700">{product.name}</h3>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {product.features && product.features.length > 0 && `${product.features.length} features`}
+                              {product.size_charts && product.size_charts.length > 0 && ` • ${product.size_charts.length} charts`}
+                              {product.custom_questions && product.custom_questions.length > 0 && ` • ${product.custom_questions.length} questions`}
+                              {product.size_price_options && product.size_price_options.length > 0 && ` • ${product.size_price_options.length} sizes`}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-2">
+                              Will import: All product information
+                            </p>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <Package className="w-5 h-5 text-gray-400 group-hover:text-primary-600 transition-colors" />
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="border-t border-gray-200 p-6">
+                <button
+                  type="button"
+                  onClick={() => setShowImportModal(false)}
+                  className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

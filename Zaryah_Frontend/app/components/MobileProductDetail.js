@@ -735,14 +735,29 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                     {sizeCharts.map((chart, index) => (
                       <div key={`chart-${index}`} className="bg-gray-50 border border-gray-200 rounded-xl p-3">
                         <p className="text-xs font-medium text-charcoal-700 mb-2">{chart.label}</p>
-                        <div className="relative w-full aspect-[4/5] bg-white rounded-lg overflow-hidden">
-                          <Image
-                            src={chart.url}
-                            alt={chart.label}
-                            fill
-                            className="object-contain"
-                          />
-                        </div>
+                        {chart.urls && Array.isArray(chart.urls) && chart.urls.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            {chart.urls.map((imageUrl, imgIndex) => (
+                              <div key={`${index}-${imgIndex}`} className="relative w-full aspect-[4/5] bg-white rounded-lg overflow-hidden">
+                                <Image
+                                  src={imageUrl}
+                                  alt={`${chart.label} - Image ${imgIndex + 1}`}
+                                  fill
+                                  className="object-contain"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : chart.url ? (
+                          <div className="relative w-full aspect-[4/5] bg-white rounded-lg overflow-hidden">
+                            <Image
+                              src={chart.url}
+                              alt={chart.label}
+                              fill
+                              className="object-contain"
+                            />
+                          </div>
+                        ) : null}
                       </div>
                     ))}
                   </div>

@@ -225,7 +225,7 @@ export async function POST(request) {
       try {
         const parsed = JSON.parse(sizeChartsStr)
         if (Array.isArray(parsed)) {
-          productData.size_charts = parsed.filter(chart => chart.label && chart.url)
+          productData.size_charts = parsed.filter(chart => chart.label && (chart.urls?.length > 0 || chart.url))
         }
       } catch (parseError) {
         console.warn('Failed to parse sizeCharts:', parseError)
@@ -236,7 +236,7 @@ export async function POST(request) {
     if (productData.size_charts.length === 0) {
       const oldSizeChartUrl = formData.get('sizeChartUrl')
       if (oldSizeChartUrl) {
-        productData.size_charts = [{ label: 'Size Chart', url: oldSizeChartUrl }]
+        productData.size_charts = [{ label: 'Size Chart', urls: [oldSizeChartUrl] }]
       }
     }
 
@@ -303,8 +303,21 @@ export async function POST(request) {
     }
 
     // Handle image uploads directly to Cloudinary
-    const imageFiles = formData.getAll('images')
-    const images = []
+    const importedImagesStr = formData.get('importedImages')
+    let importedImages = []
+    if (importedImagesStr) {
+      try {
+        const parsed = JSON.parse(importedImagesStr)
+        if (Array.isArray(parsed)) {
+          importedImages = parsed.filter(image => typeof image === 'string' && image.trim())
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse importedImages:', parseError)
+      }
+    }
+
+    const imageFiles = formData.getAll('images').filter(imageFile => imageFile instanceof File && imageFile.size > 0)
+    const uploadedImages = []
     
     if (imageFiles && imageFiles.length > 0) {
       console.log(`Processing ${imageFiles.length} image files...`)
@@ -384,7 +397,7 @@ export async function POST(request) {
           if (Array.isArray(uploadResults)) {
             uploadResults.forEach((result, index) => {
               if (result.status === 'fulfilled' && result.value) {
-                images.push(result.value)
+                uploadedImages.push(result.value)
               }
             })
           }
@@ -394,19 +407,19 @@ export async function POST(request) {
         console.log('⚠️ Continuing without images...')
       }
       
-      console.log(`✅ Successfully uploaded ${images.length}/${imageFiles.length} images`)
+      console.log(`✅ Successfully uploaded ${uploadedImages.length}/${imageFiles.length} images`)
     }
     
-    productData.images = images
+    productData.images = [...importedImages, ...uploadedImages]
     
-    if (imageFiles && imageFiles.length > 0 && images.length === 0) {
+    if (imageFiles && imageFiles.length > 0 && uploadedImages.length === 0) {
       console.warn('⚠️ WARNING: All image uploads failed, creating product without images')
     }
 
     console.log('Inserting product into database...', {
       name: productData.name,
       seller_id: productData.seller_id,
-      images_count: images.length
+      images_count: productData.images.length
     })
 
     const { data: product, error } = await supabase

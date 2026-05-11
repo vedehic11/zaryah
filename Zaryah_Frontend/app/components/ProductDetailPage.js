@@ -1103,14 +1103,29 @@ export const ProductDetailPage = ({ productId }) => {
                             {sizeCharts.map((chart, index) => (
                               <div key={`chart-${index}`} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                                 <h4 className="text-lg font-medium text-charcoal-800 mb-4">{chart.label}</h4>
-                                <div className="relative w-full max-w-2xl mx-auto aspect-[4/5] bg-white rounded-lg overflow-hidden">
-                                  <Image
-                                    src={chart.url}
-                                    alt={chart.label}
-                                    fill
-                                    className="object-contain"
-                                  />
-                                </div>
+                                {chart.urls && Array.isArray(chart.urls) && chart.urls.length > 0 ? (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {chart.urls.map((imageUrl, imgIndex) => (
+                                      <div key={`${index}-${imgIndex}`} className="relative w-full aspect-[4/5] bg-white rounded-lg overflow-hidden">
+                                        <Image
+                                          src={imageUrl}
+                                          alt={`${chart.label} - Image ${imgIndex + 1}`}
+                                          fill
+                                          className="object-contain"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : chart.url ? (
+                                  <div className="relative w-full max-w-2xl mx-auto aspect-[4/5] bg-white rounded-lg overflow-hidden">
+                                    <Image
+                                      src={chart.url}
+                                      alt={chart.label}
+                                      fill
+                                      className="object-contain"
+                                    />
+                                  </div>
+                                ) : null}
                               </div>
                             ))}
                           </div>
