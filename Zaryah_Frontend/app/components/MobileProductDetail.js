@@ -361,7 +361,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
           }
         }}
       >
-        <div className="aspect-square overflow-hidden relative">
+        <div className="w-full h-[86vw] overflow-hidden relative">
           <Image
             src={displayImages[currentImageIndex] || '/placeholder-product.png'}
             alt={product.name}
