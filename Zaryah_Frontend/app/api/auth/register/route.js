@@ -42,7 +42,7 @@ export async function POST(request) {
       name,
       user_type: userType === 'buyer' ? 'Buyer' : 'Seller',
       is_verified: true,
-      is_approved: userType === 'buyer' ? true : false // Buyers auto-approved, sellers need approval
+      is_approved: true // All accounts are approved by default; sellers no longer require manual approval
     };
 
     const { data: newUser, error: userError } = await supabaseAdmin

@@ -460,7 +460,7 @@ export async function POST(request) {
           name: sellerData.full_name,
           user_type: 'Seller',
           is_verified: session.user.email_confirmed_at !== null,
-          is_approved: false // Needs admin approval
+          is_approved: true // Sellers are approved by default
         })
         .select()
         .single()

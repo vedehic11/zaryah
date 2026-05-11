@@ -355,7 +355,7 @@ export const AuthProvider = ({ children }) => {
               user_type: 'Seller',
               supabase_auth_id: authUser.id,
               is_verified: true,
-              is_approved: false // Sellers need admin approval
+              is_approved: true // Sellers are approved by default
             })
             .select()
             .single()
