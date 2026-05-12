@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { supabaseClient } from '@/lib/supabase-client'
 import { apiService } from '@/app/services/api'
+import MultiSelect from '@/app/components/MultiSelect'
 import { 
   Package, 
   Upload, 
@@ -29,8 +30,8 @@ export default function AddProductPage() {
     description: '',
     price: '',
     mrp: '',
-    category: '',
-    section: 'Featured',
+    categories: [],
+    sections: [],
     weight: '',
     stock: '',
     customisable: false,
@@ -488,8 +489,8 @@ export default function AddProductPage() {
     if (!formData.price || parseFloat(formData.price) <= 0) newErrors.price = 'Valid price is required'
     if (!formData.mrp || parseFloat(formData.mrp) <= 0) newErrors.mrp = 'Valid MRP is required'
     if (parseFloat(formData.price) > parseFloat(formData.mrp)) newErrors.price = 'Price cannot be greater than MRP'
-    if (!formData.category) newErrors.category = 'Category is required'
-    if (!String(formData.section || '').trim()) newErrors.section = 'Section is required'
+    if (formData.categories.length === 0) newErrors.categories = 'At least one category is required'
+    if (formData.sections.length === 0) newErrors.sections = 'At least one section is required'
     if (!formData.weight || parseFloat(formData.weight) <= 0) newErrors.weight = 'Valid weight is required'
     if (!formData.stock || parseInt(formData.stock) < 0) newErrors.stock = 'Valid stock is required'
     if (!formData.deliveryTimeMin || parseInt(formData.deliveryTimeMin) <= 0) newErrors.deliveryTimeMin = 'Min delivery time required'
@@ -519,7 +520,12 @@ export default function AddProductPage() {
 
       // Basic fields
       Object.keys(formData).forEach(key => {
-        formDataToSend.append(key, formData[key])
+        if (key === 'categories' || key === 'sections') {
+          // Send arrays as JSON
+          formDataToSend.append(key, JSON.stringify(formData[key]))
+        } else {
+          formDataToSend.append(key, formData[key])
+        }
       })
 
       // Images: keep uploaded files separate from imported image URLs
@@ -744,20 +750,17 @@ export default function AddProductPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category <span className="text-red-500">*</span>
+                    Categories <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${errors.category ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
-                  >
-                    <option value="">Select category</option>
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                  {errors.category && <p className="text-sm text-red-600 mt-1">{errors.category}</p>}
+                  <MultiSelect
+                    id="categories"
+                    options={categories}
+                    selected={formData.categories}
+                    onChange={(newCategories) => setFormData(prev => ({ ...prev, categories: newCategories }))}
+                    placeholder="Select one or more categories..."
+                  />
+                  {errors.categories && <p className="text-sm text-red-600 mt-1">{errors.categories}</p>}
+                  <p className="text-xs text-gray-500 mt-1">Select multiple categories to reach more buyers</p>
                 </div>
               </div>
 
@@ -797,21 +800,17 @@ export default function AddProductPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Section <span className="text-red-500">*</span>
+                  Sections <span className="text-red-500">*</span>
                 </label>
-                <select
-                  name="section"
-                  value={formData.section}
-                  onChange={handleInputChange}
-                  className={`w-full px-4 py-2 border ${errors.section ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
-                  required
-                >
-                  <option value="">Select section</option>
-                  {sectionOptions.map(sec => (
-                    <option key={sec} value={sec}>{sec}</option>
-                  ))}
-                </select>
-                {errors.section && <p className="text-sm text-red-600 mt-1">{errors.section}</p>}
+                <MultiSelect
+                  id="sections"
+                  options={sectionOptions}
+                  selected={formData.sections}
+                  onChange={(newSections) => setFormData(prev => ({ ...prev, sections: newSections }))}
+                  placeholder="Select one or more sections..."
+                />
+                {errors.sections && <p className="text-sm text-red-600 mt-1">{errors.sections}</p>}
+                <p className="text-xs text-gray-500 mt-1">Products can appear in multiple sections to increase visibility</p>
               </div>
             </div>
           </div>

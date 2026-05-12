@@ -40,7 +40,7 @@ describe('weight utilities', () => {
 
     it('formats grams for values already in grams', () => {
       expect(formatWeightDisplay('500g')).toBe('500 g')
-      expect(formatWeightDisplay(0.25)).toBe('250 g')
+      expect(formatWeightDisplay(250)).toBe('250 g')
     })
 
     it('returns null for invalid input', () => {

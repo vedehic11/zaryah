@@ -65,6 +65,12 @@ export async function GET(request, { params }) {
       ? (ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1)
       : 0
 
+    // Normalize categories and sections for backward compatibility
+    const categories = Array.isArray(product.categories) ? product.categories : 
+                      (product.category ? [product.category] : [])
+    const sections = Array.isArray(product.sections) ? product.sections : 
+                    (product.section ? [product.section] : [])
+
     // Format seller data
     const seller = product.sellers || {}
     
@@ -84,8 +90,11 @@ export async function GET(request, { params }) {
       mrp: product.mrp ? parseFloat(product.mrp) : null,
       images: product.images || [],
       video_url: product.video_url,
-      category: product.category,
-      section: product.section,
+      // Return both formats for compatibility
+      categories: categories,
+      category: categories[0] || null,
+      sections: sections,
+      section: sections[0] || null,
       weight: product.weight,
       stock: product.stock,
       customisable: product.customisable,
@@ -202,10 +211,27 @@ export async function PUT(request, { params }) {
     }
 
     const body = await request.json()
+    
+    // Handle categories - can be single value or array, normalize to array
+    const updateBody = { ...body }
+    if (body.categories) {
+      updateBody.categories = Array.isArray(body.categories) ? body.categories : [body.categories]
+    }
+    if (body.sections) {
+      updateBody.sections = Array.isArray(body.sections) ? body.sections : [body.sections]
+    }
+    // For backward compatibility, also update single fields
+    if (body.category) {
+      updateBody.categories = [body.category]
+    }
+    if (body.section) {
+      updateBody.sections = [body.section]
+    }
+    
     const { data: updatedProduct, error } = await supabase
       .from('products')
       .update({
-        ...body,
+        ...updateBody,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)

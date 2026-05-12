@@ -8,6 +8,7 @@ import { ArrowLeft, Loader2, Save, Plus, Trash2, Image as ImageIcon } from 'luci
 import toast from 'react-hot-toast'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { apiService } from '@/app/services/api'
+import MultiSelect from '@/app/components/MultiSelect'
 
 const CATEGORY_OPTIONS = [
   'Resin Art',
@@ -65,8 +66,8 @@ export default function EditSellerProductPage() {
     description: '',
     price: '',
     mrp: '',
-    category: '',
-    section: '',
+    categories: [],
+    sections: [],
     stock: '',
     weight: '',
     delivery_time_min: '',
@@ -148,8 +149,8 @@ export default function EditSellerProductPage() {
           description: toInputValue(productData.description),
           price: toInputValue(productData.price),
           mrp: toInputValue(productData.mrp),
-          category: toInputValue(productData.category),
-          section: toInputValue(productData.section),
+          categories: Array.isArray(productData.categories) ? productData.categories : (productData.category ? [productData.category] : []),
+          sections: Array.isArray(productData.sections) ? productData.sections : (productData.section ? [productData.section] : []),
           stock: toInputValue(productData.stock),
           weight: toInputValue(productData.weight),
           delivery_time_min: toInputValue(productData.delivery_time_min),
@@ -475,13 +476,13 @@ export default function EditSellerProductPage() {
       return
     }
 
-    if (!formData.category) {
-      toast.error('Category is required')
+    if (formData.categories.length === 0) {
+      toast.error('At least one category is required')
       return
     }
 
-    if (!String(formData.section || '').trim()) {
-      toast.error('Section is required')
+    if (formData.sections.length === 0) {
+      toast.error('At least one section is required')
       return
     }
 
@@ -521,8 +522,8 @@ export default function EditSellerProductPage() {
         description: formData.description.trim(),
         price: Number(formData.price),
         mrp: formData.mrp ? Number(formData.mrp) : null,
-        category: formData.category,
-        section: String(formData.section).trim(),
+        categories: formData.categories,
+        sections: formData.sections,
         stock: formData.stock === '' ? 0 : Number(formData.stock),
         weight: formData.weight === '' ? null : Number(formData.weight),
         delivery_time_min: formData.delivery_time_min === '' ? null : Number(formData.delivery_time_min),
@@ -639,13 +640,15 @@ export default function EditSellerProductPage() {
               <input name="name" value={formData.name} onChange={handleChange} className="w-full rounded-lg border border-gray-300 px-3 py-2" required />
             </label>
             <label className="block">
-              <span className="block text-sm font-medium text-gray-700 mb-1">Category</span>
-              <select name="category" value={formData.category} onChange={handleChange} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-                <option value="">Select category</option>
-                {CATEGORY_OPTIONS.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
+              <span className="block text-sm font-medium text-gray-700 mb-1">Categories</span>
+              <MultiSelect
+                id="categories"
+                options={CATEGORY_OPTIONS}
+                selected={formData.categories}
+                onChange={(newCategories) => setFormData(prev => ({ ...prev, categories: newCategories }))}
+                placeholder="Select one or more categories..."
+              />
+              <p className="text-xs text-gray-500 mt-1">Select multiple categories to reach more buyers</p>
             </label>
             <label className="block md:col-span-2">
               <span className="block text-sm font-medium text-gray-700 mb-1">Description</span>
@@ -668,16 +671,17 @@ export default function EditSellerProductPage() {
               <input type="number" min="0" step="0.01" name="weight" value={formData.weight} onChange={handleChange} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
             </label>
             <label className="block">
-              <span className="block text-sm font-medium text-gray-700 mb-1">Section</span>
-              <select name="section" value={formData.section} onChange={handleChange} className="w-full rounded-lg border border-gray-300 px-3 py-2" required>
-                <option value="">Select section</option>
-                {sectionSelectOptions.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
+              <span className="block text-sm font-medium text-gray-700 mb-1">Sections</span>
+              <MultiSelect
+                id="sections"
+                options={sectionSelectOptions}
+                selected={formData.sections}
+                onChange={(newSections) => setFormData(prev => ({ ...prev, sections: newSections }))}
+                placeholder="Select one or more sections..."
+              />
               <p className="text-xs text-gray-500 mt-1">
                 {hasCustomSections
-                  ? 'Choose one of your self-made sections (manage them in Seller Dashboard → Products).'
+                  ? 'Select one or more of your sections (manage them in Seller Dashboard → Products).'
                   : 'No custom sections found yet. Create sections in Seller Dashboard → Products.'}
               </p>
             </label>

@@ -49,10 +49,8 @@ export async function GET(request) {
       `)
 
     // Apply filters
-    if (category) {
-      query = query.eq('category', category)
-    }
-
+    // Note: category filter works with both single category strings and category arrays
+    // We fetch all and filter in memory if categories is an array
     if (sellerId) {
       query = query.eq('seller_id', sellerId)
     }
@@ -68,7 +66,16 @@ export async function GET(request) {
     }
 
     console.log('Executing Supabase query...')
-    const { data: products, error } = await query.order('created_at', { ascending: false })
+    let { data: products, error } = await query.order('created_at', { ascending: false })
+
+    // Filter by category if specified (handles both single and array categories)
+    if (category && products) {
+      products = products.filter(product => {
+        const cats = Array.isArray(product.categories) ? product.categories : 
+                     (product.category ? [product.category] : [])
+        return cats.includes(category)
+      })
+    }
 
     if (error) {
       console.error('Supabase error:', error)
@@ -87,6 +94,12 @@ export async function GET(request) {
       // Format seller data for compatibility
       const seller = product.sellers || {}
       
+      // Normalize categories and sections for backward compatibility
+      const categories = Array.isArray(product.categories) ? product.categories : 
+                        (product.category ? [product.category] : [])
+      const sections = Array.isArray(product.sections) ? product.sections : 
+                      (product.section ? [product.section] : [])
+      
       return {
         id: product.id,
         name: product.name,
@@ -94,8 +107,11 @@ export async function GET(request) {
         price: parseFloat(product.price),
         images: product.images || [],
         video_url: product.video_url,
-        category: product.category,
-        section: product.section,
+        // Return both formats for compatibility
+        categories: categories,
+        category: categories[0] || null, // Primary category for backward compatibility
+        sections: sections,
+        section: sections[0] || null, // Primary section for backward compatibility
         weight: product.weight,
         stock: product.stock,
         customisable: product.customisable,
@@ -192,13 +208,43 @@ export async function POST(request) {
 
     const formData = await request.formData()
     console.log('Form data keys:', Array.from(formData.keys()))
+    // Handle categories - can be single value or array
+    let categories = []
+    const categoriesParam = formData.get('categories')
+    if (categoriesParam) {
+      try {
+        categories = JSON.parse(categoriesParam)
+        if (!Array.isArray(categories)) categories = [categories]
+      } catch (e) {
+        categories = [categoriesParam]
+      }
+    } else {
+      const singleCategory = formData.get('category')
+      if (singleCategory) categories = [singleCategory]
+    }
+
+    // Handle sections - can be single value or array
+    let sections = []
+    const sectionsParam = formData.get('sections')
+    if (sectionsParam) {
+      try {
+        sections = JSON.parse(sectionsParam)
+        if (!Array.isArray(sections)) sections = [sections]
+      } catch (e) {
+        sections = [sectionsParam]
+      }
+    } else {
+      const singleSection = formData.get('section')
+      if (singleSection) sections = [singleSection]
+    }
+
     const productData = {
       name: formData.get('name'),
       description: formData.get('description'),
       price: parseFloat(formData.get('price')),
       mrp: formData.get('mrp') ? parseFloat(formData.get('mrp')) : null,
-      category: formData.get('category'),
-      section: formData.get('section'),
+      categories: categories,
+      sections: sections,
       weight: parseFloat(formData.get('weight')),
       stock: parseInt(formData.get('stock')),
       customisable: formData.get('customisable') === 'true',
