@@ -602,7 +602,7 @@ export async function PUT(request, context) {
       name: item.products?.name || 'Product',
       quantity: item.quantity,
       price: item.price,
-      weight: item.products?.weight || 0.5
+      weight: item.products?.weight || 500
     }))
 
     if (status === 'confirmed') {

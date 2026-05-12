@@ -10,10 +10,9 @@ function trimTrailingZeros(value, maxDecimals = 2) {
 /**
  * Normalize weight to kilograms.
  *
- * Heuristics for backward compatibility:
- * - Numeric values <= 10 are treated as kilograms (legacy data)
- * - Numeric values > 10 are treated as grams (current seller form input)
- * - Strings with explicit units (kg/g) are parsed by unit
+ * Product weights are stored in grams in the app. Numeric values are treated
+ * as grams and converted to kilograms for shipping-rate APIs. Explicit unit
+ * strings are still supported for older data.
  */
 export function normalizeWeightToKg(rawWeight, defaultKg = null) {
   if (rawWeight === null || rawWeight === undefined || rawWeight === '') {
@@ -36,21 +35,35 @@ export function normalizeWeightToKg(rawWeight, defaultKg = null) {
 
     const numericWeight = toNumber(weightText)
     if (!numericWeight || numericWeight <= 0) return defaultKg
-    return numericWeight > 10 ? numericWeight / 1000 : numericWeight
+    return numericWeight / 1000
   }
 
   const numericWeight = toNumber(rawWeight)
   if (!numericWeight || numericWeight <= 0) return defaultKg
-  return numericWeight > 10 ? numericWeight / 1000 : numericWeight
+  return numericWeight / 1000
 }
 
 export function formatWeightDisplay(rawWeight) {
-  const weightKg = normalizeWeightToKg(rawWeight, null)
-  if (!weightKg || weightKg <= 0) return null
-
-  if (weightKg >= 1) {
-    return `${trimTrailingZeros(weightKg, 2)} kg`
+  if (rawWeight === null || rawWeight === undefined || rawWeight === '') {
+    return null
   }
 
-  return `${trimTrailingZeros(weightKg * 1000, 0)} g`
+  let grams = null
+
+  if (typeof rawWeight === 'string') {
+    const weightText = rawWeight.trim().toLowerCase()
+    if (!weightText) return null
+
+    if (weightText.includes('kg')) {
+      const kg = toNumber(weightText)
+      grams = kg && kg > 0 ? kg * 1000 : null
+    } else {
+      grams = toNumber(weightText)
+    }
+  } else {
+    grams = toNumber(rawWeight)
+  }
+
+  if (!grams || grams <= 0) return null
+  return `${trimTrailingZeros(grams, 0)} g`
 }

@@ -89,15 +89,6 @@ export const ProductDetailPage = ({ productId }) => {
     pointerStartX.current = null
   }
 
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'ArrowLeft') setActiveImageIndex((i) => Math.max(0, i - 1))
-      if (e.key === 'ArrowRight') setActiveImageIndex((i) => Math.min(displayImages.length - 1, i + 1))
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [displayImages.length])
-
   const scrollThumbs = (dir = 1) => {
     const el = thumbsRef.current
     if (!el) return
@@ -168,6 +159,23 @@ export const ProductDetailPage = ({ productId }) => {
       ? product.color_options
       : []
 
+  const selectedColorImage = colorOptions.find(option => option?.name === selectedColor)?.image
+  const baseImages = Array.isArray(product?.images) && product.images.length > 0
+    ? product.images
+    : product?.image
+      ? [product.image]
+      : []
+  const displayImages = selectedColorImage ? [selectedColorImage, ...baseImages] : baseImages
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'ArrowLeft') setActiveImageIndex((i) => Math.max(0, i - 1))
+      if (e.key === 'ArrowRight') setActiveImageIndex((i) => Math.min(displayImages.length - 1, i + 1))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [displayImages.length])
+
   const parseSizeCharts = (p) => {
     try {
       if (Array.isArray(p?.sizeCharts)) return p.sizeCharts
@@ -195,14 +203,6 @@ export const ProductDetailPage = ({ productId }) => {
   const displayPrice = selectedSizePrice !== undefined && selectedSizePrice !== null
     ? Number(selectedSizePrice)
     : Number(product?.price || 0)
-
-  const selectedColorImage = colorOptions.find(option => option?.name === selectedColor)?.image
-  const baseImages = Array.isArray(product?.images) && product.images.length > 0
-    ? product.images
-    : product?.image
-      ? [product.image]
-      : []
-  const displayImages = selectedColorImage ? [selectedColorImage, ...baseImages] : baseImages
 
   const handleBack = () => {
     if (safeBackTarget) {

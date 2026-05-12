@@ -19,8 +19,8 @@ describe('weight utilities', () => {
       expect(normalizeWeightToKg('1500 g')).toBe(1.5)
     })
 
-    it('uses heuristic for numeric values', () => {
-      expect(normalizeWeightToKg(2)).toBe(2)
+    it('treats numeric values as grams', () => {
+      expect(normalizeWeightToKg(2)).toBe(0.002)
       expect(normalizeWeightToKg(500)).toBe(0.5)
       expect(normalizeWeightToKg('12')).toBe(0.012)
     })
@@ -33,12 +33,12 @@ describe('weight utilities', () => {
   })
 
   describe('formatWeightDisplay', () => {
-    it('formats kg for values >= 1kg', () => {
-      expect(formatWeightDisplay(2)).toBe('2 kg')
-      expect(formatWeightDisplay('1.5kg')).toBe('1.5 kg')
+    it('formats grams for numeric and unit values', () => {
+      expect(formatWeightDisplay(2)).toBe('2 g')
+      expect(formatWeightDisplay('1.5kg')).toBe('1500 g')
     })
 
-    it('formats grams for values < 1kg', () => {
+    it('formats grams for values already in grams', () => {
       expect(formatWeightDisplay('500g')).toBe('500 g')
       expect(formatWeightDisplay(0.25)).toBe('250 g')
     })

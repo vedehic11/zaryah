@@ -103,7 +103,7 @@ export default function CheckoutPage() {
             cartItems: cart.map(item => ({
               product_id: item.id || item._id,
               seller_id: item.sellerId || item.seller_id,
-              weight: item.weight || 0.5,
+              weight: item.weight || 500,
               quantity: item.quantity
             })),
             twoWayDelivery: hasTwoWayDelivery,

@@ -60,7 +60,7 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
             cartItems: cart.map(item => ({
               product_id: item.product?.id || item.productId,
               seller_id: item.product?.seller_id || item.sellerId,
-              weight: item.product?.weight || 0.5,
+              weight: item.product?.weight || 500,
               quantity: item.quantity
             })),
             codAmount: paymentMethod === 'cod' ? total : 0
