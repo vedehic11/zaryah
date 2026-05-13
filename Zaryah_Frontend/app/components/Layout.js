@@ -111,6 +111,12 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
     }
   }, [])
 
+  const getNavHref = useCallback((href) => {
+    if (!hostSubdomain) return href
+    if (href === '/') return `https://${ROOT_DOMAIN}/`
+    return href
+  }, [hostSubdomain])
+
   // Load products for search suggestions only when needed
   const getContextualProducts = useCallback((allProducts = []) => {
     if (!currentSellerUsername) return allProducts
@@ -363,7 +369,7 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
               return (
                 <Link
                   key={item.name}
-                  href={item.href}
+                    href={getNavHref(item.href)}
                   prefetch={true}
                   className={`flex items-center gap-1 text-base xl:text-lg font-medium transition-colors duration-200 ${
                     isActive ? 'text-primary-700 underline underline-offset-8 decoration-2' : 'text-neutral-900 hover:text-primary-600'
@@ -568,7 +574,7 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
                 return (
                   <Link
                     key={item.name}
-                    href={item.href}
+                    href={getNavHref(item.href)}
                     onClick={() => setIsMenuOpen(false)}
                     className={`flex items-center space-x-4 px-6 py-3 rounded-xl transition-all text-base ${
                       isActive
