@@ -459,16 +459,49 @@ export const ProductDetailPage = ({ productId }) => {
     }));
   };
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: product.name,
-        text: `Check out this amazing product: ${product.name}`,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard!');
+  const handleShare = async () => {
+    try {
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined') {
+        toast.error('Share not available');
+        return;
+      }
+
+      const shareUrl = window.location.href;
+      const shareData = {
+        title: product?.name || 'Product',
+        text: `Check out this amazing product: ${product?.name || 'Unknown'}`,
+        url: shareUrl,
+      };
+
+      // Try native share first
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (err) {
+          // User cancelled or share failed, try clipboard
+          console.log('Native share cancelled or failed', err);
+        }
+      }
+
+      // Fallback to clipboard
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copied to clipboard!');
+      } else {
+        // Last resort: use old copyToClipboard method
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        toast.success('Link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Share error:', error);
+      toast.error('Unable to share. Please try again.');
     }
   };
 

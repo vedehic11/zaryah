@@ -278,6 +278,52 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     toast.success(isWishlisted ? 'Removed from wishlist' : 'Added to wishlist')
   }
 
+  const handleShare = async () => {
+    try {
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined') {
+        toast.error('Share not available');
+        return;
+      }
+
+      const shareUrl = window.location.href;
+      const shareData = {
+        title: product?.name || 'Product',
+        text: `Check out this amazing product: ${product?.name || 'Unknown'}`,
+        url: shareUrl,
+      };
+
+      // Try native share first
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (err) {
+          // User cancelled or share failed, try clipboard
+          console.log('Native share cancelled or failed', err);
+        }
+      }
+
+      // Fallback to clipboard
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copied to clipboard!');
+      } else {
+        // Last resort: use old copyToClipboard method
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        toast.success('Link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Share error:', error);
+      toast.error('Unable to share. Please try again.');
+    }
+  };
+
   // Calculate estimated delivery date
   const deliveryDate = new Date()
   deliveryDate.setDate(deliveryDate.getDate() + (product.delivery_time_max || 7))
@@ -452,7 +498,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
               {product.seller?.businessName || 'Brand'}
             </p>
           </div>
-          <button className="p-2 -mr-2 active:bg-primary-50 rounded-full transition-colors">
+          <button onClick={handleShare} className="p-2 -mr-2 active:bg-primary-50 rounded-full transition-colors">
             <Share2 className="w-5 h-5 text-charcoal-700" />
           </button>
         </div>
@@ -550,9 +596,17 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
         <div className="text-sm text-charcoal-600">
           Delivery by <span className="font-semibold text-charcoal-900">{deliveryDateStr}</span> - 422001
         </div>
-        <div className="text-sm">
-          Seller: <span className="font-semibold text-primary-700">{product.seller?.businessName?.toUpperCase() || 'SELLER'}</span>
-        </div>
+        <button 
+          onClick={() => {
+            if (sellerUsername) {
+              router.push(`/${sellerUsername}`)
+            }
+          }}
+          disabled={!sellerUsername}
+          className="text-sm text-left hover:opacity-80 transition-opacity disabled:cursor-not-allowed"
+        >
+          Seller: <span className="font-semibold text-primary-700 hover:text-primary-800">{product.seller?.businessName?.toUpperCase() || 'SELLER'}</span>
+        </button>
       </div>
 
       {/* Customization Info */}
