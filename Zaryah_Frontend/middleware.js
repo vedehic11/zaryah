@@ -37,11 +37,12 @@ export function middleware(request) {
     return NextResponse.next()
   }
 
-  if (!url.pathname.startsWith(`/${subdomain}`)) {
-    url.pathname = `/${subdomain}${url.pathname}`
+  if (url.pathname === '/') {
+    url.pathname = `/${subdomain}`
+    return NextResponse.rewrite(url)
   }
 
-  return NextResponse.rewrite(url)
+  return NextResponse.next()
 }
 
 export const config = {
