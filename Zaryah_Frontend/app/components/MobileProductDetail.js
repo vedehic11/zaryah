@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles, Star, Image as ImageIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles, Star, Image as ImageIcon, Gift } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCart } from '../contexts/CartContext'
+import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 import { Reviews } from './Reviews'
 import Image from 'next/image'
@@ -14,6 +15,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { addToCart, setIsCartOpen } = useCart()
+  const { user } = useAuth()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const touchStartX = useRef(null)
   const touchCurrentX = useRef(null)
@@ -236,6 +238,54 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       toast.success('Added to bag!')
     } catch (error) {
       toast.error(error.message || 'Failed to add to bag')
+    }
+  }
+
+  const handleBuyNow = async () => {
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    // Validate customization questions if product is customizable
+    if (product.customisable && customizationQuestions.length > 0) {
+      const unanswered = customizationQuestions.some((q, index) => {
+        if (q.required === false) return false
+        
+        const questionType = q.answerType || q.type || 'text'
+        const answer = customizationAnswers[index]
+        if (questionType === 'photo') {
+          return !answer || customUploadStatus[index]
+        }
+        return !answer || answer.trim() === ''
+      })
+      if (unanswered) {
+        toast.error('Please answer all required customization questions before buying')
+        return
+      }
+    }
+    
+    try {
+      const customizations = product.customisable && customizationQuestions.length > 0 
+        ? customizationQuestions.map((q, index) => ({
+            question: q.question,
+            answer: customizationAnswers[index],
+            answerType: q.answerType || q.type || 'text'
+          }))
+        : []
+      
+      await addToCart(product, { 
+        quantity: 1, 
+        selectedSize,
+        selectedColor,
+        unitPrice: displayPrice,
+        customizations 
+      })
+      
+      // Navigate to checkout
+      router.push('/checkout')
+    } catch (error) {
+      toast.error(error.message || 'Failed to proceed')
     }
   }
 
@@ -509,9 +559,21 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
               {product.seller?.businessName || 'Brand'}
             </p>
           </div>
-          <button onClick={handleShare} className="p-2 -mr-2 active:bg-primary-50 rounded-full transition-colors">
-            <Share2 className="w-5 h-5 text-charcoal-700" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={toggleWishlist} 
+              className="p-2 active:bg-primary-50 rounded-full transition-colors"
+              aria-label="Add to wishlist"
+            >
+              <Heart 
+                className={`w-5 h-5 ${isWishlisted ? 'fill-secondary-500 text-secondary-500' : 'text-charcoal-700'}`}
+                strokeWidth={2}
+              />
+            </button>
+            <button onClick={handleShare} className="p-2 active:bg-primary-50 rounded-full transition-colors">
+              <Share2 className="w-5 h-5 text-charcoal-700" />
+            </button>
+          </div>
         </div>
         
         <div className="mt-3 flex items-center gap-3">
@@ -1106,6 +1168,13 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
             className="flex-1 bg-white border-2 border-secondary-600 text-secondary-700 font-bold py-3.5 rounded-xl hover:bg-secondary-50 transition-all active:scale-95 shadow-sm"
           >
             ADD TO BAG
+          </button>
+          <button
+            onClick={handleBuyNow}
+            className="flex-1 flex items-center justify-center space-x-2 bg-primary-600 text-white font-bold py-3.5 rounded-xl hover:bg-primary-700 transition-all active:scale-95 shadow-sm"
+          >
+            <Gift className="w-5 h-5" />
+            <span>BUY NOW</span>
           </button>
         </div>
       </div>
