@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { 
   Heart, 
@@ -27,6 +28,11 @@ import { CartSidebar } from './CartSidebar'
 import { NotificationCenter } from './NotificationCenter'
 import { UserAvatar } from './UserAvatar'
 import { apiService } from '../services/api'
+
+const SearchParamsHandler = dynamic(() => import('./SearchParamsHandler').then(mod => mod.SearchParamsHandler), {
+  ssr: false,
+  loading: () => null
+})
 
 const LOGO_SRC = '/assets/image.png?v=20260501'
 const ROOT_DOMAIN = 'zaryah.in'
@@ -61,7 +67,6 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
   const { user, logout, isLoading: authLoading } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const [hostSubdomain, setHostSubdomain] = useState(null)
   const [returnToSeller, setReturnToSeller] = useState('')
   const reservedTopLevelRoutes = useMemo(() => new Set([
@@ -113,17 +118,9 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
     }
   }, [])
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const redirectParam = String(searchParams.get('redirect') || '').trim()
-    if (redirectParam.startsWith('http')) {
-      window.sessionStorage.setItem('zaryah-return-to-seller', redirectParam)
-      setReturnToSeller(redirectParam)
-      return
-    }
-    const stored = window.sessionStorage.getItem('zaryah-return-to-seller')
-    setReturnToSeller(stored || '')
-  }, [searchParams])
+  const handleRedirectParam = useCallback((redirectParam) => {
+    setReturnToSeller(redirectParam)
+  }, [])
 
   const getNavHref = useCallback((href) => {
     if (!hostSubdomain) return href
@@ -335,6 +332,11 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
 
   return (
     <div className="min-h-screen bg-cream-50">
+      {/* Search Params Handler */}
+      <Suspense fallback={null}>
+        <SearchParamsHandler onRedirectParamFound={handleRedirectParam} />
+      </Suspense>
+      
       {/* Header */}
       {!isUsernameBrandPage && (
       <header className="bg-cream-50/95 backdrop-blur-md border-b border-cream-200 sticky top-0 z-50 shadow-lg">
