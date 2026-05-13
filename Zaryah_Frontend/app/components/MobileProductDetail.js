@@ -338,6 +338,10 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     toast.success(isWishlisted ? 'Removed from wishlist' : 'Added to wishlist')
   }
 
+  const handleOpenWishlist = () => {
+    router.push('/wishlist')
+  }
+
   const handleShare = async () => {
     try {
       // Check if we're in a browser environment
@@ -419,13 +423,11 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
           </div>
           
           <button 
-            onClick={toggleWishlist}
+            onClick={handleOpenWishlist}
             className="p-1.5 active:bg-primary-100 rounded-full transition-colors"
+            aria-label="Open wishlist"
           >
-            <Heart 
-              className={`w-6 h-6 ${isWishlisted ? 'fill-secondary-500 text-secondary-500' : 'text-charcoal-800'}`}
-              strokeWidth={2}
-            />
+            <Heart className="w-6 h-6 text-charcoal-800" strokeWidth={2} />
           </button>
           
           <button 
