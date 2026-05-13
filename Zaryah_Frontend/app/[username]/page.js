@@ -33,8 +33,8 @@ export default function SellerProfilePage({ params }) {
 
   const sellerHomeUrl = useMemo(() => `https://${username}.zaryah.in`, [username])
   const zaryahHomeUrl = 'https://zaryah.in/'
-  const zaryahLoginUrl = 'https://zaryah.in/login'
-  const zaryahRegisterUrl = 'https://zaryah.in/register'
+  const zaryahLoginUrl = `https://zaryah.in/login?redirect=${encodeURIComponent(sellerHomeUrl)}`
+  const zaryahRegisterUrl = `https://zaryah.in/register?redirect=${encodeURIComponent(sellerHomeUrl)}`
 
   useEffect(() => {
     const fetchSeller = async () => {

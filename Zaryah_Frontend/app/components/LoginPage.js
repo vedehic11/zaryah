@@ -92,7 +92,9 @@ export const LoginPage = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTarget = String(searchParams.get('redirect') || '').trim()
-  const safeRedirectTarget = redirectTarget.startsWith('/') ? redirectTarget : ''
+  const safeRedirectTarget = redirectTarget.startsWith('/') || redirectTarget.startsWith('http')
+    ? redirectTarget
+    : ''
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -138,6 +140,10 @@ export const LoginPage = () => {
       
       if (success) {
         if (safeRedirectTarget) {
+          if (safeRedirectTarget.startsWith('http') && typeof window !== 'undefined') {
+            window.location.href = safeRedirectTarget
+            return
+          }
           router.push(safeRedirectTarget)
           return
         }
