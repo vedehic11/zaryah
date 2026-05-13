@@ -10,6 +10,18 @@ function getHostname(request) {
 
 export function middleware(request) {
   const hostname = getHostname(request)
+  const url = request.nextUrl.clone()
+
+  if (hostname === 'zaryah.vercel.app') {
+    const segments = url.pathname.split('/').filter(Boolean)
+    if (segments.length > 0) {
+      const [username, ...rest] = segments
+      const redirectUrl = new URL(`https://${username}.${ROOT_DOMAIN}/${rest.join('/')}`)
+      redirectUrl.search = url.search
+      return NextResponse.redirect(redirectUrl, 308)
+    }
+    return NextResponse.next()
+  }
 
   if (!hostname || !hostname.endsWith(SUBDOMAIN_SUFFIX)) {
     return NextResponse.next()
@@ -25,14 +37,11 @@ export function middleware(request) {
     return NextResponse.next()
   }
 
-  const url = request.nextUrl.clone()
-
-  if (url.pathname === '/') {
-    url.pathname = `/${subdomain}`
-    return NextResponse.rewrite(url)
+  if (!url.pathname.startsWith(`/${subdomain}`)) {
+    url.pathname = `/${subdomain}${url.pathname}`
   }
 
-  return NextResponse.next()
+  return NextResponse.rewrite(url)
 }
 
 export const config = {

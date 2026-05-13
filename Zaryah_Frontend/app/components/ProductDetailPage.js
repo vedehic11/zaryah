@@ -220,7 +220,10 @@ export const ProductDetailPage = ({ productId }) => {
 
   const goToSellerProfile = () => {
     if (!sellerUsername) return
-    router.push(`/${sellerUsername}`)
+    const url = `https://${sellerUsername}.zaryah.in`
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank', 'noopener')
+    }
   }
 
   useEffect(() => {

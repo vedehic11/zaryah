@@ -596,10 +596,12 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
         <div className="text-sm text-charcoal-600">
           Delivery by <span className="font-semibold text-charcoal-900">{deliveryDateStr}</span> - 422001
         </div>
-        <button 
+        <button
           onClick={() => {
-            if (sellerUsername) {
-              router.push(`/${sellerUsername}`)
+            if (!sellerUsername) return
+            const url = `https://${sellerUsername}.zaryah.in`
+            if (typeof window !== 'undefined') {
+              window.open(url, '_blank', 'noopener')
             }
           }}
           disabled={!sellerUsername}
