@@ -33,6 +33,8 @@ export default function SellerProfilePage({ params }) {
 
   const sellerHomeUrl = useMemo(() => `https://${username}.zaryah.in`, [username])
   const zaryahHomeUrl = 'https://zaryah.in/'
+  const zaryahLoginUrl = 'https://zaryah.in/login'
+  const zaryahRegisterUrl = 'https://zaryah.in/register'
 
   useEffect(() => {
     const fetchSeller = async () => {
@@ -380,6 +382,26 @@ export default function SellerProfilePage({ params }) {
                         <History className="h-4 w-4" />
                         <span>Order History</span>
                       </Link>
+                    )}
+                    {!user && (
+                      <>
+                        <Link
+                          href={zaryahLoginUrl}
+                          className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                          onClick={() => setIsQuickMenuOpen(false)}
+                        >
+                          <User className="h-4 w-4" />
+                          <span>Sign In</span>
+                        </Link>
+                        <Link
+                          href={zaryahRegisterUrl}
+                          className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                          onClick={() => setIsQuickMenuOpen(false)}
+                        >
+                          <User className="h-4 w-4" />
+                          <span>Register</span>
+                        </Link>
+                      </>
                     )}
                   </nav>
 
