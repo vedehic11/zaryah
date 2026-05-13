@@ -25,6 +25,25 @@ export default function AddProductPage() {
   const sizeChartInputRefs = useRef({})
   const colorImageInputRefs = useRef({})
 
+  const WORD_LIMITS = {
+    name: 12,
+    description: 80,
+    material: 20,
+    careInstructions: 40,
+    legalDisclaimer: 40,
+    feature: 10,
+    question: 20
+  }
+
+  const IMAGE_LIMIT = 5
+
+  const countWords = (value) => String(value || '').trim().split(/\s+/).filter(Boolean).length
+
+  const limitWords = (value, limit) => {
+    const words = String(value || '').trim().split(/\s+/).filter(Boolean)
+    return words.slice(0, limit).join(' ')
+  }
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -51,6 +70,7 @@ export default function AddProductPage() {
   })
 
   const [images, setImages] = useState([])
+  const [imageUploading, setImageUploading] = useState(false)
   const [features, setFeatures] = useState([''])
   const [customQuestions, setCustomQuestions] = useState([{ question: '', required: false, answerType: 'text' }])
   const [sizePriceOptions, setSizePriceOptions] = useState([{ label: '', price: '' }])
@@ -148,8 +168,12 @@ export default function AddProductPage() {
       description: sourceProduct.description || '',
       price: sourceProduct.price || '',
       mrp: sourceProduct.mrp || sourceProduct.price || '',
-      category: sourceProduct.category || '',
-      section: sourceProduct.section || '',
+      categories: Array.isArray(sourceProduct.categories)
+        ? sourceProduct.categories
+        : (sourceProduct.category ? [sourceProduct.category] : []),
+      sections: Array.isArray(sourceProduct.sections)
+        ? sourceProduct.sections
+        : (sourceProduct.section ? [sourceProduct.section] : []),
       weight: sourceProduct.weight || '',
       stock: sourceProduct.stock || '',
       customisable: sourceProduct.customisable || false,
@@ -238,14 +262,25 @@ export default function AddProductPage() {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
+
+    if (type !== 'checkbox' && WORD_LIMITS[name]) {
+      setFormData(prev => ({
+        ...prev,
+        [name]: limitWords(value, WORD_LIMITS[name])
+      }))
+      return
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
   }
 
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files)
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+
     const validFiles = files.filter(file => {
       const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
       const isValidSize = file.size <= 5 * 1024 * 1024 // 5MB limit
@@ -261,7 +296,50 @@ export default function AddProductPage() {
       return true
     })
 
-    setImages(prev => [...prev, ...validFiles].slice(0, 5)) // Max 5 images
+    const remainingSlots = Math.max(0, IMAGE_LIMIT - images.length)
+    const filesToUpload = validFiles.slice(0, remainingSlots)
+
+    if (filesToUpload.length === 0) {
+      toast.error(`Maximum ${IMAGE_LIMIT} images allowed`)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      return
+    }
+
+    setImageUploading(true)
+
+    try {
+      const uploadedUrls = []
+
+      for (const file of filesToUpload) {
+        const uploadData = new FormData()
+        uploadData.append('file', file)
+        uploadData.append('folder', 'products')
+
+        const response = await apiService.request('/upload', {
+          method: 'POST',
+          body: uploadData,
+          timeoutMs: 120000
+        })
+
+        if (!response?.url) {
+          throw new Error(`Failed to upload ${file.name}`)
+        }
+
+        uploadedUrls.push(response.url)
+      }
+
+      setImages(prev => [...prev, ...uploadedUrls].slice(0, 5))
+    } catch (error) {
+      console.error('Failed to upload product image(s):', error)
+      toast.error(error.message || 'Failed to upload image(s)')
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      setImageUploading(false)
+    }
   }
 
   const removeImage = (index) => {
@@ -269,8 +347,9 @@ export default function AddProductPage() {
   }
 
   const handleFeatureChange = (index, value) => {
+    const limitedValue = limitWords(value, WORD_LIMITS.feature)
     const newFeatures = [...features]
-    newFeatures[index] = value
+    newFeatures[index] = limitedValue
     setFeatures(newFeatures)
   }
 
@@ -284,7 +363,11 @@ export default function AddProductPage() {
 
   const handleQuestionChange = (index, field, value) => {
     const newQuestions = [...customQuestions]
-    newQuestions[index][field] = value
+    if (field === 'question') {
+      newQuestions[index][field] = limitWords(value, WORD_LIMITS.question)
+    } else {
+      newQuestions[index][field] = value
+    }
     setCustomQuestions(newQuestions)
   }
 
@@ -728,6 +811,7 @@ export default function AddProductPage() {
                   placeholder="Describe your product in detail..."
                 />
                 {errors.description && <p className="text-sm text-red-600 mt-1">{errors.description}</p>}
+                <p className="text-xs text-gray-500 mt-1">{countWords(formData.description)}/{WORD_LIMITS.description} words</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -832,14 +916,14 @@ export default function AddProductPage() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={images.length >= 5}
-                  className={`w-full px-4 py-8 border-2 border-dashed ${errors.images ? 'border-red-500' : 'border-gray-300'} rounded-lg hover:border-primary-500 transition-colors flex flex-col items-center justify-center space-y-2 ${images.length >= 5 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={images.length >= IMAGE_LIMIT || imageUploading}
+                  className={`w-full px-4 py-8 border-2 border-dashed ${errors.images ? 'border-red-500' : 'border-gray-300'} rounded-lg hover:border-primary-500 transition-colors flex flex-col items-center justify-center space-y-2 ${(images.length >= IMAGE_LIMIT || imageUploading) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <Upload className="w-8 h-8 text-gray-400" />
                   <p className="text-sm text-gray-600">
-                    {images.length >= 5 ? 'Maximum 5 images' : 'Click to upload images'}
+                    {imageUploading ? 'Uploading images...' : images.length >= IMAGE_LIMIT ? `Maximum ${IMAGE_LIMIT} images` : 'Click to upload images'}
                   </p>
-                  <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                  <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB each. Up to {IMAGE_LIMIT} images total.</p>
                 </button>
                 {errors.images && <p className="text-sm text-red-600 mt-1">{errors.images}</p>}
               </div>
@@ -1207,6 +1291,7 @@ export default function AddProductPage() {
                   placeholder="e.g., Premium milk chocolate with organic ingredients"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
+                <p className="text-xs text-gray-500 mt-1">{countWords(formData.material)}/{WORD_LIMITS.material} words</p>
               </div>
 
               <div>
@@ -1221,6 +1306,7 @@ export default function AddProductPage() {
                   rows="3"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
+                <p className="text-xs text-gray-500 mt-1">{countWords(formData.careInstructions)}/{WORD_LIMITS.careInstructions} words</p>
               </div>
             </div>
           </div>
@@ -1385,6 +1471,7 @@ export default function AddProductPage() {
                         placeholder="e.g., What message would you like on the card?"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />
+                      <p className="text-xs text-gray-500 mt-1">{countWords(q.question)}/{WORD_LIMITS.question} words</p>
                       <label className="flex items-center space-x-2 mt-2 cursor-pointer">
                         <input
                           type="checkbox"

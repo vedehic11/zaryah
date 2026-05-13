@@ -216,16 +216,20 @@ export async function PUT(request, { params }) {
     const updateBody = { ...body }
     if (body.categories) {
       updateBody.categories = Array.isArray(body.categories) ? body.categories : [body.categories]
+      updateBody.category = updateBody.categories[0] || null
     }
     if (body.sections) {
       updateBody.sections = Array.isArray(body.sections) ? body.sections : [body.sections]
+      updateBody.section = updateBody.sections[0] || null
     }
     // For backward compatibility, also update single fields
     if (body.category) {
       updateBody.categories = [body.category]
+      updateBody.category = body.category
     }
     if (body.section) {
       updateBody.sections = [body.section]
+      updateBody.section = body.section
     }
     
     const { data: updatedProduct, error } = await supabase
