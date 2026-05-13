@@ -264,7 +264,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
         return
       }
     }
-    
+
     try {
       const customizations = product.customisable && customizationQuestions.length > 0 
         ? customizationQuestions.map((q, index) => ({
@@ -273,17 +273,31 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
             answerType: q.answerType || q.type || 'text'
           }))
         : []
-      
-      await addToCart(product, { 
-        quantity: 1, 
+
+      // Prepare a single buy-now item and store in session so Checkout can read it
+      const buyNowItem = {
+        id: product.id || product._id,
+        name: product.name,
+        images: product.images || (product.image ? [product.image] : []),
+        unitPrice: displayPrice,
+        price: displayPrice,
+        quantity: 1,
         selectedSize,
         selectedColor,
-        unitPrice: displayPrice,
-        customizations 
-      })
-      
-      // Navigate to checkout
-      router.push('/checkout')
+        customizations,
+        giftPackaging: false,
+        cartItemId: `buyNow_${Date.now()}`
+      }
+
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('zaryah-buyNowItem', JSON.stringify(buyNowItem))
+        } catch (e) {
+          console.error('Failed to save buyNow item to sessionStorage', e)
+        }
+      }
+
+      router.push('/checkout?buyNow=1')
     } catch (error) {
       toast.error(error.message || 'Failed to proceed')
     }

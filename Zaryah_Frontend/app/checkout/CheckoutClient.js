@@ -18,7 +18,9 @@ export default function CheckoutClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
-  const { cart, clearCart } = useCart()
+  const { cart, clearCart, updateQuantity, removeFromCart } = useCart()
+  const [buyNowMode, setBuyNowMode] = useState(false)
+  const [buyNowItem, setBuyNowItem] = useState(null)
   const { addresses = [], addAddress, loadUserAddresses } = useAddress()
 
   const [selectedAddress, setSelectedAddress] = useState(null)
@@ -70,13 +72,28 @@ export default function CheckoutClient() {
   }
 
   useEffect(() => {
+    const buyNowFlag = String(searchParams.get('buyNow') || '').trim()
+    if (buyNowFlag === '1' && typeof window !== 'undefined') {
+      try {
+        const data = sessionStorage.getItem('zaryah-buyNowItem')
+        if (data) {
+          const parsed = JSON.parse(data)
+          setBuyNowItem(parsed)
+          setBuyNowMode(true)
+        }
+      } catch (e) {
+        console.error('Failed to parse buyNow item from sessionStorage', e)
+      }
+    }
+
     if (!user) {
       toast.error('Please login to checkout')
       router.push('/login')
       return
     }
 
-    if (cart.length === 0) {
+    // If not in buyNow mode, require non-empty cart
+    if (!buyNowMode && cart.length === 0) {
       router.push('/shop')
       return
     }
@@ -88,17 +105,20 @@ export default function CheckoutClient() {
     } else if (addresses.length > 0) {
       setSelectedAddress(addresses[0])
     }
-  }, [user, cart, addresses, router])
+  }, [user, cart, addresses, router, searchParams, buyNowMode])
+
+  // Determine displayed items (supports buy-now single-item checkout)
+  const displayedItems = buyNowMode && buyNowItem ? [buyNowItem] : cart
 
   // Calculate delivery charge dynamically when address changes
-  const hasTwoWayDelivery = cart.some(item => item.two_way_delivery || item.twoWayDelivery)
+  const hasTwoWayDelivery = displayedItems.some(item => item.two_way_delivery || item.twoWayDelivery)
   const canUseCod = useMemo(() => {
-    if (!cart.length) {
+    if (!displayedItems.length) {
       return false
     }
 
-    return cart.every(item => item.codAvailable !== false && item.sellerAllowCod !== false)
-  }, [cart])
+    return displayedItems.every(item => item.codAvailable !== false && item.sellerAllowCod !== false)
+  }, [displayedItems])
 
   const codUnavailableReason = !canUseCod
     ? 'This seller does not support Cash on Delivery.'
@@ -114,7 +134,7 @@ export default function CheckoutClient() {
 
   useEffect(() => {
     const calculateDeliveryCharge = async () => {
-      if (!selectedAddress?.pincode || !cart || cart.length === 0) {
+      if (!selectedAddress?.pincode || !displayedItems || displayedItems.length === 0) {
         setDynamicDeliveryCharge(null)
         setTwoWayCharges({ inbound: null, outbound: null })
         return
@@ -129,14 +149,14 @@ export default function CheckoutClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             deliveryPincode: selectedAddress.pincode,
-            cartItems: cart.map(item => ({
+            cartItems: displayedItems.map(item => ({
               product_id: item.id || item._id,
               seller_id: item.sellerId || item.seller_id,
               weight: item.weight || 500,
               quantity: item.quantity
             })),
             twoWayDelivery: hasTwoWayDelivery,
-            codAmount: paymentMethod === 'cod' ? subtotal : 0
+            codAmount: paymentMethod === 'cod' ? (displayedItems.reduce((s, i) => s + ((i.unitPrice || i.price) * i.quantity), 0)) : 0
           })
         })
 
@@ -168,17 +188,43 @@ export default function CheckoutClient() {
     if (selectedAddress?.pincode) {
       calculateDeliveryCharge()
     }
-  }, [selectedAddress, paymentMethod, cart, hasTwoWayDelivery])
+  }, [selectedAddress, paymentMethod, displayedItems, hasTwoWayDelivery])
 
-  // Calculate totals
-  const subtotal = cart.reduce((sum, item) => sum + ((item.unitPrice || item.price) * item.quantity), 0)
-  const giftPackagingFee = cart.reduce((sum, item) => {
+  // Calculate totals (based on displayed items - supports buy-now)
+  const subtotal = displayedItems.reduce((sum, item) => sum + ((item.unitPrice || item.price) * item.quantity), 0)
+  const giftPackagingFee = displayedItems.reduce((sum, item) => {
     return sum + (item.giftPackaging ? 10 * item.quantity : 0)
   }, 0)
   const deliveryFee = dynamicDeliveryCharge !== null ? dynamicDeliveryCharge : (subtotal >= 500 ? 0 : 60)
   // Note: deliveryFee already includes ₹10 markup from Shiprocket API (getCheapestShippingRate)
   const platformFee = subtotal < 500 ? 10 : 20 // Flat platform fee based on order value
   const total = subtotal + giftPackagingFee + deliveryFee + platformFee
+
+  // Helpers to update/remove items in displayedItems (works for buy-now or full cart)
+  const handleUpdateDisplayedQuantity = (item, newQty) => {
+    const qty = Math.max(1, newQty)
+    if (buyNowMode) {
+      setBuyNowItem(prev => prev ? { ...prev, quantity: qty } : prev)
+    } else {
+      updateQuantity(item.cartItemId, qty)
+    }
+  }
+
+  const handleRemoveDisplayedItem = (item) => {
+    if (buyNowMode) {
+      try { sessionStorage.removeItem('zaryah-buyNowItem') } catch (e) {}
+      setBuyNowItem(null)
+      setBuyNowMode(false)
+      // Navigate back to product page if possible
+      if (item && (item.id || item._id)) {
+        router.push(`/product/${item.id || item._id}`)
+        return
+      }
+      router.push('/shop')
+    } else {
+      removeFromCart(item.cartItemId)
+    }
+  }
 
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
@@ -194,9 +240,9 @@ export default function CheckoutClient() {
       console.log('Step 1: Formatting address...')
       const addressString = `${selectedAddress.name}, ${selectedAddress.address}, ${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.pincode}. Phone: ${selectedAddress.phone}`
 
-      // Create order
+      // Create order (use displayedItems so buy-now works)
       const orderData = {
-        items: cart.map(item => ({
+        items: displayedItems.map(item => ({
           productId: item.id || item._id,
           quantity: item.quantity,
           giftPackaging: item.giftPackaging || false,
@@ -292,7 +338,7 @@ export default function CheckoutClient() {
               console.log('✅ Payment verified successfully:', verificationResult)
               toast.success('Payment successful! Redirecting...', { id: 'payment-verify' })
               setIsProcessing(false)
-              clearCart()
+              if (!buyNowMode) clearCart()
 
               // Small delay before redirect to show success message
               setTimeout(() => navigateAfterOrder(), 1000)
@@ -325,7 +371,7 @@ export default function CheckoutClient() {
                     })
 
                     toast.success('Payment successful!', { id: 'payment-verify' })
-                    clearCart()
+                    if (!buyNowMode) clearCart()
                     setTimeout(() => navigateAfterOrder(), 1000)
                   } else if (statusCheck.payment?.status === 'failed') {
                     // Payment actually failed
@@ -422,7 +468,7 @@ export default function CheckoutClient() {
         // Clear cart (backend already cleared it, this is for frontend state)
         console.log('Step 5: Clearing frontend cart state...')
         try {
-          await clearCart()
+          if (!buyNowMode) await clearCart()
         } catch (cartError) {
           console.error('Cart clear error (non-critical):', cartError)
           // Don't fail the order if cart clear fails
@@ -444,7 +490,7 @@ export default function CheckoutClient() {
     }
   }
 
-  if (!user || cart.length === 0) {
+  if (!user || (!buyNowMode && cart.length === 0)) {
     return null
   }
 
@@ -753,7 +799,7 @@ export default function CheckoutClient() {
 
               {/* Cart Items */}
               <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
-                {cart.map((item) => (
+                {displayedItems.map((item) => (
                   <div key={item.cartItemId} className="flex items-center space-x-3">
                     <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
                       <Image
@@ -777,6 +823,28 @@ export default function CheckoutClient() {
                       <p className="text-sm text-charcoal-600">
                         Qty: {item.quantity} × ₹{(item.unitPrice || item.price)}
                       </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <button
+                          onClick={() => handleUpdateDisplayedQuantity(item, item.quantity - 1)}
+                          disabled={item.quantity <= 1}
+                          className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded"
+                        >
+                          -
+                        </button>
+                        <span className="w-8 text-center">{item.quantity}</span>
+                        <button
+                          onClick={() => handleUpdateDisplayedQuantity(item, item.quantity + 1)}
+                          className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded"
+                        >
+                          +
+                        </button>
+                        <button
+                          onClick={() => handleRemoveDisplayedItem(item)}
+                          className="ml-3 text-sm text-rose-600"
+                        >
+                          Remove
+                        </button>
+                      </div>
                       {item.giftPackaging && (
                         <p className="text-xs text-secondary-600">+ Gift Packaging</p>
                       )}
