@@ -29,6 +29,7 @@ import { UserAvatar } from './UserAvatar'
 import { apiService } from '../services/api'
 
 const LOGO_SRC = '/assets/image.png?v=20260501'
+const ROOT_DOMAIN = 'zaryah.in'
 
 // NotificationSidebar component (like CartSidebar)
 function NotificationSidebar({ isOpen, onClose }) {
@@ -60,6 +61,7 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
   const { user, logout, isLoading: authLoading } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const [hostSubdomain, setHostSubdomain] = useState(null)
   const reservedTopLevelRoutes = useMemo(() => new Set([
     '',
     'shop',
@@ -80,20 +82,15 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
     'api'
   ]), [])
   const pathSegments = useMemo(() => (pathname || '').split('/').filter(Boolean), [pathname])
-  const isUsernameBrandPage = useMemo(() => {
-    if (pathSegments.length !== 1) return false
-    return !reservedTopLevelRoutes.has(pathSegments[0])
+  const pathSellerUsername = useMemo(() => {
+    if (pathSegments.length !== 1) return null
+    if (reservedTopLevelRoutes.has(pathSegments[0])) return null
+    return pathSegments[0]
   }, [pathSegments, reservedTopLevelRoutes])
   const currentSellerUsername = useMemo(() => {
-    if (!isUsernameBrandPage || pathSegments.length !== 1) return null
-    return pathSegments[0]
-  }, [isUsernameBrandPage, pathSegments])
-  const headerBrandLabel = useMemo(() => {
-    if (isUsernameBrandPage && currentSellerUsername) {
-      return `@${decodeURIComponent(currentSellerUsername)}`
-    }
-    return 'Zaryah'
-  }, [isUsernameBrandPage, currentSellerUsername])
+    return hostSubdomain || pathSellerUsername
+  }, [hostSubdomain, pathSellerUsername])
+  const isUsernameBrandPage = useMemo(() => Boolean(currentSellerUsername), [currentSellerUsername])
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -103,6 +100,16 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
   const [products, setProducts] = useState([])
   const [productsLoaded, setProductsLoaded] = useState(false)
   // const { syncGuestCartToBackend } = useCart() // Removed automatic syncing
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const host = window.location.hostname.toLowerCase()
+    if (host.endsWith(`.${ROOT_DOMAIN}`) && host !== ROOT_DOMAIN && host !== `www.${ROOT_DOMAIN}`) {
+      setHostSubdomain(host.slice(0, -(ROOT_DOMAIN.length + 1)))
+    } else {
+      setHostSubdomain(null)
+    }
+  }, [])
 
   // Load products for search suggestions only when needed
   const getContextualProducts = useCallback((allProducts = []) => {
@@ -311,7 +318,6 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
       {/* Header */}
       {!isUsernameBrandPage && (
       <header className="bg-cream-50/95 backdrop-blur-md border-b border-cream-200 sticky top-0 z-50 shadow-lg">
-        {/* Desktop header row */}
         <div className="hidden lg:flex w-full items-center justify-between py-3 px-4 xl:px-6">
           {/* Logo - Left Side */}
           <div className="flex-shrink-0 flex items-center justify-start">
@@ -329,47 +335,47 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
           {/* Center Navigation */}
           {!isUsernameBrandPage && (
             <nav className="flex flex-1 justify-center gap-8 xl:gap-12">
-              {navigation.map((item) => {
-                const isActive = pathname === item.href
-                const Icon = item.icon
-                
-                if (item.isAnchor) {
-                  return (
-                    <button
-                      key={item.name}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        if (item.onClick) {
-                          item.onClick()
-                        }
-                      }}
-                      className={`flex items-center gap-1 text-base xl:text-lg font-medium transition-colors duration-200 cursor-pointer ${
-                        'text-neutral-900 hover:text-primary-600'
-                      }`}
-                      style={{ background: 'none', boxShadow: 'none', padding: 0, border: 'none' }}
-                    >
-                      <Icon className="w-5 h-5 xl:w-6 xl:h-6" />
-                      <span>{item.name}</span>
-                    </button>
-                  )
-                }
-                
+            {navigation.map((item) => {
+              const isActive = pathname === item.href
+              const Icon = item.icon
+              
+              if (item.isAnchor) {
                 return (
-                  <Link
+                  <button
                     key={item.name}
-                    href={item.href}
-                    prefetch={true}
-                    className={`flex items-center gap-1 text-base xl:text-lg font-medium transition-colors duration-200 ${
-                      isActive ? 'text-primary-700 underline underline-offset-8 decoration-2' : 'text-neutral-900 hover:text-primary-600'
+                    onClick={(e) => {
+                      e.preventDefault()
+                      if (item.onClick) {
+                        item.onClick()
+                      }
+                    }}
+                    className={`flex items-center gap-1 text-base xl:text-lg font-medium transition-colors duration-200 cursor-pointer ${
+                      'text-neutral-900 hover:text-primary-600'
                     }`}
-                    style={{ textDecoration: 'none', background: 'none', boxShadow: 'none', padding: 0 }}
+                    style={{ background: 'none', boxShadow: 'none', padding: 0, border: 'none' }}
                   >
                     <Icon className="w-5 h-5 xl:w-6 xl:h-6" />
                     <span>{item.name}</span>
-                  </Link>
+                  </button>
                 )
-              })}
-            </nav>
+              }
+              
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  prefetch={true}
+                  className={`flex items-center gap-1 text-base xl:text-lg font-medium transition-colors duration-200 ${
+                    isActive ? 'text-primary-700 underline underline-offset-8 decoration-2' : 'text-neutral-900 hover:text-primary-600'
+                  }`}
+                  style={{ textDecoration: 'none', background: 'none', boxShadow: 'none', padding: 0 }}
+                >
+                  <Icon className="w-5 h-5 xl:w-6 xl:h-6" />
+                  <span>{item.name}</span>
+                </Link>
+              )
+            })}
+          </nav>
           )}
           {/* Right Side - User Menu */}
           <div className="flex items-center space-x-2">
