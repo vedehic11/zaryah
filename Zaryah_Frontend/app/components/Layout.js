@@ -327,7 +327,7 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
         <div className="hidden lg:flex w-full items-center justify-between py-3 px-4 xl:px-6">
           {/* Logo - Left Side */}
           <div className="flex-shrink-0 flex items-center justify-start">
-            <Link href="/" className="flex items-center">
+            <Link href={getNavHref('/')} className="flex items-center">
               <Image
                 src={LOGO_SRC}
                 alt="Zaryah"
@@ -450,7 +450,7 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
         
         {/* Tablet and Mobile header (combined) */}
         <div className="flex lg:hidden w-full items-center justify-between py-2 px-3 xl:px-6">
-          <Link href="/" className="flex items-center">
+          <Link href={getNavHref('/')} className="flex items-center">
             <Image
               src={LOGO_SRC}
               alt="Zaryah"
