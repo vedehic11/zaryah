@@ -13,7 +13,7 @@ import { apiService } from '../services/api'
 export default function MobileProductDetail({ product, similarProducts = [] }) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { addToCart } = useCart()
+  const { addToCart, setIsCartOpen } = useCart()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const touchStartX = useRef(null)
   const touchCurrentX = useRef(null)
@@ -139,6 +139,10 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     }
 
     router.back()
+  }
+
+  const handleViewCart = () => {
+    setIsCartOpen(true)
   }
 
   const goToSellerProfile = () => {
@@ -375,8 +379,9 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
           </button>
           
           <button 
-            onClick={handleAddToCart}
+            onClick={handleViewCart}
             className="p-1.5 active:bg-primary-100 rounded-full transition-colors"
+            aria-label="View cart"
           >
             <ShoppingBag className="w-6 h-6 text-charcoal-800" strokeWidth={2} />
           </button>
