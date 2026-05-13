@@ -26,7 +26,9 @@ export const ProductCard = ({ product, backHref }) => {
     : Array.isArray(product?.custom_questions)
       ? product.custom_questions
       : []
-  const normalizedBackHref = typeof backHref === 'string' && backHref.startsWith('/') ? backHref : ''
+  const normalizedBackHref = typeof backHref === 'string' && (backHref.startsWith('/') || backHref.startsWith('http'))
+    ? backHref
+    : ''
   const productHref = productId
     ? normalizedBackHref
       ? `/product/${productId}?back=${encodeURIComponent(normalizedBackHref)}`

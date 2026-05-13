@@ -204,7 +204,7 @@ export const HomePage = () => {
                 
                 return (
                   <Link 
-                    href={sellerUsername ? `/${sellerUsername}` : '/shop'} 
+                    href={sellerUsername ? `https://${sellerUsername}.zaryah.in` : '/shop'} 
                     key={seller.id}
                     className="group bg-neutral-50 rounded-2xl shadow-subtle border border-primary-100 overflow-hidden hover:shadow-lg transition-all cursor-pointer"
                   >

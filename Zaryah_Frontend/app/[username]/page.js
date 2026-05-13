@@ -31,6 +31,9 @@ export default function SellerProfilePage({ params }) {
   const { wishlistCount } = useWishlist()
   const { user } = useAuth()
 
+  const sellerHomeUrl = useMemo(() => `https://${username}.zaryah.in`, [username])
+  const zaryahHomeUrl = 'https://zaryah.in/'
+
   useEffect(() => {
     const fetchSeller = async () => {
       try {
@@ -39,7 +42,11 @@ export default function SellerProfilePage({ params }) {
         // First check if this is a reserved route
         const reservedRoutes = ['shop', 'product', 'login', 'register', 'admin', 'seller', 'orders', 'cart', 'support', 'gift-suggester', 'hamper-builder']
         if (reservedRoutes.includes(username)) {
-          // This is a reserved route, redirect to 404 or home
+          // This is a reserved route, redirect to home
+          if (typeof window !== 'undefined') {
+            window.location.href = zaryahHomeUrl
+            return
+          }
           router.push('/')
           return
         }
@@ -349,7 +356,7 @@ export default function SellerProfilePage({ params }) {
                 <div className="space-y-4 p-4">
                   <nav className="space-y-1.5">
                     <Link
-                      href="/"
+                      href={zaryahHomeUrl}
                       className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
                       onClick={() => setIsQuickMenuOpen(false)}
                     >
@@ -668,7 +675,7 @@ export default function SellerProfilePage({ params }) {
                         visible: { opacity: 1, y: 0 }
                       }}
                     >
-                      <ProductCard product={product} backHref={`/${username}`} />
+                      <ProductCard product={product} backHref={sellerHomeUrl} />
                     </motion.div>
                   ))}
                 </motion.div>
@@ -682,8 +689,8 @@ export default function SellerProfilePage({ params }) {
 
               {products.length >= 20 && (
                 <div className="mt-7 text-center">
-                  <Link
-                    href={`/shop?seller=${username}`}
+                    <Link
+                      href={`/shop?seller=${username}`}
                     className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-700 to-secondary-700 text-white text-base font-semibold rounded-xl hover:shadow-large transition-all"
                   >
                     <ShoppingBag className="w-5 h-5" />

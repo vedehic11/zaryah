@@ -68,7 +68,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   }, [product])
   const isTwoWayDelivery = Boolean(product?.twoWayDelivery || product?.two_way_delivery)
   const backTarget = String(searchParams.get('back') || '').trim()
-  const safeBackTarget = backTarget.startsWith('/') ? backTarget : ''
+  const safeBackTarget = backTarget.startsWith('/') || backTarget.startsWith('http') ? backTarget : ''
 
   const sizePriceOptions = Array.isArray(product?.sizePriceOptions)
     ? product.sizePriceOptions
@@ -123,12 +123,18 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
 
   const handleBack = () => {
     if (safeBackTarget) {
+      if (safeBackTarget.startsWith('http') && typeof window !== 'undefined') {
+        window.location.href = safeBackTarget
+        return
+      }
       router.push(safeBackTarget)
       return
     }
 
     if (sellerUsername) {
-      router.push(`/${sellerUsername}`)
+      if (typeof window !== 'undefined') {
+        window.location.href = `https://${sellerUsername}.zaryah.in`
+      }
       return
     }
 
@@ -137,7 +143,9 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
 
   const goToSellerProfile = () => {
     if (!sellerUsername) return
-    router.push(`/${sellerUsername}`)
+    if (typeof window !== 'undefined') {
+      window.location.href = `https://${sellerUsername}.zaryah.in`
+    }
   }
 
   useEffect(() => {

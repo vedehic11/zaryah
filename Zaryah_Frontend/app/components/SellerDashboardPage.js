@@ -300,8 +300,8 @@ export default function SellerDashboardPage() {
   }
 
   const isKycMissing = !(hasValue(profileData.account_holder_name) && hasValue(profileData.upi_id))
-  const profileUrl = profileData?.username && typeof window !== 'undefined'
-    ? `${window.location.origin}/${profileData.username}`
+  const profileUrl = profileData?.username
+    ? `https://${profileData.username}.zaryah.in`
     : ''
   const qrPreviewUrl = profileUrl
     ? `/api/qr?size=160&data=${encodeURIComponent(profileUrl)}`
