@@ -197,6 +197,9 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     // Validate customization questions if product is customizable
     if (product.customisable && customizationQuestions.length > 0) {
       const unanswered = customizationQuestions.some((q, index) => {
+        // Only validate required questions (those with asterisk)
+        if (q.required === false) return false
+        
         const questionType = q.answerType || q.type || 'text'
         const answer = customizationAnswers[index]
         if (questionType === 'photo') {
@@ -205,7 +208,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
         return !answer || answer.trim() === ''
       })
       if (unanswered) {
-        toast.error('Please answer all customization questions before adding to bag')
+        toast.error('Please answer all required customization questions before adding to bag')
         return
       }
     }
@@ -274,16 +277,6 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     } finally {
       setCustomUploadStatus(prev => ({ ...prev, [questionIndex]: false }))
     }
-  }
-
-  const handleBuyNow = async () => {
-    await handleAddToCart()
-    if (typeof window !== 'undefined') {
-      const redirect = encodeURIComponent(window.location.href)
-      router.push(`/checkout?redirect=${redirect}`)
-      return
-    }
-    router.push('/checkout')
   }
 
   const toggleWishlist = () => {
@@ -1108,13 +1101,6 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
             className="flex-1 bg-white border-2 border-secondary-600 text-secondary-700 font-bold py-3.5 rounded-xl hover:bg-secondary-50 transition-all active:scale-95 shadow-sm"
           >
             ADD TO BAG
-          </button>
-          <button
-            onClick={handleBuyNow}
-            className="flex-1 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-bold py-3.5 rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all active:scale-95 shadow-md flex items-center justify-center space-x-2"
-          >
-            <ShoppingBag className="w-5 h-5" />
-            <span>BUY NOW</span>
           </button>
         </div>
       </div>

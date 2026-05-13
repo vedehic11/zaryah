@@ -32,9 +32,10 @@ export default function SellerProfilePage({ params }) {
   const { user } = useAuth()
 
   const sellerHomeUrl = useMemo(() => `https://${username}.zaryah.in`, [username])
-  const zaryahHomeUrl = 'https://zaryah.in/'
-  const zaryahSupportUrl = 'https://zaryah.in/support'
-  const zaryahOrdersUrl = 'https://zaryah.in/orders'
+  const redirectParam = encodeURIComponent(sellerHomeUrl)
+  const zaryahHomeUrl = `https://zaryah.in/?redirect=${redirectParam}`
+  const zaryahSupportUrl = `https://zaryah.in/support?redirect=${redirectParam}`
+  const zaryahOrdersUrl = `https://zaryah.in/orders?redirect=${redirectParam}`
   const zaryahLoginUrl = `https://zaryah.in/login?redirect=${encodeURIComponent(sellerHomeUrl)}`
   const zaryahRegisterUrl = `https://zaryah.in/register?redirect=${encodeURIComponent(sellerHomeUrl)}`
 

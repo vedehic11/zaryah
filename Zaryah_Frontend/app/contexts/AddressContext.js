@@ -43,7 +43,6 @@ export const AddressProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error loading addresses:', error)
-      toast.error('Failed to load addresses')
     } finally {
       setLoading(false)
     }

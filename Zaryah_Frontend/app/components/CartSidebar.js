@@ -145,7 +145,6 @@ export const CartSidebar = () => {
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center py-12">
             <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" />
-            <p className="text-gray-600 mb-4">Your cart is empty</p>
             <Link
               href="/shop"
               onClick={() => setIsCartOpen(false)}

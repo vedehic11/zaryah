@@ -87,21 +87,8 @@ export const LocationProvider = ({ children }) => {
     setLocationError(null)
 
     try {
-      if (!navigator.geolocation) {
-        throw new Error('Geolocation is not supported by this browser')
-      }
-
-      const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000 // 5 minutes
-        })
-      })
-
-      const { latitude, longitude } = position.coords
-      const detectedCity = getCityFromCoordinates(latitude, longitude)
-      setUserCity(detectedCity)
+      // Location fetching disabled
+      console.log('Location fetching is disabled')
     } catch (error) {
       console.error('Location detection failed:', error)
       setLocationError('Unable to detect location. Please add an address manually.')

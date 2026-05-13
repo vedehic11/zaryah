@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { 
   Heart, 
@@ -61,7 +61,9 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
   const { user, logout, isLoading: authLoading } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [hostSubdomain, setHostSubdomain] = useState(null)
+  const [returnToSeller, setReturnToSeller] = useState('')
   const reservedTopLevelRoutes = useMemo(() => new Set([
     '',
     'shop',
@@ -110,6 +112,18 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
       setHostSubdomain(null)
     }
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const redirectParam = String(searchParams.get('redirect') || '').trim()
+    if (redirectParam.startsWith('http')) {
+      window.sessionStorage.setItem('zaryah-return-to-seller', redirectParam)
+      setReturnToSeller(redirectParam)
+      return
+    }
+    const stored = window.sessionStorage.getItem('zaryah-return-to-seller')
+    setReturnToSeller(stored || '')
+  }, [searchParams])
 
   const getNavHref = useCallback((href) => {
     if (!hostSubdomain) return href
@@ -385,6 +399,19 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
           )}
           {/* Right Side - User Menu */}
           <div className="flex items-center space-x-2">
+            {returnToSeller && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.href = returnToSeller
+                  }
+                }}
+                className="hidden xl:inline-flex items-center rounded-xl border border-primary-200 bg-white px-3 py-1.5 text-sm font-semibold text-primary-700 hover:bg-primary-50 transition-colors"
+              >
+                Back to Seller
+              </button>
+            )}
             {/* Notification Bell Icon */}
             {user && (
               <button
@@ -461,6 +488,19 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
             />
           </Link>
           <div className="flex items-center space-x-2">
+            {returnToSeller && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.href = returnToSeller
+                  }
+                }}
+                className="rounded-full border border-primary-200 bg-white px-2.5 py-1 text-xs font-semibold text-primary-700"
+              >
+                Back
+              </button>
+            )}
             {/* Notification Bell Icon */}
             {user && (
               <button

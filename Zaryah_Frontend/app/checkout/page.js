@@ -47,6 +47,18 @@ export default function CheckoutPage() {
 
   const navigateAfterOrder = () => {
     if (safeRedirectTarget) {
+      // Check if the redirect target has a 'back' parameter (from product pages)
+      const url = new URL(safeRedirectTarget, typeof window !== 'undefined' ? window.location.origin : 'https://zaryah.in')
+      const backParam = url.searchParams.get('back')
+      if (backParam && (backParam.startsWith('http') || backParam.startsWith('/'))) {
+        if (backParam.startsWith('http') && typeof window !== 'undefined') {
+          window.location.href = backParam
+          return
+        }
+        router.push(backParam)
+        return
+      }
+      
       if (safeRedirectTarget.startsWith('http') && typeof window !== 'undefined') {
         window.location.href = safeRedirectTarget
         return
@@ -65,7 +77,6 @@ export default function CheckoutPage() {
     }
 
     if (cart.length === 0) {
-      toast.error('Your cart is empty')
       router.push('/shop')
       return
     }

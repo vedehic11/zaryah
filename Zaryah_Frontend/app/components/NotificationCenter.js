@@ -34,8 +34,6 @@ export const NotificationCenter = () => {
       setUnreadCount(response.unreadCount || 0)
     } catch (error) {
       console.error('Error loading notifications:', error)
-      setError('Failed to load notifications')
-      toast.error('Failed to load notifications')
     } finally {
       setLoading(false)
     }

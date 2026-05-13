@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { 
@@ -66,7 +66,10 @@ export const RegisterPage = () => {
   const { register, isLoading, pendingVerification } = useAuth()
   const { addAddress, requestLocation, userCity, isLocationLoading } = useAddress()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [showAddressModal, setShowAddressModal] = useState(false)
+  const redirectTarget = String(searchParams.get('redirect') || '').trim()
+  const backToSellerUrl = redirectTarget.startsWith('http') ? redirectTarget : ''
 
   const indianStates = [
     'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
@@ -97,6 +100,21 @@ export const RegisterPage = () => {
       return
     }
     if (type === 'businessDocuments') {
+            {backToSellerUrl && (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.location.href = backToSellerUrl
+                    }
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl border border-primary-200 bg-white px-3 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-50 transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4" /> Back to Seller
+                </button>
+              </div>
+            )}
       setUploadedFiles(prev => ({ ...prev, businessDocuments: [...prev.businessDocuments, file] }))
     } else {
       setUploadedFiles(prev => ({ ...prev, [type]: file }))

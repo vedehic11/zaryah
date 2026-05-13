@@ -95,6 +95,7 @@ export const LoginPage = () => {
   const safeRedirectTarget = redirectTarget.startsWith('/') || redirectTarget.startsWith('http')
     ? redirectTarget
     : ''
+  const backToSellerUrl = safeRedirectTarget.startsWith('http') ? safeRedirectTarget : ''
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -171,6 +172,19 @@ export const LoginPage = () => {
       >
         {/* Header */}
         <div className="text-center">
+          {backToSellerUrl && (
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.location.href = backToSellerUrl
+                }
+              }}
+              className="mb-3 inline-flex items-center gap-2 rounded-xl border border-primary-200 bg-white px-3 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-50 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" /> Back to Seller
+            </button>
+          )}
           <div className="flex items-center justify-center mb-4">
             <Image
               src={LOGO_SRC}
