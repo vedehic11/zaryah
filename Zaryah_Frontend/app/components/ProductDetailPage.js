@@ -396,6 +396,11 @@ export const ProductDetailPage = ({ productId }) => {
       selectedColor,
       unitPrice: displayPrice
     });
+    if (typeof window !== 'undefined') {
+      const redirect = encodeURIComponent(window.location.href)
+      router.push(`/checkout?redirect=${redirect}`)
+      return
+    }
     router.push('/checkout');
   }
 

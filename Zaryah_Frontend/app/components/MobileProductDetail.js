@@ -278,7 +278,12 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
 
   const handleBuyNow = async () => {
     await handleAddToCart()
-    router.push('/orders')
+    if (typeof window !== 'undefined') {
+      const redirect = encodeURIComponent(window.location.href)
+      router.push(`/checkout?redirect=${redirect}`)
+      return
+    }
+    router.push('/checkout')
   }
 
   const toggleWishlist = () => {

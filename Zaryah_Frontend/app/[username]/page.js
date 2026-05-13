@@ -33,6 +33,8 @@ export default function SellerProfilePage({ params }) {
 
   const sellerHomeUrl = useMemo(() => `https://${username}.zaryah.in`, [username])
   const zaryahHomeUrl = 'https://zaryah.in/'
+  const zaryahSupportUrl = 'https://zaryah.in/support'
+  const zaryahOrdersUrl = 'https://zaryah.in/orders'
   const zaryahLoginUrl = `https://zaryah.in/login?redirect=${encodeURIComponent(sellerHomeUrl)}`
   const zaryahRegisterUrl = `https://zaryah.in/register?redirect=${encodeURIComponent(sellerHomeUrl)}`
 
@@ -366,7 +368,7 @@ export default function SellerProfilePage({ params }) {
                       <span>Zaryah Home</span>
                     </Link>
                     <Link
-                      href="/support"
+                      href={zaryahSupportUrl}
                       className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
                       onClick={() => setIsQuickMenuOpen(false)}
                     >
@@ -375,7 +377,7 @@ export default function SellerProfilePage({ params }) {
                     </Link>
                     {user && (
                       <Link
-                        href="/orders"
+                        href={zaryahOrdersUrl}
                         className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
                         onClick={() => setIsQuickMenuOpen(false)}
                       >

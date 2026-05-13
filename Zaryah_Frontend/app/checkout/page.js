@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -16,6 +16,7 @@ import toast from 'react-hot-toast'
 
 export default function CheckoutPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user } = useAuth()
   const { cart, clearCart } = useCart()
   const { addresses = [], addAddress, loadUserAddresses } = useAddress()
@@ -38,6 +39,23 @@ export default function CheckoutPage() {
     pincode: '',
     isDefault: false
   })
+
+  const redirectTarget = String(searchParams.get('redirect') || '').trim()
+  const safeRedirectTarget = redirectTarget.startsWith('/') || redirectTarget.startsWith('http')
+    ? redirectTarget
+    : ''
+
+  const navigateAfterOrder = () => {
+    if (safeRedirectTarget) {
+      if (safeRedirectTarget.startsWith('http') && typeof window !== 'undefined') {
+        window.location.href = safeRedirectTarget
+        return
+      }
+      router.push(safeRedirectTarget)
+      return
+    }
+    router.push('/orders')
+  }
 
   useEffect(() => {
     if (!user) {
@@ -266,7 +284,7 @@ export default function CheckoutPage() {
               clearCart()
               
               // Small delay before redirect to show success message
-              setTimeout(() => router.push('/orders'), 1000)
+              setTimeout(() => navigateAfterOrder(), 1000)
             } catch (error) {
               console.error('❌ Payment verification failed:', error)
               setIsProcessing(false)
@@ -297,7 +315,7 @@ export default function CheckoutPage() {
                     
                     toast.success('Payment successful!', { id: 'payment-verify' })
                     clearCart()
-                    setTimeout(() => router.push('/orders'), 1000)
+                    setTimeout(() => navigateAfterOrder(), 1000)
                   } else if (statusCheck.payment?.status === 'failed') {
                     // Payment actually failed
                     toast.error(`Payment failed: ${statusCheck.payment.error_description || 'Unknown error'}`, { 
@@ -310,7 +328,7 @@ export default function CheckoutPage() {
                       id: 'payment-verify',
                       duration: 5000 
                     })
-                    setTimeout(() => router.push('/orders'), 3000)
+                    setTimeout(() => navigateAfterOrder(), 3000)
                   }
                 } catch (statusError) {
                   console.error('Status check failed:', statusError)
@@ -318,7 +336,7 @@ export default function CheckoutPage() {
                     id: 'payment-verify',
                     duration: 5000
                   })
-                  setTimeout(() => router.push('/orders'), 3000)
+                  setTimeout(() => navigateAfterOrder(), 3000)
                 }
               } else {
                 // Actual verification error
@@ -326,7 +344,7 @@ export default function CheckoutPage() {
                   id: 'payment-verify',
                   duration: 6000
                 })
-                setTimeout(() => router.push('/orders'), 3000)
+                setTimeout(() => navigateAfterOrder(), 3000)
               }
             }
           },
@@ -395,7 +413,7 @@ export default function CheckoutPage() {
         // Use setTimeout to ensure UI updates before navigation
         setTimeout(() => {
           setIsProcessing(false)
-          router.push('/orders')
+          navigateAfterOrder()
         }, 1000)
       }
     } catch (error) {
