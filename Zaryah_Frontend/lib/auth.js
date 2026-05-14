@@ -57,8 +57,47 @@ async function getSession(request) {
             console.log('Token extracted from cookie, length:', token?.length)
           } catch (e) {
             // Cookie might not be JSON, try as direct token
-            token = cookies[supabaseTokenCookie]
+            token = decodeURIComponent(cookies[supabaseTokenCookie])
             console.log('Token from raw cookie, length:', token?.length)
+          }
+        }
+
+        // Fallback for custom client storage cookie
+        if (!token) {
+          const customCookieKey = 'zaryah-auth-token'
+          const chunkKey = `${customCookieKey}.chunks`
+          const chunkCount = Number(cookies[chunkKey] ? decodeURIComponent(cookies[chunkKey]) : 0)
+
+          if (chunkCount) {
+            let combined = ''
+            for (let i = 0; i < chunkCount; i += 1) {
+              const part = cookies[`${customCookieKey}.${i}`]
+              if (!part) {
+                combined = ''
+                break
+              }
+              combined += decodeURIComponent(part)
+            }
+            if (combined) {
+              try {
+                const decoded = Buffer.from(combined, 'base64').toString('utf8')
+                const tokenData = JSON.parse(decoded)
+                token = tokenData?.access_token || tokenData
+                console.log('Token extracted from chunked cookie, length:', token?.length)
+              } catch (e) {
+                console.error('Failed to parse chunked auth cookie:', e)
+              }
+            }
+          } else if (cookies[customCookieKey]) {
+            try {
+              const raw = decodeURIComponent(cookies[customCookieKey])
+              const tokenData = JSON.parse(raw)
+              token = tokenData?.access_token || tokenData
+              console.log('Token extracted from custom cookie, length:', token?.length)
+            } catch (e) {
+              token = decodeURIComponent(cookies[customCookieKey])
+              console.log('Token from raw custom cookie, length:', token?.length)
+            }
           }
         }
       }
