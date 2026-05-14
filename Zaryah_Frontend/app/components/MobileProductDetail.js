@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles, Star, Image as ImageIcon, Gift, Menu, X } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCart } from '../contexts/CartContext'
+import { CartSidebar } from './CartSidebar'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 import { Reviews } from './Reviews'
@@ -1223,6 +1224,8 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
           </button>
         </div>
       </div>
+
+      <CartSidebar />
 
       {/* Add custom scrollbar styles */}
       <style jsx>{`

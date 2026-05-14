@@ -23,9 +23,17 @@ export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
 
 function createCookieStorage() {
   const cookieKey = 'zaryah-auth-token'
-  const cookieDomain = '.zaryah.in'
+  const cookieDomain = resolveCookieDomain()
   const chunkKey = `${cookieKey}.chunks`
   const chunkSize = 3800
+
+  function resolveCookieDomain() {
+    if (typeof window === 'undefined') return '.zaryah.in'
+    const host = window.location.hostname
+    if (host === 'localhost' || host === '127.0.0.1') return null
+    if (host === 'zaryah.in' || host.endsWith('.zaryah.in')) return '.zaryah.in'
+    return null
+  }
 
   const getCookieValue = (key) => {
     if (typeof document === 'undefined') return null
@@ -55,12 +63,14 @@ function createCookieStorage() {
     if (typeof document === 'undefined') return
     const isSecure = window.location.protocol === 'https:'
     const secureAttr = isSecure ? '; Secure' : ''
-    document.cookie = `${key}=${encodeURIComponent(value)}; Path=/; Domain=${cookieDomain}; SameSite=Lax${secureAttr}`
+    const domainAttr = cookieDomain ? `; Domain=${cookieDomain}` : ''
+    document.cookie = `${key}=${encodeURIComponent(value)}; Path=/${domainAttr}; SameSite=Lax${secureAttr}`
   }
 
   const removeCookieValue = (key) => {
     if (typeof document === 'undefined') return
-    document.cookie = `${key}=; Path=/; Domain=${cookieDomain}; Max-Age=0; SameSite=Lax`
+    const domainAttr = cookieDomain ? `; Domain=${cookieDomain}` : ''
+    document.cookie = `${key}=; Path=/${domainAttr}; Max-Age=0; SameSite=Lax`
   }
 
   return {
