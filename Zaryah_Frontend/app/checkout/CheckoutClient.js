@@ -32,6 +32,9 @@ export default function CheckoutClient() {
   const [calculatingDelivery, setCalculatingDelivery] = useState(false)
   const [dynamicDeliveryCharge, setDynamicDeliveryCharge] = useState(null)
   const [twoWayCharges, setTwoWayCharges] = useState({ inbound: null, outbound: null })
+  const [orderPlaced, setOrderPlaced] = useState(false)
+  const [placedOrderId, setPlacedOrderId] = useState(null)
+  const [sellerUsername, setSellerUsername] = useState(null)
   const [newAddress, setNewAddress] = useState({
     name: user?.name || '',
     phone: '',
@@ -478,12 +481,16 @@ export default function CheckoutClient() {
           // Don't fail the order if cart clear fails
         }
 
-        console.log('Step 6: Redirecting to orders page...')
-        // Use setTimeout to ensure UI updates before navigation
-        setTimeout(() => {
-          setIsProcessing(false)
-          navigateAfterOrder()
-        }, 1000)
+        // Set order placed state to show success screen
+        setOrderPlaced(true)
+        setPlacedOrderId(order.id)
+        
+        // Extract seller username from items
+        if (displayedItems.length > 0 && displayedItems[0]?.seller?.username) {
+          setSellerUsername(displayedItems[0].seller.username)
+        }
+
+        console.log('Step 6: Order success screen displayed...')
       }
     } catch (error) {
       console.error('=== Order Process Failed ===')
@@ -496,6 +503,77 @@ export default function CheckoutClient() {
 
   if (!user || (!buyNowMode && cart.length === 0)) {
     return null
+  }
+
+  // Show order success screen
+  if (orderPlaced) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-cream-50 via-white to-primary-50 flex items-center justify-center py-8">
+        <div className="max-w-md w-full px-4">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-2xl shadow-2xl p-8 text-center"
+          >
+            {/* Success Icon */}
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="flex justify-center mb-6"
+            >
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-12 h-12 text-green-600" />
+              </div>
+            </motion.div>
+
+            {/* Success Message */}
+            <h1 className="text-3xl font-bold text-charcoal-900 mb-2">Order Placed!</h1>
+            <p className="text-charcoal-600 mb-2">Your order has been successfully placed.</p>
+            <p className="text-primary-700 font-semibold mb-6">Order ID: {placedOrderId}</p>
+
+            {/* Details */}
+            <div className="bg-cream-50 rounded-xl p-4 mb-6 text-left">
+              <p className="text-sm text-charcoal-700 mb-2">
+                <span className="font-semibold">Status:</span> Pending Confirmation
+              </p>
+              <p className="text-sm text-charcoal-700">
+                <span className="font-semibold">Delivery Time:</span> 5-7 business days
+              </p>
+            </div>
+
+            {/* Buttons */}
+            <div className="space-y-3">
+              <button
+                onClick={() => navigateAfterOrder()}
+                className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 px-4 rounded-xl transition-colors"
+              >
+                View Orders
+              </button>
+
+              {sellerUsername && (
+                <button
+                  onClick={() => {
+                    window.location.href = `https://${sellerUsername}.zaryah.in`
+                  }}
+                  className="w-full bg-charcoal-100 hover:bg-charcoal-200 text-charcoal-900 font-bold py-3 px-4 rounded-xl transition-colors"
+                >
+                  Back to Seller
+                </button>
+              )}
+
+              <button
+                onClick={() => router.push('/shop')}
+                className="w-full border-2 border-primary-600 text-primary-600 hover:bg-primary-50 font-bold py-3 px-4 rounded-xl transition-colors"
+              >
+                Continue Shopping
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    )
   }
 
   return (

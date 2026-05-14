@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles, Star, Image as ImageIcon, Gift } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles, Star, Image as ImageIcon, Gift, Menu, X } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -71,6 +71,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   const isTwoWayDelivery = Boolean(product?.twoWayDelivery || product?.two_way_delivery)
   const backTarget = String(searchParams.get('back') || '').trim()
   const safeBackTarget = backTarget.startsWith('/') || backTarget.startsWith('http') ? backTarget : ''
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   const sizePriceOptions = Array.isArray(product?.sizePriceOptions)
     ? product.sizePriceOptions
@@ -417,10 +418,11 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       <div className="sticky top-0 z-50 bg-cream-50 border-b border-primary-200 shadow-sm">
         <div className="flex items-center px-3 py-2.5 space-x-2">
           <button 
-            onClick={handleBack}
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="p-1 -ml-1 active:bg-primary-100 rounded-full transition-colors"
+            aria-label="Toggle menu"
           >
-            <ChevronLeft className="w-7 h-7 text-charcoal-800" strokeWidth={2} />
+            {isMenuOpen ? <X className="w-6 h-6 text-charcoal-800" /> : <Menu className="w-6 h-6 text-charcoal-800" />}
           </button>
           
           <div className="flex-1 flex items-center bg-white border border-primary-200 rounded-md px-3 py-2">
@@ -452,6 +454,33 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
             <ShoppingBag className="w-6 h-6 text-charcoal-800" strokeWidth={2} />
           </button>
         </div>
+        
+        {/* Mobile Menu Dropdown */}
+        {isMenuOpen && (
+          <div className="bg-white border-t border-primary-200 px-4 py-3 space-y-2">
+            <button
+              onClick={() => {
+                handleBack()
+                setIsMenuOpen(false)
+              }}
+              className="w-full text-left px-3 py-2 rounded-lg hover:bg-cream-100 text-charcoal-800 font-medium flex items-center gap-2"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              Back
+            </button>
+            {sellerUsername && (
+              <button
+                onClick={() => {
+                  window.location.href = `https://${sellerUsername}.zaryah.in`
+                  setIsMenuOpen(false)
+                }}
+                className="w-full text-left px-3 py-2 rounded-lg hover:bg-cream-100 text-charcoal-800 font-medium"
+              >
+                Visit Seller
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Image Carousel */}
