@@ -259,7 +259,7 @@ export default function SellerProfilePage({ params }) {
               <Search className="h-5 w-5" />
             </button>
             <Link
-              href={`/wishlist?seller=${encodeURIComponent(username)}&back=${encodeURIComponent(`/${username}`)}`}
+              href={`/wishlist?seller=${encodeURIComponent(username)}&back=${encodeURIComponent(`https://${username}.zaryah.in`)}`}
               className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white backdrop-blur-xl shadow-lg transition-colors hover:bg-white/30"
               aria-label="Open this seller wishlist"
             >

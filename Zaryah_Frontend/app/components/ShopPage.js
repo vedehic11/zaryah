@@ -349,7 +349,7 @@ export const ShopPage = () => {
               {filteredArtisans.map((artisan) => (
                 <Link
                   key={artisan.id}
-                  href={`/${artisan.username}`}
+                  href={`https://${artisan.username}.zaryah.in`}
                   className="block"
                 >
                   <motion.div

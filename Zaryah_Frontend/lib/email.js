@@ -97,7 +97,7 @@ export async function sendSellerApprovalEmail({ to, businessName, username, appr
         <li>Add products to your store</li>
         <li>Manage your inventory</li>
         <li>View your seller dashboard</li>
-        <li>Access your storefront at: <a href="${process.env.NEXT_PUBLIC_APP_URL}/${username}">${process.env.NEXT_PUBLIC_APP_URL}/${username}</a></li>
+        <li>Access your storefront at: <a href="https://${username}.zaryah.in">https://${username}.zaryah.in</a></li>
       </ul>
       <div style="text-align: center;">
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/seller/dashboard" class="button">Go to Seller Dashboard</a>
