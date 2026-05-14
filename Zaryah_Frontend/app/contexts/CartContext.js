@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { useAuth } from './AuthContext'
 import { apiService } from '../services/api'
@@ -23,10 +23,45 @@ export const CartProvider = ({ children }) => {
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
 
+  // Track previous isCartOpen for logging
+  const prevIsCartOpenRef = useRef(isCartOpen);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    // Log cart open state changes for debugging flicker on navigation
+    try {
+      console.debug('CartContext:isCartOpen change', {
+        prev: prevIsCartOpenRef.current,
+        next: isCartOpen,
+        pathname: window.location.pathname,
+        time: new Date().toISOString(),
+        stack: (new Error()).stack && String(new Error().stack).split('\n').slice(0,6).join('\n')
+      });
+    } catch (e) {
+      // ignore logging errors
+    }
     window.sessionStorage.setItem('zaryah-cart-open', String(isCartOpen));
+    prevIsCartOpenRef.current = isCartOpen;
   }, [isCartOpen]);
+
+  // Listen for browser back/forward navigation (popstate) to help reproduce issue
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPop = (e) => {
+      try {
+        console.debug('CartContext: popstate', {
+          state: e.state,
+          pathname: window.location.pathname,
+          time: new Date().toISOString()
+        });
+      } catch (err) {
+        // ignore
+      }
+    };
+
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   // Debug function to manually test cart (for development only)
   const debugCart = async () => {
