@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles, Star, Image as ImageIcon, Gift, Menu, X } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCart } from '../contexts/CartContext'
+import { useWishlist } from '../contexts/WishlistContext'
 import { CartSidebar } from './CartSidebar'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
@@ -16,13 +17,13 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { addToCart, setIsCartOpen } = useCart()
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   const { user } = useAuth()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const touchStartX = useRef(null)
   const touchCurrentX = useRef(null)
   const [selectedSize, setSelectedSize] = useState(null)
   const [selectedColor, setSelectedColor] = useState(null)
-  const [isWishlisted, setIsWishlisted] = useState(false)
   const [customizationAnswers, setCustomizationAnswers] = useState({})
   const [customUploadStatus, setCustomUploadStatus] = useState({})
   const [activeTab, setActiveTab] = useState('details')
@@ -111,6 +112,8 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   }
 
   const sizeCharts = parseSizeCharts(product)
+  const productId = product?.id || product?._id
+  const isWishlisted = productId ? isInWishlist(productId) : false
 
   const selectedSizePrice = sizePriceOptions.find(option => option?.label === selectedSize)?.price
   const displayPrice = selectedSizePrice !== undefined && selectedSizePrice !== null
@@ -147,6 +150,14 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
 
   const handleViewCart = () => {
     setIsCartOpen(true)
+  }
+
+  const checkAuthAndRedirect = () => {
+    if (!user) {
+      router.push('/login')
+      return false
+    }
+    return true
   }
 
   const goToSellerProfile = () => {
@@ -349,9 +360,17 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     }
   }
 
-  const toggleWishlist = () => {
-    setIsWishlisted(!isWishlisted)
-    toast.success(isWishlisted ? 'Removed from wishlist' : 'Added to wishlist')
+  const toggleWishlist = async () => {
+    if (!checkAuthAndRedirect()) return
+    if (!productId) return
+
+    if (isWishlisted) {
+      await removeFromWishlist(productId)
+      toast.success('Removed from wishlist')
+    } else {
+      await addToWishlist(productId)
+      toast.success('Added to wishlist')
+    }
   }
 
   const handleOpenWishlist = () => {

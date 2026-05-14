@@ -26,6 +26,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
+import { useWishlist } from '../contexts/WishlistContext'
 // Instant delivery option removed — badge component no longer used here
 import { useAuth } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
@@ -41,11 +42,11 @@ export const ProductDetailPage = ({ productId }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const { addToCart } = useCart()
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [quantity, setQuantity] = useState(1)
-  const [isLiked, setIsLiked] = useState(false)
   const [selectedSize, setSelectedSize] = useState(null)
   const [selectedColor, setSelectedColor] = useState(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
@@ -198,6 +199,8 @@ export const ProductDetailPage = ({ productId }) => {
 
   // Only consider charts if the new `size_charts` array (or its string) is present
   const hasCharts = sizeCharts.length > 0
+  const resolvedProductId = product?.id || product?._id || productId
+  const isLiked = resolvedProductId ? isInWishlist(resolvedProductId) : false
 
   const selectedSizePrice = sizePriceOptions.find(option => option?.label === selectedSize)?.price
   const displayPrice = selectedSizePrice !== undefined && selectedSizePrice !== null
@@ -304,6 +307,19 @@ export const ProductDetailPage = ({ productId }) => {
     if (!checkAuthAndRedirect()) return;
     setShowReviewModal(true);
   };
+
+  const handleToggleWishlist = async () => {
+    if (!checkAuthAndRedirect()) return
+    if (!resolvedProductId) return
+
+    if (isLiked) {
+      await removeFromWishlist(resolvedProductId)
+      toast.success('Removed from wishlist')
+    } else {
+      await addToWishlist(resolvedProductId)
+      toast.success('Added to wishlist')
+    }
+  }
 
   if (loading) return <div>Loading...</div>
   if (error) {
@@ -678,7 +694,7 @@ export const ProductDetailPage = ({ productId }) => {
                     </div>
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => setIsLiked(!isLiked)}
+                        onClick={handleToggleWishlist}
                         className={`p-3 rounded-full transition-colors ${
                           isLiked ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
