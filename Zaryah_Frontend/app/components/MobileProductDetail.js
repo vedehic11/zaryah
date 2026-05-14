@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, MapPin, CheckCircle, Shield, AlertCircle, Search, Package, Truck, RotateCcw, Sparkles, Star, Image as ImageIcon, Gift, Menu, X } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCart } from '../contexts/CartContext'
@@ -18,7 +19,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   const searchParams = useSearchParams()
   const { addToCart, setIsCartOpen } = useCart()
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const touchStartX = useRef(null)
   const touchCurrentX = useRef(null)
@@ -146,6 +147,12 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     }
 
     router.back()
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
+    window.location.href = mainDomain + '/'
   }
 
   const handleViewCart = () => {
@@ -437,14 +444,6 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
       {/* Header - Myntra Style */}
       <div className="sticky top-0 z-50 bg-cream-50 border-b border-primary-200 shadow-sm">
         <div className="flex items-center px-3 py-2.5 space-x-2">
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-1 -ml-1 active:bg-primary-100 rounded-full transition-colors"
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? <X className="w-6 h-6 text-charcoal-800" /> : <Menu className="w-6 h-6 text-charcoal-800" />}
-          </button>
-          
           <div className="flex-1 flex items-center bg-white border border-primary-200 rounded-md px-3 py-2">
             <div className="w-5 h-5 mr-2 text-primary-700 font-bold flex items-center justify-center">
               <span className="text-lg">z</span>
@@ -473,34 +472,155 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
           >
             <ShoppingBag className="w-6 h-6 text-charcoal-800" strokeWidth={2} />
           </button>
+          
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-1 active:bg-primary-100 rounded-full transition-colors"
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <X className="w-6 h-6 text-charcoal-800" /> : <Menu className="w-6 h-6 text-charcoal-800" />}
+          </button>
         </div>
         
-        {/* Mobile Menu Dropdown */}
-        {isMenuOpen && (
-          <div className="bg-white border-t border-primary-200 px-4 py-3 space-y-2">
-            <button
-              onClick={() => {
-                handleBack()
-                setIsMenuOpen(false)
-              }}
-              className="w-full text-left px-3 py-2 rounded-lg hover:bg-cream-100 text-charcoal-800 font-medium flex items-center gap-2"
-            >
-              <ChevronLeft className="w-5 h-5" />
-              Back
-            </button>
-            {sellerUsername && (
+        <AnimatePresence>
+          {isMenuOpen && (
+            <>
               <button
-                onClick={() => {
-                  window.location.href = `https://${sellerUsername}.zaryah.in`
-                  setIsMenuOpen(false)
-                }}
-                className="w-full text-left px-3 py-2 rounded-lg hover:bg-cream-100 text-charcoal-800 font-medium"
+                type="button"
+                onClick={() => setIsMenuOpen(false)}
+                className="fixed inset-0 z-40 bg-black/40"
+                aria-label="Close menu"
+              />
+              <motion.aside
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="fixed inset-y-0 right-0 z-50 w-72 max-w-[86%] border-l border-primary-200 bg-cream-50/95 text-charcoal-900 backdrop-blur-xl shadow-2xl overflow-y-auto"
               >
-                Visit Seller
-              </button>
-            )}
-          </div>
-        )}
+                <div className="flex items-center justify-between border-b border-primary-200 px-4 py-4">
+                  <h3 className="text-base font-semibold">Quick Menu</h3>
+                  <button
+                    type="button"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-primary-200 bg-white hover:bg-cream-100 transition-colors"
+                    aria-label="Close menu"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-2 p-4">
+                  <button
+                    onClick={() => {
+                      handleBack()
+                      setIsMenuOpen(false)
+                    }}
+                    className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                  >
+                    Back
+                  </button>
+                  {sellerUsername && (
+                    <button
+                      onClick={() => {
+                        window.location.href = `https://${sellerUsername}.zaryah.in`
+                        setIsMenuOpen(false)
+                      }}
+                      className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                    >
+                      Visit Seller
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
+                      window.location.href = mainDomain + '/'
+                      setIsMenuOpen(false)
+                    }}
+                    className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                  >
+                    Zaryah Home
+                  </button>
+                  <button
+                    onClick={() => {
+                      const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
+                      window.location.href = mainDomain + '/shop'
+                      setIsMenuOpen(false)
+                    }}
+                    className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                  >
+                    Shop
+                  </button>
+                  {user && (
+                    <>
+                      <button
+                        onClick={() => {
+                          const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
+                          window.location.href = mainDomain + '/orders'
+                          setIsMenuOpen(false)
+                        }}
+                        className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                      >
+                        Orders
+                      </button>
+                      <button
+                        onClick={() => {
+                          const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
+                          window.location.href = mainDomain + '/support'
+                          setIsMenuOpen(false)
+                        }}
+                        className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                      >
+                        Support
+                      </button>
+                      <button
+                        onClick={() => {
+                          const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
+                          window.location.href = mainDomain + '/wishlist'
+                          setIsMenuOpen(false)
+                        }}
+                        className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                      >
+                        Wishlist
+                      </button>
+                      <button
+                        onClick={() => {
+                          const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
+                          window.location.href = mainDomain + '/addresses'
+                          setIsMenuOpen(false)
+                        }}
+                        className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                      >
+                        Profile Details
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleLogout()
+                          setIsMenuOpen(false)
+                        }}
+                        className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  )}
+                  {!user && (
+                    <button
+                      onClick={() => {
+                        const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
+                        window.location.href = mainDomain + '/login'
+                        setIsMenuOpen(false)
+                      }}
+                      className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
+                    >
+                      Login / Register
+                    </button>
+                  )}
+                </div>
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Image Carousel */}
