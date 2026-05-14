@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
-import { CartIcon } from './CartIcon'
+const CartIcon = dynamic(() => import('./CartIcon').then(mod => mod.CartIcon), { ssr: false, loading: () => null })
 import { WishlistIcon } from './WishlistIcon'
 import { CartSidebar } from './CartSidebar'
 import { NotificationCenter } from './NotificationCenter'

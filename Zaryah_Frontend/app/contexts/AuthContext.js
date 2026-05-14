@@ -174,8 +174,12 @@ export const AuthProvider = ({ children }) => {
 
     try {
       setIsLoading(true)
-      
-      console.log('syncUser called for:', authUser.email, 'isAfterRegistration:', isAfterRegistration)
+
+      console.log('syncUser called for authUser:', {
+        id: authUser?.id,
+        email: authUser?.email,
+        raw: authUser
+      }, 'isAfterRegistration:', isAfterRegistration)
       
       // Try to use cached user data if available and auth IDs match
       const cachedUser = sessionStorage.getItem('zaryah_user_cache')
@@ -199,26 +203,65 @@ export const AuthProvider = ({ children }) => {
       console.log('pendingBuyerData exists:', !!sessionStorage.getItem('pendingBuyerData'))
       console.log('pendingSellerData exists:', !!sessionStorage.getItem('pendingSellerData'))
 
-      // Get user from our users table by Supabase auth ID or email (single query with OR)
+      // Get user from our users table by Supabase auth ID or email
       let userData = null
       let retries = isAfterRegistration ? 3 : 1 // Reduced retries to prevent long waits
-      
+
       for (let i = 0; i < retries; i++) {
+        // Log the attempted query for debugging
+        console.debug('Attempting user lookup (or) with supabase_auth_id and email', { attempt: i + 1, supabaseAuthId: authUser.id, email: authUser.email })
+
         const { data, error } = await supabaseClient
           .from('users')
           .select('*')
           .or(`supabase_auth_id.eq.${authUser.id},email.eq.${authUser.email}`)
           .maybeSingle()
 
+        console.debug('Lookup result (or):', { data, error })
+
         if (data) {
           userData = data
           console.log('User found:', userData.email)
           break
         }
-        
+
         if (i < retries - 1) {
           console.log(`User not found, retrying in 500ms... (attempt ${i + 1}/${retries})`)
           await new Promise(resolve => setTimeout(resolve, 500))
+        }
+      }
+
+      // If not found, try a case-insensitive email lookup as a fallback
+      if (!userData && authUser?.email) {
+        try {
+          console.debug('Attempting case-insensitive email lookup for', authUser.email)
+          const { data: emailData, error: emailErr } = await supabaseClient
+            .from('users')
+            .select('*')
+            .ilike('email', authUser.email)
+            .maybeSingle()
+
+          console.debug('Email lookup result (ilike):', { emailData, emailErr })
+
+          if (emailData) {
+            userData = emailData
+            console.log('User found via case-insensitive email match:', userData.email)
+            // Ensure supabase_auth_id set for future direct matches
+            if (!userData.supabase_auth_id) {
+              try {
+                await supabaseClient
+                  .from('users')
+                  .update({ supabase_auth_id: authUser.id })
+                  .eq('id', userData.id)
+                userData.supabase_auth_id = authUser.id
+                console.log('Linked supabase_auth_id to existing user:', userData.id)
+              } catch (linkErr) {
+                console.error('Failed to link supabase_auth_id:', linkErr)
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error during email ilike lookup:', e)
         }
       }
 
@@ -394,11 +437,34 @@ export const AuthProvider = ({ children }) => {
           sessionStorage.removeItem('pendingSellerData')
         } else {
           // No pending data and no user in database
-          console.error('No pending registration data found for:', authUser.email)
-          await supabaseClient.auth.signOut()
-          toast.error('Account not found. Please register first.')
-          setUser(null)
+          // Avoid forcibly signing the user out here. Instead, keep the Supabase auth
+          // user and guide them to complete registration. This prevents noisy console
+          // errors and unexpected sign-outs when auth returns a user but our DB lacks a record.
+          console.warn('No pending registration data found for:', authUser.email)
+
+          // Expose the Supabase auth user so UI can prompt for registration completion
+          setSupabaseUser(authUser)
           setIsLoading(false)
+
+          try {
+            // Persist a short-lived flag so UI can detect this state if needed
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('zaryah_pending_registration_email', authUser.email)
+            }
+          } catch (e) {
+            // ignore storage errors
+          }
+
+          toast.info('No account found. Please complete registration.')
+
+          // Redirect to registration page with email prefilled to complete account creation
+          try {
+            router.push(`/register?email=${encodeURIComponent(authUser.email)}`)
+          } catch (e) {
+            // If router push fails (e.g., during non-client render), do nothing
+            console.debug('Unable to redirect to register:', e)
+          }
+
           return
         }
         

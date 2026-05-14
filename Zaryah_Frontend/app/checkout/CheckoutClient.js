@@ -72,7 +72,10 @@ export default function CheckoutClient() {
   }
 
   useEffect(() => {
+    // Parse buyNow flag and item synchronously to decide navigation in this effect
     const buyNowFlag = String(searchParams.get('buyNow') || '').trim()
+    let initialBuyNow = false
+
     if (buyNowFlag === '1' && typeof window !== 'undefined') {
       try {
         const data = sessionStorage.getItem('zaryah-buyNowItem')
@@ -80,6 +83,7 @@ export default function CheckoutClient() {
           const parsed = JSON.parse(data)
           setBuyNowItem(parsed)
           setBuyNowMode(true)
+          initialBuyNow = true
         }
       } catch (e) {
         console.error('Failed to parse buyNow item from sessionStorage', e)
@@ -92,8 +96,8 @@ export default function CheckoutClient() {
       return
     }
 
-    // If not in buyNow mode, require non-empty cart
-    if (!buyNowMode && cart.length === 0) {
+    // If not in buyNow mode (based on parsed flag), require non-empty cart
+    if (!initialBuyNow && cart.length === 0) {
       router.push('/shop')
       return
     }
@@ -105,7 +109,7 @@ export default function CheckoutClient() {
     } else if (addresses.length > 0) {
       setSelectedAddress(addresses[0])
     }
-  }, [user, cart, addresses, router, searchParams, buyNowMode])
+  }, [user, cart, addresses, router, searchParams])
 
   // Determine displayed items (supports buy-now single-item checkout)
   const displayedItems = buyNowMode && buyNowItem ? [buyNowItem] : cart
