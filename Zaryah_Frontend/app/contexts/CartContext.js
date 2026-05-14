@@ -14,11 +14,19 @@ export const useCart = () => {
 export const CartProvider = ({ children }) => {
   const { user, isLoading: authLoading } = useAuth();
   const [carts, setCarts] = useState([]); // Array of carts (one per seller)
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.sessionStorage.getItem('zaryah-cart-open') === 'true';
+  });
   const [loading, setLoading] = useState(false);
   const [cartLoaded, setCartLoaded] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.sessionStorage.setItem('zaryah-cart-open', String(isCartOpen));
+  }, [isCartOpen]);
 
   // Debug function to manually test cart (for development only)
   const debugCart = async () => {
