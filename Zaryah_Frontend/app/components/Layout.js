@@ -22,7 +22,10 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
-const CartIcon = dynamic(() => import('./CartIcon').then(mod => mod.CartIcon), { ssr: false, loading: () => null })
+const CartIcon = dynamic(() => import('./CartIcon').then(mod => mod.CartIcon), { 
+  ssr: false, 
+  loading: () => <div className="p-2 rounded-full" style={{ width: '40px', height: '40px' }} />
+})
 import { WishlistIcon } from './WishlistIcon'
 import { CartSidebar } from './CartSidebar'
 import { NotificationCenter } from './NotificationCenter'
