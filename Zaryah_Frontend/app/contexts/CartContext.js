@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useAuth } from './AuthContext'
 import { apiService } from '../services/api'
@@ -13,54 +14,27 @@ export const useCart = () => {
 
 export const CartProvider = ({ children }) => {
   const { user, isLoading: authLoading } = useAuth();
+  const pathname = usePathname();
   const [carts, setCarts] = useState([]); // Array of carts (one per seller)
-  const [isCartOpen, setIsCartOpen] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.sessionStorage.getItem('zaryah-cart-open') === 'true';
-  });
+  const [isCartOpen, setIsCartOpen] = useState(false); // Start closed, never auto-open
   const [loading, setLoading] = useState(false);
   const [cartLoaded, setCartLoaded] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
 
-  // Track previous isCartOpen for logging
-  const prevIsCartOpenRef = useRef(isCartOpen);
+  // Close cart when navigating to a different page
+  useEffect(() => {
+    setIsCartOpen(false);
+  }, [pathname]);
 
+  // Clean up any old sessionStorage entries
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    // Log cart open state changes for debugging flicker on navigation
     try {
-      console.debug('CartContext:isCartOpen change', {
-        prev: prevIsCartOpenRef.current,
-        next: isCartOpen,
-        pathname: window.location.pathname,
-        time: new Date().toISOString(),
-        stack: (new Error()).stack && String(new Error().stack).split('\n').slice(0,6).join('\n')
-      });
+      window.sessionStorage.removeItem('zaryah-cart-open');
     } catch (e) {
-      // ignore logging errors
+      // ignore
     }
-    window.sessionStorage.setItem('zaryah-cart-open', String(isCartOpen));
-    prevIsCartOpenRef.current = isCartOpen;
-  }, [isCartOpen]);
-
-  // Listen for browser back/forward navigation (popstate) to help reproduce issue
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const onPop = (e) => {
-      try {
-        console.debug('CartContext: popstate', {
-          state: e.state,
-          pathname: window.location.pathname,
-          time: new Date().toISOString()
-        });
-      } catch (err) {
-        // ignore
-      }
-    };
-
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
   }, []);
 
   // Debug function to manually test cart (for development only)

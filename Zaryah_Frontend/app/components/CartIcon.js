@@ -3,31 +3,16 @@
 import { motion } from 'framer-motion'
 import { ShoppingBag } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
-import { useState } from 'react'
 
 export const CartIcon = () => {
   const { totalItems, setIsCartOpen } = useCart()
-  const [isClicking, setIsClicking] = useState(false)
-
-  const handleClick = () => {
-    setIsClicking(true)
-    try {
-      setIsCartOpen(true)
-      console.log('Cart opened, totalItems:', totalItems)
-    } catch (error) {
-      console.error('Error opening cart:', error)
-    } finally {
-      setIsClicking(false)
-    }
-  }
 
   return (
     <motion.button
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      onClick={handleClick}
-      disabled={isClicking}
-      className="relative p-2 rounded-full text-charcoal-600 hover:bg-cream-100 transition-colors disabled:opacity-50"
+      onClick={() => setIsCartOpen(true)}
+      className="relative p-2 rounded-full text-charcoal-600 hover:bg-cream-100 transition-colors"
       aria-label="Shopping cart"
     >
       <ShoppingBag className="w-6 h-6" />
