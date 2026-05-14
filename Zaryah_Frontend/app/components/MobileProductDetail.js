@@ -511,15 +511,6 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                 </div>
 
                 <div className="space-y-2 p-4">
-                  <button
-                    onClick={() => {
-                      handleBack()
-                      setIsMenuOpen(false)
-                    }}
-                    className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
-                  >
-                    Back
-                  </button>
                   {sellerUsername && (
                     <button
                       onClick={() => {

@@ -493,7 +493,7 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
             />
           </Link>
           <div className="flex items-center space-x-2">
-            {returnToSeller && (
+            {returnToSeller && isUsernameBrandPage && (
               <button
                 type="button"
                 onClick={() => {

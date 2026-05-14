@@ -91,7 +91,14 @@ export const ProductCard = ({ product, backHref }) => {
   const handleSellerClick = (e) => {
     e.preventDefault()
     if (!sellerUsername) return
-    router.push(`/${sellerUsername}`)
+    const sellerUrl = typeof window !== 'undefined'
+      ? window.location.hostname.includes('localhost')
+        ? `http://localhost:3000/${sellerUsername}`
+        : `https://${sellerUsername}.zaryah.in`
+      : `/${sellerUsername}`
+    if (typeof window !== 'undefined') {
+      window.location.href = sellerUrl
+    }
   }
 
   // Calculate average rating from the ratings array
