@@ -28,14 +28,6 @@ export const CartSidebar = () => {
 
   return (
     <>
-      {isCartOpen && (
-        <button
-          type="button"
-          aria-label="Close cart overlay"
-          onClick={() => setIsCartOpen(false)}
-          className="fixed inset-0 z-[60] bg-black/30 backdrop-blur-[1px]"
-        />
-      )}
       <div 
         className={`fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-[70] flex flex-col transition-transform duration-300 ${
           isCartOpen ? 'translate-x-0' : 'translate-x-full'
