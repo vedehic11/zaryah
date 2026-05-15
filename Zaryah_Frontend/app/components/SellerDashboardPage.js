@@ -1250,7 +1250,7 @@ export default function SellerDashboardPage() {
                 ) : (
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
                     {products.map((product) => (
-                      <div key={product.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                      <div key={product.id} className="bg-white border border-gray-200 rounded-lg overflow-visible hover:shadow-md transition-shadow">
                         <div className="aspect-square bg-gray-100 relative">
                           {product.images && product.images.length > 0 ? (
                             <Image

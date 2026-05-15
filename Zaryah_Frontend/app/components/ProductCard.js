@@ -91,14 +91,17 @@ export const ProductCard = ({ product, backHref }) => {
   const handleSellerClick = (e) => {
     e.preventDefault()
     if (!sellerUsername) return
-    const sellerUrl = typeof window !== 'undefined'
-      ? window.location.hostname.includes('localhost')
-        ? `http://localhost:3000/${sellerUsername}`
-        : `https://${sellerUsername}.zaryah.in`
-      : `/${sellerUsername}`
-    if (typeof window !== 'undefined') {
-      window.location.href = sellerUrl
+    if (typeof window === 'undefined') return
+
+    const host = window.location.hostname || ''
+    // If we're on the production domain, redirect to seller subdomain.
+    if (host.endsWith('zaryah.in')) {
+      window.location.href = `https://${sellerUsername}.zaryah.in`
+      return
     }
+
+    // Otherwise use internal routing for local/dev environments to avoid external redirects.
+    router.push(`/${sellerUsername}`)
   }
 
   // Calculate average rating from the ratings array
