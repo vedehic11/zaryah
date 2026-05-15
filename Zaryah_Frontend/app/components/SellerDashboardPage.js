@@ -1302,9 +1302,11 @@ export default function SellerDashboardPage() {
                             </Link>
                             <button
                               onClick={() => handleDeleteProduct(product.id)}
-                              className="inline-flex items-center justify-center bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-lg transition-colors"
+                              className="flex-1 inline-flex items-center justify-center space-x-1 bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-lg transition-colors"
+                              aria-label={`Delete ${product.name}`}
                             >
                               <Trash2 className="w-4 h-4" />
+                              <span>Delete</span>
                             </button>
                           </div>
                         </div>
