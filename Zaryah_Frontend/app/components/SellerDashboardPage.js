@@ -12,6 +12,7 @@ import {
   Share2, Copy, QrCode, Download
   , MoreVertical } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { getSellerUrl } from '@/lib/url-utils'
 import { apiService } from '../services/api'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
@@ -277,9 +278,7 @@ export default function SellerDashboardPage() {
   }
 
   const isKycMissing = !(hasValue(profileData.account_holder_name) && hasValue(profileData.upi_id))
-  const profileUrl = profileData?.username
-    ? `https://${profileData.username}.zaryah.in`
-    : ''
+  const profileUrl = profileData?.username ? getSellerUrl(profileData.username) : ''
   const qrPreviewUrl = profileUrl
     ? `/api/qr?size=160&data=${encodeURIComponent(profileUrl)}`
     : ''
@@ -2840,7 +2839,7 @@ export default function SellerDashboardPage() {
                             </button>
                             {profileUrl && (
                               <Link
-                                href={`https://${profileData.username}.zaryah.in`}
+                                href={getSellerUrl(profileData.username)}
                                 target="_blank"
                                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700"
                               >
@@ -2916,7 +2915,7 @@ export default function SellerDashboardPage() {
                           <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
                           <p className="text-primary-600">
                             {profileData?.username ? (
-                              <Link href={`https://${profileData.username}.zaryah.in`} target="_blank" className="hover:underline">
+                              <Link href={getSellerUrl(profileData.username)} target="_blank" className="hover:underline">
                                 {profileData.username}.zaryah.in
                               </Link>
                             ) : (

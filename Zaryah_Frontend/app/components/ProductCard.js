@@ -7,6 +7,7 @@ import { Heart, Play, Star, ShoppingBag, Gift, Package, Scale, Sparkles } from '
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useWishlist } from '../contexts/WishlistContext'
+import { getSellerUrl, isProductionDomain } from '@/lib/url-utils'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -93,14 +94,12 @@ export const ProductCard = ({ product, backHref }) => {
     if (!sellerUsername) return
     if (typeof window === 'undefined') return
 
-    const host = window.location.hostname || ''
-    // If we're on the production domain, redirect to seller subdomain.
-    if (host.endsWith('zaryah.in')) {
-      window.location.href = `https://${sellerUsername}.zaryah.in`
+    const sellerUrl = getSellerUrl(sellerUsername)
+    if (isProductionDomain()) {
+      window.location.href = sellerUrl
       return
     }
 
-    // Otherwise use internal routing for local/dev environments to avoid external redirects.
     router.push(`/${sellerUsername}`)
   }
 

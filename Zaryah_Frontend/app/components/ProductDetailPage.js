@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { useWishlist } from '../contexts/WishlistContext'
+import { getSellerUrl } from '@/lib/url-utils'
 // Instant delivery option removed — badge component no longer used here
 import { useAuth } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
@@ -219,7 +220,7 @@ export const ProductDetailPage = ({ productId }) => {
 
     if (sellerUsername) {
       if (typeof window !== 'undefined') {
-        window.location.href = `https://${sellerUsername}.zaryah.in`
+        window.location.href = getSellerUrl(sellerUsername)
       }
       return
     }
@@ -230,7 +231,7 @@ export const ProductDetailPage = ({ productId }) => {
   const goToSellerProfile = () => {
     if (!sellerUsername) return
     if (typeof window !== 'undefined') {
-      window.location.href = `https://${sellerUsername}.zaryah.in`
+      window.location.href = getSellerUrl(sellerUsername)
     }
   }
 

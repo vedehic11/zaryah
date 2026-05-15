@@ -12,6 +12,7 @@ import { toast } from 'react-hot-toast'
 import { Reviews } from './Reviews'
 import Image from 'next/image'
 import { formatWeightDisplay } from '@/lib/weight'
+import { getSellerUrl, getMainDomainUrl } from '@/lib/url-utils'
 import { apiService } from '../services/api'
 
 export default function MobileProductDetail({ product, similarProducts = [] }) {
@@ -141,7 +142,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
 
     if (sellerUsername) {
       if (typeof window !== 'undefined') {
-        window.location.href = `https://${sellerUsername}.zaryah.in`
+        window.location.href = getSellerUrl(sellerUsername)
       }
       return
     }
@@ -151,8 +152,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
 
   const handleLogout = async () => {
     await logout()
-    const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
-    window.location.href = mainDomain + '/'
+    window.location.href = getMainDomainUrl('/')
   }
 
   const handleViewCart = () => {
@@ -170,7 +170,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   const goToSellerProfile = () => {
     if (!sellerUsername) return
     if (typeof window !== 'undefined') {
-      window.location.href = `https://${sellerUsername}.zaryah.in`
+      window.location.href = getSellerUrl(sellerUsername)
     }
   }
 
@@ -514,7 +514,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                   {sellerUsername && (
                     <button
                       onClick={() => {
-                        window.location.href = `https://${sellerUsername}.zaryah.in`
+                        window.location.href = getSellerUrl(sellerUsername)
                         setIsMenuOpen(false)
                       }}
                       className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
@@ -524,8 +524,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                   )}
                   <button
                     onClick={() => {
-                      const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
-                      window.location.href = mainDomain + '/'
+                      window.location.href = getMainDomainUrl('/')
                       setIsMenuOpen(false)
                     }}
                     className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
@@ -534,8 +533,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                   </button>
                   <button
                     onClick={() => {
-                      const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
-                      window.location.href = mainDomain + '/shop'
+                      window.location.href = getMainDomainUrl('/shop')
                       setIsMenuOpen(false)
                     }}
                     className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
@@ -546,8 +544,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                     <>
                       <button
                         onClick={() => {
-                          const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
-                          window.location.href = mainDomain + '/orders'
+                          window.location.href = getMainDomainUrl('/orders')
                           setIsMenuOpen(false)
                         }}
                         className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
@@ -556,8 +553,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                       </button>
                       <button
                         onClick={() => {
-                          const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
-                          window.location.href = mainDomain + '/support'
+                          window.location.href = getMainDomainUrl('/support')
                           setIsMenuOpen(false)
                         }}
                         className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
@@ -566,8 +562,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                       </button>
                       <button
                         onClick={() => {
-                          const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
-                          window.location.href = mainDomain + '/wishlist'
+                          window.location.href = getMainDomainUrl('/wishlist')
                           setIsMenuOpen(false)
                         }}
                         className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
@@ -576,8 +571,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                       </button>
                       <button
                         onClick={() => {
-                          const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
-                          window.location.href = mainDomain + '/addresses'
+                          window.location.href = getMainDomainUrl('/addresses')
                           setIsMenuOpen(false)
                         }}
                         className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
@@ -598,8 +592,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                   {!user && (
                     <button
                       onClick={() => {
-                        const mainDomain = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://zaryah.in'
-                        window.location.href = mainDomain + '/login'
+                        window.location.href = getMainDomainUrl('/login')
                         setIsMenuOpen(false)
                       }}
                       className="w-full text-left rounded-xl px-3 py-2 text-sm font-medium hover:bg-primary-50 transition-colors"
@@ -848,7 +841,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
         <button
           onClick={() => {
             if (!sellerUsername) return
-            const url = `https://${sellerUsername}.zaryah.in`
+            const url = getSellerUrl(sellerUsername)
             if (typeof window !== 'undefined') {
               window.open(url, '_blank', 'noopener')
             }

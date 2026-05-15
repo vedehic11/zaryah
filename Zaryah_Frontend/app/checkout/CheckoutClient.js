@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useAddress } from '../contexts/AddressContext'
+import { getCurrentOrigin, getSellerUrl } from '@/lib/url-utils'
 import { apiService } from '../services/api'
 import {
   MapPin, Phone, User, CreditCard, Wallet, Package,
@@ -53,7 +54,7 @@ export default function CheckoutClient() {
   const navigateAfterOrder = () => {
     if (safeRedirectTarget) {
       // Check if the redirect target has a 'back' parameter (from product pages)
-      const url = new URL(safeRedirectTarget, typeof window !== 'undefined' ? window.location.origin : 'https://zaryah.in')
+      const url = new URL(safeRedirectTarget, getCurrentOrigin())
       const backParam = url.searchParams.get('back')
       if (backParam && (backParam.startsWith('http') || backParam.startsWith('/'))) {
         if (backParam.startsWith('http') && typeof window !== 'undefined') {
@@ -555,7 +556,7 @@ export default function CheckoutClient() {
               {sellerUsername && (
                 <button
                   onClick={() => {
-                    window.location.href = `https://${sellerUsername}.zaryah.in`
+                    window.location.href = getSellerUrl(sellerUsername)
                   }}
                   className="w-full bg-charcoal-100 hover:bg-charcoal-200 text-charcoal-900 font-bold py-3 px-4 rounded-xl transition-colors"
                 >

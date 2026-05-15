@@ -8,6 +8,7 @@ import { ProductCard } from './ProductCard'
 import Link from 'next/link'
 import Image from 'next/image'
 import { apiService } from '../services/api'
+import { getSellerUrl } from '@/lib/url-utils'
 
 export const HomePage = () => {
   const [products, setProducts] = useState([])
@@ -204,7 +205,7 @@ export const HomePage = () => {
                 
                 return (
                   <Link 
-                    href={sellerUsername ? `https://${sellerUsername}.zaryah.in` : '/shop'} 
+                    href={sellerUsername ? getSellerUrl(sellerUsername) : '/shop'} 
                     key={seller.id}
                     className="group bg-neutral-50 rounded-2xl shadow-subtle border border-primary-100 overflow-hidden hover:shadow-lg transition-all cursor-pointer"
                   >

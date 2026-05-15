@@ -13,6 +13,7 @@ import Image from 'next/image'
 import { useCart } from '@/app/contexts/CartContext'
 import { useWishlist } from '@/app/contexts/WishlistContext'
 import { useAuth } from '@/app/contexts/AuthContext'
+import { getSellerUrl, getMainDomainUrl } from '@/lib/url-utils'
 
 export default function SellerProfilePage({ params }) {
   const { username } = use(params)
@@ -31,13 +32,13 @@ export default function SellerProfilePage({ params }) {
   const { wishlistCount } = useWishlist()
   const { user } = useAuth()
 
-  const sellerHomeUrl = useMemo(() => `https://${username}.zaryah.in`, [username])
+  const sellerHomeUrl = useMemo(() => getSellerUrl(username), [username])
   const redirectParam = encodeURIComponent(sellerHomeUrl)
-  const zaryahHomeUrl = `https://zaryah.in/?redirect=${redirectParam}`
-  const zaryahSupportUrl = `https://zaryah.in/support?redirect=${redirectParam}`
-  const zaryahOrdersUrl = `https://zaryah.in/orders?redirect=${redirectParam}`
-  const zaryahLoginUrl = `https://zaryah.in/login?redirect=${encodeURIComponent(sellerHomeUrl)}`
-  const zaryahRegisterUrl = `https://zaryah.in/register?redirect=${encodeURIComponent(sellerHomeUrl)}`
+  const zaryahHomeUrl = getMainDomainUrl(`/?redirect=${redirectParam}`)
+  const zaryahSupportUrl = getMainDomainUrl(`/support?redirect=${redirectParam}`)
+  const zaryahOrdersUrl = getMainDomainUrl(`/orders?redirect=${redirectParam}`)
+  const zaryahLoginUrl = getMainDomainUrl(`/login?redirect=${encodeURIComponent(sellerHomeUrl)}`)
+  const zaryahRegisterUrl = getMainDomainUrl(`/register?redirect=${encodeURIComponent(sellerHomeUrl)}`)
 
   useEffect(() => {
     const fetchSeller = async () => {
@@ -259,7 +260,7 @@ export default function SellerProfilePage({ params }) {
               <Search className="h-5 w-5" />
             </button>
             <Link
-              href={`/wishlist?seller=${encodeURIComponent(username)}&back=${encodeURIComponent(`https://${username}.zaryah.in`)}`}
+              href={`/wishlist?seller=${encodeURIComponent(username)}&back=${encodeURIComponent(getSellerUrl(username))}`}
               className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white backdrop-blur-xl shadow-lg transition-colors hover:bg-white/30"
               aria-label="Open this seller wishlist"
             >

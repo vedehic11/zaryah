@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Search, Filter, Grid, List, SlidersHorizontal, User, MapPin } from 'lucide-react'
 import { ProductCard } from './ProductCard'
 import { apiService } from '../services/api'
+import { getSellerUrl } from '@/lib/url-utils'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -349,7 +350,7 @@ export const ShopPage = () => {
               {filteredArtisans.map((artisan) => (
                 <Link
                   key={artisan.id}
-                  href={`https://${artisan.username}.zaryah.in`}
+                  href={artisan.username ? getSellerUrl(artisan.username) : '/shop'}
                   className="block"
                 >
                   <motion.div
