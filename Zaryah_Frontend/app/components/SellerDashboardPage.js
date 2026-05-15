@@ -10,7 +10,7 @@ import {
   Wallet, ArrowUpCircle, ArrowDownCircle, CreditCard, IndianRupee, Truck, ExternalLink, User,
   Instagram, Facebook, Twitter, Linkedin, MapPin, Building, Sparkles, X, ChevronDown, ChevronUp, Filter, Printer,
   Share2, Copy, QrCode, Download
-} from 'lucide-react'
+  , MoreVertical } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
 import toast from 'react-hot-toast'
@@ -32,6 +32,7 @@ export default function SellerDashboardPage() {
     totalRevenue: 0
   })
   const [products, setProducts] = useState([])
+  const [openMenuProductId, setOpenMenuProductId] = useState(null)
   const [sellerSections, setSellerSections] = useState([])
   const [newSectionName, setNewSectionName] = useState('')
   const [newSectionImageUrl, setNewSectionImageUrl] = useState('')
@@ -1285,7 +1286,7 @@ export default function SellerDashboardPage() {
                             )}
                           </div>
                           <p className="text-gray-500 text-xs mb-3">Stock: {product.stock}</p>
-                          <div className="flex items-center space-x-2">
+                          <div className="hidden md:flex items-center space-x-2">
                             <Link
                               href={`/product/${product.id}`}
                               className="flex-1 inline-flex items-center justify-center space-x-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -1308,6 +1309,47 @@ export default function SellerDashboardPage() {
                               <Trash2 className="w-4 h-4" />
                               <span>Delete</span>
                             </button>
+                          </div>
+
+                          <div className="flex md:hidden items-center justify-end relative">
+                            <button
+                              type="button"
+                              onClick={() => setOpenMenuProductId(openMenuProductId === product.id ? null : product.id)}
+                              className="inline-flex items-center justify-center p-2 bg-white border border-gray-200 rounded-full"
+                              aria-expanded={openMenuProductId === product.id}
+                              aria-label="Open product actions"
+                            >
+                              <MoreVertical className="w-5 h-5 text-gray-700" />
+                            </button>
+
+                            {openMenuProductId === product.id && (
+                              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                                <button
+                                  type="button"
+                                  onClick={() => { setOpenMenuProductId(null); router.push(`/product/${product.id}`) }}
+                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  <span>View</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setOpenMenuProductId(null); router.push(`/seller/products/${product.id}/edit`) }}
+                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setOpenMenuProductId(null); handleDeleteProduct(product.id) }}
+                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
