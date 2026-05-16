@@ -40,6 +40,17 @@ function toInputValue(value) {
   return String(value)
 }
 
+const WORD_LIMITS = {
+  question: 20
+}
+
+const countWords = (value) => String(value || '').trim().split(/\s+/).filter(Boolean).length
+
+const limitWords = (value, limit) => {
+  const words = String(value || '').trim().split(/\s+/).filter(Boolean)
+  return words.slice(0, limit).join(' ')
+}
+
 export default function EditSellerProductPage() {
   const params = useParams()
   const router = useRouter()
@@ -61,6 +72,7 @@ export default function EditSellerProductPage() {
   const [colorImageUploading, setColorImageUploading] = useState({})
   const [sizeCharts, setSizeCharts] = useState([])
   const [sizeChartUploading, setSizeChartUploading] = useState({})
+  const [customQuestions, setCustomQuestions] = useState([{ question: '', required: false, answerType: 'text' }])
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -204,6 +216,19 @@ export default function EditSellerProductPage() {
             }))
             : [{ name: '', image: '' }]
         )
+        // Load custom questions for editable products
+        const importedCustomQuestions = Array.isArray(productData.custom_questions)
+          ? productData.custom_questions
+          : Array.isArray(productData.customQuestions)
+            ? productData.customQuestions
+            : []
+        if (importedCustomQuestions && importedCustomQuestions.length > 0) {
+          setCustomQuestions(importedCustomQuestions.map(q => ({
+            question: String(q.question || ''),
+            required: Boolean(q.required),
+            answerType: q.answerType || q.type || 'text'
+          })))
+        }
       } catch (error) {
         console.error('Failed to load product for editing:', error)
         toast.error(error.message || 'Failed to load product')
@@ -446,6 +471,24 @@ export default function EditSellerProductPage() {
     })
   }
 
+  const handleQuestionChange = (index, field, value) => {
+    const newQuestions = [...customQuestions]
+    if (field === 'question') {
+      newQuestions[index][field] = limitWords(value, WORD_LIMITS.question)
+    } else {
+      newQuestions[index][field] = value
+    }
+    setCustomQuestions(newQuestions)
+  }
+
+  const addCustomQuestion = () => {
+    setCustomQuestions(prev => [...prev, { question: '', required: false, answerType: 'text' }])
+  }
+
+  const removeCustomQuestion = (index) => {
+    setCustomQuestions(prev => prev.filter((_, i) => i !== index))
+  }
+
   const addSizeChart = () => {
     setSizeCharts(prev => [...prev, { label: '', url: '' }])
   }
@@ -548,6 +591,13 @@ export default function EditSellerProductPage() {
         return_days: formData.return_days === '' ? null : Number(formData.return_days),
         images: images.slice(0, 5)
       }
+
+      // Custom questions
+      const validQuestions = (customQuestions || [])
+        .map(q => ({ question: String(q.question || '').trim(), required: Boolean(q.required), answerType: q.answerType || 'text' }))
+        .filter(q => q.question)
+
+      payload.custom_questions = validQuestions.length > 0 ? validQuestions : []
 
       await apiService.updateProduct(productId, payload)
       toast.success('Product updated successfully')
@@ -914,6 +964,70 @@ export default function EditSellerProductPage() {
               </div>
             </div>
           </div>
+
+          {/* Custom Questions */}
+          {formData.customisable && (
+            <div className="bg-white rounded-lg shadow p-6 md:col-span-2">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Custom Questions</h2>
+                <button
+                  type="button"
+                  onClick={addCustomQuestion}
+                  className="inline-flex items-center space-x-1 text-primary-600 hover:text-primary-700 text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Question</span>
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {customQuestions.map((q, index) => (
+                  <div key={index} className="flex items-start space-x-2">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={q.question}
+                        onChange={(e) => handleQuestionChange(index, 'question', e.target.value)}
+                        placeholder="e.g., What message would you like on the card?"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">{countWords(q.question)}/{WORD_LIMITS.question} words</p>
+                      <label className="flex items-center space-x-2 mt-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={q.required}
+                          onChange={(e) => handleQuestionChange(index, 'required', e.target.checked)}
+                          className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm text-gray-700">Required</span>
+                      </label>
+                      <div className="mt-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Expected Answer Type</label>
+                        <select
+                          value={q.answerType || 'text'}
+                          onChange={(e) => handleQuestionChange(index, 'answerType', e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        >
+                          <option value="text">Text</option>
+                          <option value="photo">Photo</option>
+                        </select>
+                        <p className="text-xs text-gray-500 mt-2">Buyers will answer with text or upload a photo based on this selection.</p>
+                      </div>
+                    </div>
+                    {customQuestions.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeCustomQuestion(index)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {[

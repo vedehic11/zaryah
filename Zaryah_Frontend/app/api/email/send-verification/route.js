@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { sendVerificationEmail } from '@/lib/email';
 import crypto from 'crypto';
 import { requireAuth, requireRole } from '@/lib/auth';
+import { getServerBaseUrl } from '@/lib/server-url';
 
 export async function POST(request) {
   try {
@@ -51,8 +52,10 @@ export async function POST(request) {
       );
     }
 
+    const appUrl = getServerBaseUrl(request)
+
     // Create verification URL
-    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/email/verify?token=${token}`;
+    const verificationUrl = `${appUrl}/api/email/verify?token=${token}`;
 
     // Send verification email
     try {

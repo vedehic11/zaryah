@@ -1,15 +1,17 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { redirect } from 'next/navigation';
+import { getServerBaseUrl } from '@/lib/server-url';
 
 export async function GET(request) {
+  const appUrl = getServerBaseUrl(request)
+
   try {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get('token');
 
     if (!token) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/login?error=invalid_token`
+        `${appUrl}/login?error=invalid_token`
       );
     }
 
@@ -22,21 +24,21 @@ export async function GET(request) {
 
     if (findError || !verification) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/login?error=invalid_token`
+        `${appUrl}/login?error=invalid_token`
       );
     }
 
     // Check if already verified
     if (verification.verified_at) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/login?message=already_verified`
+        `${appUrl}/login?message=already_verified`
       );
     }
 
     // Check if expired
     if (new Date(verification.expires_at) < new Date()) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/login?error=token_expired`
+        `${appUrl}/login?error=token_expired`
       );
     }
 
@@ -49,7 +51,7 @@ export async function GET(request) {
     if (updateError) {
       console.error('Update error:', updateError);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/login?error=verification_failed`
+        `${appUrl}/login?error=verification_failed`
       );
     }
 
@@ -64,13 +66,15 @@ export async function GET(request) {
     }
 
     // Redirect to success page
+    const appUrl = getServerBaseUrl(request)
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/login?message=email_verified`
+      `${appUrl}/login?message=email_verified`
     );
   } catch (error) {
     console.error('Email verification error:', error);
+    const appUrl = getServerBaseUrl(request)
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/login?error=verification_failed`
+      `${appUrl}/login?error=verification_failed`
     );
   }
 }

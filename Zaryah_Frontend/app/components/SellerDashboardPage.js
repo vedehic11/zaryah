@@ -1270,6 +1270,46 @@ export default function SellerDashboardPage() {
                           }`}>
                             {product.status}
                           </span>
+                          <div className="absolute top-2 left-2 md:hidden">
+                            <button
+                              type="button"
+                              onClick={() => setOpenMenuProductId(openMenuProductId === product.id ? null : product.id)}
+                              className="inline-flex items-center justify-center p-2 bg-white/90 border border-gray-200 rounded-full shadow-sm hover:bg-white"
+                              aria-expanded={openMenuProductId === product.id}
+                              aria-label="Open product actions"
+                            >
+                              <MoreVertical className="w-5 h-5 text-gray-700" />
+                            </button>
+
+                            {openMenuProductId === product.id && (
+                              <div className="absolute left-0 top-full mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                                <button
+                                  type="button"
+                                  onClick={() => { setOpenMenuProductId(null); router.push(`/product/${product.id}`) }}
+                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  <span>View</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setOpenMenuProductId(null); router.push(`/seller/products/${product.id}/edit`) }}
+                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setOpenMenuProductId(null); handleDeleteProduct(product.id) }}
+                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="p-4">
                           <h4 className="font-semibold text-gray-900 mb-1">{product.name}</h4>
@@ -1310,46 +1350,6 @@ export default function SellerDashboardPage() {
                             </button>
                           </div>
 
-                          <div className="flex md:hidden items-center justify-end relative">
-                            <button
-                              type="button"
-                              onClick={() => setOpenMenuProductId(openMenuProductId === product.id ? null : product.id)}
-                              className="inline-flex items-center justify-center p-2 bg-white border border-gray-200 rounded-full"
-                              aria-expanded={openMenuProductId === product.id}
-                              aria-label="Open product actions"
-                            >
-                              <MoreVertical className="w-5 h-5 text-gray-700" />
-                            </button>
-
-                            {openMenuProductId === product.id && (
-                              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                                <button
-                                  type="button"
-                                  onClick={() => { setOpenMenuProductId(null); router.push(`/product/${product.id}`) }}
-                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  <span>View</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => { setOpenMenuProductId(null); router.push(`/seller/products/${product.id}/edit`) }}
-                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                  <span>Edit</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => { setOpenMenuProductId(null); handleDeleteProduct(product.id) }}
-                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-red-600"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  <span>Delete</span>
-                                </button>
-                              </div>
-                            )}
-                          </div>
                         </div>
                       </div>
                     ))}

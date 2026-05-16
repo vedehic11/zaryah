@@ -1,48 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { sendPasswordResetEmail } from '@/lib/email'
-
-function normalizeAbsoluteBaseUrl(value) {
-  const raw = String(value || '').trim().replace(/\/$/, '')
-  if (!raw) return null
-
-  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
-
-  try {
-    const parsed = new URL(withProtocol)
-    return `${parsed.protocol}//${parsed.host}`
-  } catch {
-    return null
-  }
-}
-
-function getAppBaseUrl(request) {
-  const configured =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.APP_URL ||
-    process.env.SITE_URL ||
-    ''
-
-  if (configured) {
-    const normalizedConfigured = normalizeAbsoluteBaseUrl(configured)
-    if (normalizedConfigured) {
-      return normalizedConfigured
-    }
-    console.warn('Invalid configured app URL for reset links:', configured)
-  }
-
-  const forwardedProto = request.headers.get('x-forwarded-proto')
-  const forwardedHost = request.headers.get('x-forwarded-host')
-
-  if (forwardedProto && forwardedHost) {
-    const normalizedForwarded = normalizeAbsoluteBaseUrl(`${forwardedProto}://${forwardedHost}`)
-    if (normalizedForwarded) {
-      return normalizedForwarded
-    }
-  }
-
-  return normalizeAbsoluteBaseUrl(request.nextUrl.origin) || 'http://localhost:3000'
-}
+import { getServerBaseUrl } from '@/lib/server-url'
 
 // POST /api/auth/send-reset-link
 // Body: { email, redirectTo? }
@@ -54,7 +13,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Valid email is required' }, { status: 400 })
     }
 
-    const appBaseUrl = getAppBaseUrl(request)
+    const appBaseUrl = getServerBaseUrl(request)
     const finalRedirectTo = `${appBaseUrl}/reset-password`
 
     // Generate recovery link from Supabase admin API
