@@ -599,15 +599,26 @@ export default function AddProductPage() {
     const toastId = toast.loading('Creating product...')
 
     try {
+      // Normalize delivery unit: convert weeks to days before sending to server
+      const normalizedForm = { ...formData }
+      if (String(normalizedForm.deliveryTimeUnit || '').toLowerCase() === 'weeks' || String(normalizedForm.deliveryTimeUnit || '').toLowerCase() === 'week') {
+        const min = parseInt(normalizedForm.deliveryTimeMin || '0') || 0
+        const max = parseInt(normalizedForm.deliveryTimeMax || '0') || 0
+        // Convert weeks -> days
+        normalizedForm.deliveryTimeMin = String(min * 7)
+        normalizedForm.deliveryTimeMax = String(max * 7)
+        normalizedForm.deliveryTimeUnit = 'days'
+      }
+
       const formDataToSend = new FormData()
 
       // Basic fields
-      Object.keys(formData).forEach(key => {
+      Object.keys(normalizedForm).forEach(key => {
         if (key === 'categories' || key === 'sections') {
           // Send arrays as JSON
-          formDataToSend.append(key, JSON.stringify(formData[key]))
+          formDataToSend.append(key, JSON.stringify(normalizedForm[key]))
         } else {
-          formDataToSend.append(key, formData[key])
+          formDataToSend.append(key, normalizedForm[key])
         }
       })
 
@@ -1004,7 +1015,6 @@ export default function AddProductPage() {
                   >
                     <option value="hours">Hours</option>
                     <option value="days">Days</option>
-                    <option value="weeks">Weeks</option>
                   </select>
                 </div>
               </div>

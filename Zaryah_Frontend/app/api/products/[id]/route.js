@@ -212,6 +212,18 @@ export async function PUT(request, { params }) {
 
     const body = await request.json()
     
+    // Normalize delivery time unit if caller sent 'week'/'weeks'
+    if (body && body.delivery_time_unit && String(body.delivery_time_unit).toLowerCase().startsWith('week')) {
+      // Convert min/max from weeks to days
+      if (body.delivery_time_min !== undefined && body.delivery_time_min !== null) {
+        body.delivery_time_min = Number(body.delivery_time_min) * 7
+      }
+      if (body.delivery_time_max !== undefined && body.delivery_time_max !== null) {
+        body.delivery_time_max = Number(body.delivery_time_max) * 7
+      }
+      body.delivery_time_unit = 'days'
+    }
+    
     // Handle categories - can be single value or array, normalize to array
     const updateBody = { ...body }
     if (body.categories) {

@@ -238,6 +238,16 @@ export async function POST(request) {
       if (singleSection) sections = [singleSection]
     }
 
+    // Normalize delivery time unit: accept 'week'/'weeks' by converting to days
+    let deliveryTimeMin = parseInt(formData.get('deliveryTimeMin'))
+    let deliveryTimeMax = parseInt(formData.get('deliveryTimeMax'))
+    let deliveryTimeUnit = formData.get('deliveryTimeUnit') || 'days'
+    if (String(deliveryTimeUnit).toLowerCase().startsWith('week')) {
+      deliveryTimeMin = Number.isNaN(deliveryTimeMin) ? 0 : deliveryTimeMin * 7
+      deliveryTimeMax = Number.isNaN(deliveryTimeMax) ? 0 : deliveryTimeMax * 7
+      deliveryTimeUnit = 'days'
+    }
+
     const productData = {
       name: formData.get('name'),
       description: formData.get('description'),
@@ -250,9 +260,9 @@ export async function POST(request) {
       weight: parseFloat(formData.get('weight')),
       stock: parseInt(formData.get('stock')),
       customisable: formData.get('customisable') === 'true',
-      delivery_time_min: parseInt(formData.get('deliveryTimeMin')),
-      delivery_time_max: parseInt(formData.get('deliveryTimeMax')),
-      delivery_time_unit: formData.get('deliveryTimeUnit') || 'days',
+      delivery_time_min: deliveryTimeMin,
+      delivery_time_max: deliveryTimeMax,
+      delivery_time_unit: deliveryTimeUnit,
       instant_delivery: formData.get('instantDelivery') === 'true',
       material: formData.get('material') || null,
       care_instructions: formData.get('careInstructions') || null,
