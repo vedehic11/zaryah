@@ -73,7 +73,14 @@ describe('/api/products/[id] route handlers', () => {
   })
 
   it('DELETE succeeds for admin user', async () => {
-    const deleteEqMock = vi.fn(async () => ({ data: null, error: null }))
+    const productSelectEq = vi.fn(() => ({ single: async () => ({ data: { seller_id: 'some-seller' }, error: null }) }))
+    const productDeleteEq = vi.fn(async () => ({ error: null }))
+    const orderItemsEq = vi.fn(async () => ({ count: 0, error: null }))
+    const cartItemsDeleteEq = vi.fn(async () => ({ error: null }))
+    const wishlistDeleteEq = vi.fn(async () => ({ error: null }))
+    const ratingsDeleteEq = vi.fn(async () => ({ error: null }))
+    const reviewsDeleteEq = vi.fn(async () => ({ error: null }))
+    const notificationsDeleteEq = vi.fn(async () => ({ error: null }))
 
     const { DELETE } = await loadRoute({
       requireAuthImpl: async () => ({ user: { id: 'auth-2' } }),
@@ -81,15 +88,75 @@ describe('/api/products/[id] route handlers', () => {
       fromImpl: (table) => {
         if (table === 'products') {
           return {
-            select: () => ({
-              eq: () => ({
-                single: async () => ({ data: { seller_id: 'some-seller' }, error: null }),
-              }),
-            }),
-            delete: () => ({ eq: deleteEqMock }),
+            select: () => ({ eq: productSelectEq }),
+            delete: () => ({ eq: productDeleteEq }),
           }
         }
+
+        if (table === 'order_items') {
+          return { select: () => ({ eq: orderItemsEq }) }
+        }
+
+        if (table === 'cart_items') {
+          return { delete: () => ({ eq: cartItemsDeleteEq }) }
+        }
+
+        if (table === 'wishlist') {
+          return { delete: () => ({ eq: wishlistDeleteEq }) }
+        }
+
+        if (table === 'product_ratings') {
+          return { delete: () => ({ eq: ratingsDeleteEq }) }
+        }
+
+        if (table === 'reviews') {
+          return { delete: () => ({ eq: reviewsDeleteEq }) }
+        }
+
+        if (table === 'notifications') {
+          return { delete: () => ({ eq: notificationsDeleteEq }) }
+        }
+
         throw new Error(`unexpected table ${table}`)
+      },
+    })
+
+    const id = '11111111-1111-1111-1111-111111111111'
+    const response = await DELETE(
+      new Request('http://localhost/api/products/123', { method: 'DELETE' }),
+      { params: Promise.resolve({ id }) }
+    )
+
+    const payload = await response.json()
+    expect(response.status).toBe(200)
+    expect(payload.message).toContain('deleted successfully')
+    expect(productSelectEq).toHaveBeenCalledWith('id', id)
+    expect(orderItemsEq).toHaveBeenCalledWith('product_id', id)
+    expect(cartItemsDeleteEq).toHaveBeenCalledWith('product_id', id)
+    expect(wishlistDeleteEq).toHaveBeenCalledWith('product_id', id)
+    expect(ratingsDeleteEq).toHaveBeenCalledWith('product_id', id)
+    expect(reviewsDeleteEq).toHaveBeenCalledWith('product_id', id)
+    expect(notificationsDeleteEq).toHaveBeenCalledWith('related_product_id', id)
+    expect(productDeleteEq).toHaveBeenCalledWith('id', id)
+  })
+
+  it('DELETE returns 400 when product has existing order items', async () => {
+    const productSelectEq = vi.fn(() => ({ single: async () => ({ data: { seller_id: 'some-seller' }, error: null }) }))
+    const orderItemsEq = vi.fn(async () => ({ count: 2, error: null }))
+
+    const { DELETE } = await loadRoute({
+      requireAuthImpl: async () => ({ user: { id: 'auth-2' } }),
+      getUserBySupabaseAuthIdImpl: async () => ({ id: 'admin-1', user_type: 'Admin' }),
+      fromImpl: (table) => {
+        if (table === 'products') {
+          return { select: () => ({ eq: productSelectEq }) }
+        }
+
+        if (table === 'order_items') {
+          return { select: () => ({ eq: orderItemsEq }) }
+        }
+
+        return { delete: () => ({ eq: vi.fn(async () => ({ error: null })) }) }
       },
     })
 
@@ -99,8 +166,8 @@ describe('/api/products/[id] route handlers', () => {
     )
 
     const payload = await response.json()
-    expect(response.status).toBe(200)
-    expect(payload.message).toContain('deleted successfully')
-    expect(deleteEqMock).toHaveBeenCalledWith('id', '11111111-1111-1111-1111-111111111111')
+    expect(response.status).toBe(400)
+    expect(payload.error).toContain('existing order items')
+    expect(orderItemsEq).toHaveBeenCalledWith('product_id', '11111111-1111-1111-1111-111111111111')
   })
 })

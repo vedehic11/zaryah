@@ -284,20 +284,62 @@ export async function DELETE(request, { params }) {
     // Next.js 16: params is a Promise, unwrap it
     const { id } = await params
 
+    if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return NextResponse.json({ error: 'Invalid product id' }, { status: 400 })
+    }
+
     // Check if user owns the product or is admin
-    const { data: product } = await supabase
+    const { data: product, error: productError } = await supabase
       .from('products')
       .select('seller_id')
       .eq('id', id)
       .single()
 
-    if (!product) {
+    if (productError || !product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
     // Verify ownership or admin role
     if (user.user_type !== 'Admin' && product.seller_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden: You can only delete your own products' }, { status: 403 })
+    }
+
+    // Prevent deleting products that are referenced by orders
+    const { count: orderItemsCount, error: orderItemsError } = await supabase
+      .from('order_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('product_id', id)
+
+    if (orderItemsError) {
+      console.error('Error checking order items for product deletion:', orderItemsError)
+      return NextResponse.json({ error: 'Unable to verify product order history' }, { status: 500 })
+    }
+
+    if (orderItemsCount > 0) {
+      return NextResponse.json({
+        error: 'Cannot delete product because it has existing order items. Please contact support if you need help removing this product.'
+      }, { status: 400 })
+    }
+
+    // Clean up any non-order product references before deleting
+    const cleanupOperations = [
+      { table: 'cart_items', column: 'product_id' },
+      { table: 'wishlist', column: 'product_id' },
+      { table: 'product_ratings', column: 'product_id' },
+      { table: 'reviews', column: 'product_id' },
+      { table: 'notifications', column: 'related_product_id' }
+    ]
+
+    for (const { table, column } of cleanupOperations) {
+      const { error: cleanupError } = await supabase
+        .from(table)
+        .delete()
+        .eq(column, id)
+
+      if (cleanupError) {
+        console.error(`Error cleaning up ${table} before product deletion:`, cleanupError)
+        return NextResponse.json({ error: 'Unable to delete product dependencies' }, { status: 500 })
+      }
     }
 
     const { error } = await supabase

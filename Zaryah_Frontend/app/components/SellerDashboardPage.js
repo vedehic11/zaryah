@@ -886,7 +886,7 @@ export default function SellerDashboardPage() {
       toast.success('Product deleted successfully')
       fetchDashboardData()
     } catch (error) {
-      toast.error('Failed to delete product')
+      toast.error(error?.message || 'Failed to delete product')
     }
   }
 
