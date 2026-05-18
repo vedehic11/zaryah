@@ -75,6 +75,25 @@ export default function CheckoutClient() {
     router.push('/orders')
   }
 
+  const getContinueShoppingUrl = () => {
+    const firstItem = displayedItems[0]
+    const productId = firstItem?.id || firstItem?._id
+
+    if (displayedItems.length === 1 && productId) {
+      return `/product/${productId}`
+    }
+
+    if (sellerUsername) {
+      return getSellerUrl(sellerUsername)
+    }
+
+    if (productId) {
+      return `/product/${productId}`
+    }
+
+    return '/shop'
+  }
+
   useEffect(() => {
     // Parse buyNow flag and item synchronously to decide navigation in this effect
     const buyNowFlag = String(searchParams.get('buyNow') || '').trim()
@@ -572,7 +591,14 @@ export default function CheckoutClient() {
               )}
 
               <button
-                onClick={() => router.push('/shop')}
+                onClick={() => {
+                  const continueUrl = getContinueShoppingUrl()
+                  if (continueUrl.startsWith('http') && typeof window !== 'undefined') {
+                    window.location.href = continueUrl
+                    return
+                  }
+                  router.push(continueUrl)
+                }}
                 className="w-full border-2 border-primary-600 text-primary-600 hover:bg-primary-50 font-bold py-3 px-4 rounded-xl transition-colors"
               >
                 Continue Shopping

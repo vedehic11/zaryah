@@ -42,15 +42,37 @@ export async function GET(request, { params }) {
 		}
 
 		// Fetch seller products (only approved)
-		const { data: products, error: productError } = await supabase
-			.from('products')
-			.select(`
-				*,
-				product_ratings (rating)
-			`)
-			.eq('seller_id', seller.id)
-			.eq('status', 'approved')
-			.order('created_at', { ascending: false })
+		const isArchivedColumnMissing = (error) => {
+			const message = String(error?.message || error || '').toLowerCase()
+			return message.includes('column products.archived does not exist') ||
+				message.includes('could not find the') && message.includes('archived') ||
+				message.includes('archived column')
+		}
+
+		const fetchSellerProducts = async (shouldSkipArchivedFilter) => {
+			let query = supabase
+				.from('products')
+				.select(`
+					*,
+					product_ratings (rating)
+				`)
+				.eq('seller_id', seller.id)
+				.eq('status', 'approved')
+				.order('created_at', { ascending: false })
+
+			if (!shouldSkipArchivedFilter) {
+				query = query.eq('archived', false)
+			}
+
+			return query
+		}
+
+		let { data: products, error: productError } = await fetchSellerProducts(false)
+
+		if (productError && isArchivedColumnMissing(productError)) {
+			console.warn('Archived column is missing for seller profile, retrying without archived filter')
+			;({ data: products, error: productError } = await fetchSellerProducts(true))
+		}
 
 		if (productError) {
 			return NextResponse.json({ error: productError.message }, { status: 500 })
