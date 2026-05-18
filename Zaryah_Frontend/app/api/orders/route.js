@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import { requireRole, getBuyerId, getSellerId, requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
+import { sendSellerOrderPlacedEmail } from '@/lib/email'
 import { getShipmentTracking, getShipmentDetails, mapShiprocketStatus } from '@/lib/shiprocket'
 
 export const dynamic = 'force-dynamic'
@@ -371,7 +372,7 @@ export async function POST(request) {
       console.log(`Fetching product: ${item.productId}`)
       const { data: product, error: productError } = await supabase
         .from('products')
-        .select('price, seller_id, stock, two_way_delivery, cod_available, sellers:seller_id(allow_cod)')
+        .select('name, price, seller_id, stock, two_way_delivery, cod_available, sellers:seller_id(allow_cod)')
         .eq('id', item.productId)
         .single()
 
@@ -408,6 +409,7 @@ export async function POST(request) {
 
       orderItems.push({
         product_id: item.productId,
+        product_name: product.name,
         quantity: item.quantity,
         price: item.unitPrice || product.price,
         gift_packaging: item.giftPackaging || false,
@@ -607,6 +609,34 @@ export async function POST(request) {
       .single()
 
     console.log('=== Order Creation Completed Successfully ===')
+
+    try {
+      const { data: sellerProfile } = await supabase
+        .from('sellers')
+        .select('business_name, username, users:id(email, name, full_name)')
+        .eq('id', sellerId)
+        .single()
+
+      const sellerEmail = sellerProfile?.users?.email
+      if (sellerEmail) {
+        const buyerName = user?.name || user?.full_name || 'Buyer'
+        await sendSellerOrderPlacedEmail({
+          to: sellerEmail,
+          sellerName: sellerProfile?.business_name || sellerProfile?.users?.name || sellerProfile?.users?.full_name,
+          orderId: order.id,
+          buyerName,
+          totalAmount,
+          items: orderItems.map((orderItem) => ({
+            name: orderItem.product_name,
+            quantity: orderItem.quantity,
+            price: orderItem.price
+          }))
+        })
+      }
+    } catch (emailError) {
+      console.error('Error sending seller order email:', emailError)
+    }
+
     return NextResponse.json({ order: completeOrder || order }, { status: 201 })
   } catch (error) {
     console.error('=== Order Creation Failed ===')

@@ -11,11 +11,18 @@ export async function GET(request) {
 			return NextResponse.json({ error: 'User not found' }, { status: 404 })
 		}
 
+		const userModel = String(user.user_type || '').trim()
+		const userModelMatches = Array.from(new Set([
+			userModel,
+			userModel.toLowerCase(),
+			userModel.toUpperCase()
+		].filter(Boolean)))
+
 		const { data, error } = await supabase
 			.from('notifications')
 			.select('*')
 			.eq('user_id', user.id)
-			.eq('user_model', user.user_type)
+			.in('user_model', userModelMatches)
 			.order('created_at', { ascending: false })
 			.limit(100)
 
@@ -46,6 +53,13 @@ export async function PATCH(request) {
 			return NextResponse.json({ error: 'User not found' }, { status: 404 })
 		}
 
+		const userModel = String(user.user_type || '').trim()
+		const userModelMatches = Array.from(new Set([
+			userModel,
+			userModel.toLowerCase(),
+			userModel.toUpperCase()
+		].filter(Boolean)))
+
 		const { error } = await supabase
 			.from('notifications')
 			.update({
@@ -53,7 +67,7 @@ export async function PATCH(request) {
 				read_at: new Date().toISOString()
 			})
 			.eq('user_id', user.id)
-			.eq('user_model', user.user_type)
+			.in('user_model', userModelMatches)
 			.eq('is_read', false)
 
 		if (error) {
@@ -75,11 +89,18 @@ export async function DELETE(request) {
 			return NextResponse.json({ error: 'User not found' }, { status: 404 })
 		}
 
+		const userModel = String(user.user_type || '').trim()
+		const userModelMatches = Array.from(new Set([
+			userModel,
+			userModel.toLowerCase(),
+			userModel.toUpperCase()
+		].filter(Boolean)))
+
 		const { error } = await supabase
 			.from('notifications')
 			.delete()
 			.eq('user_id', user.id)
-			.eq('user_model', user.user_type)
+			.in('user_model', userModelMatches)
 
 		if (error) {
 			return NextResponse.json({ error: error.message }, { status: 500 })

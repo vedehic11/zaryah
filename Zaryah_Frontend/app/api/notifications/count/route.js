@@ -11,11 +11,18 @@ export async function GET(request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    const userModel = String(user.user_type || '').trim()
+    const userModelMatches = Array.from(new Set([
+      userModel,
+      userModel.toLowerCase(),
+      userModel.toUpperCase()
+    ].filter(Boolean)))
+
     const { count, error } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
-      .eq('user_model', user.user_type)
+      .in('user_model', userModelMatches)
       .eq('is_read', false)
 
     if (error) {

@@ -200,3 +200,86 @@ export async function sendPasswordResetEmail({ to, resetUrl }) {
 
   return transporter.sendMail(mailOptions);
 }
+
+/**
+ * Send seller notification when a new order is placed
+ */
+export async function sendSellerOrderPlacedEmail({
+  to,
+  sellerName,
+  orderId,
+  buyerName,
+  totalAmount,
+  items
+}) {
+  const transporter = createEmailTransporter();
+  const safeSellerName = sellerName || 'Seller';
+  const safeBuyerName = buyerName || 'A buyer';
+  const orderShort = String(orderId || '').slice(0, 8);
+  const formattedTotal = typeof totalAmount === 'number'
+    ? totalAmount.toLocaleString('en-IN')
+    : String(totalAmount || '');
+
+  const itemRows = (items || []).map((item) => {
+    const name = item?.name || 'Product';
+    const qty = item?.quantity || 0;
+    const price = item?.price ? `₹${item.price}` : '';
+    return `<tr><td style="padding:6px 0;">${name}</td><td style="padding:6px 0; text-align:center;">${qty}</td><td style="padding:6px 0; text-align:right;">${price}</td></tr>`;
+  }).join('');
+
+  const mailOptions = {
+    from: `"Zaryah" <${process.env.GMAIL_USER}>`,
+    to,
+    subject: `New order received - #${orderShort}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #111827; color: white; padding: 24px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 24px; border-radius: 0 0 10px 10px; }
+            .summary { background: #fff; border: 1px solid #e5e7eb; padding: 16px; border-radius: 10px; margin-top: 16px; }
+            .button { display: inline-block; padding: 12px 22px; background: #111827; color: white; text-decoration: none; border-radius: 6px; margin-top: 16px; }
+            table { width: 100%; border-collapse: collapse; }
+            th { text-align: left; font-size: 12px; color: #6b7280; padding-bottom: 6px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h2>New order received</h2>
+            </div>
+            <div class="content">
+              <p>Hi ${safeSellerName},</p>
+              <p>${safeBuyerName} just placed an order in your store.</p>
+              <div class="summary">
+                <p><strong>Order:</strong> #${orderShort}</p>
+                <p><strong>Total:</strong> ₹${formattedTotal}</p>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th style="text-align:center;">Qty</th>
+                      <th style="text-align:right;">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${itemRows || '<tr><td colspan="3" style="padding:6px 0;">Order items unavailable</td></tr>'}
+                  </tbody>
+                </table>
+              </div>
+              <div style="text-align:center;">
+                <a href="${process.env.NEXT_PUBLIC_APP_URL}/seller/dashboard?tab=orders" class="button">View order</a>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `New order received\nOrder #${orderShort}\nTotal: ₹${formattedTotal}\nBuyer: ${safeBuyerName}`,
+  };
+
+  return transporter.sendMail(mailOptions);
+}

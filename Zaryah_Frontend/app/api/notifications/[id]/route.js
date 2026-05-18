@@ -11,6 +11,13 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    const userModel = String(user.user_type || '').trim()
+    const userModelMatches = Array.from(new Set([
+      userModel,
+      userModel.toLowerCase(),
+      userModel.toUpperCase()
+    ].filter(Boolean)))
+
     const { id } = await params
     const body = await request.json().catch(() => ({}))
     const read = body.read !== false
@@ -24,7 +31,7 @@ export async function PATCH(request, { params }) {
       .update(updates)
       .eq('id', id)
       .eq('user_id', user.id)
-      .eq('user_model', user.user_type)
+      .in('user_model', userModelMatches)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
@@ -45,6 +52,13 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    const userModel = String(user.user_type || '').trim()
+    const userModelMatches = Array.from(new Set([
+      userModel,
+      userModel.toLowerCase(),
+      userModel.toUpperCase()
+    ].filter(Boolean)))
+
     const { id } = await params
 
     const { error } = await supabase
@@ -52,7 +66,7 @@ export async function DELETE(request, { params }) {
       .delete()
       .eq('id', id)
       .eq('user_id', user.id)
-      .eq('user_model', user.user_type)
+      .in('user_model', userModelMatches)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
