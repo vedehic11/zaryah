@@ -206,7 +206,10 @@ export default function CheckoutClient() {
   const deliveryFee = dynamicDeliveryCharge !== null ? dynamicDeliveryCharge : (subtotal >= 500 ? 0 : 60)
   // Note: deliveryFee already includes ₹10 markup from Shiprocket API (getCheapestShippingRate)
   const platformFee = subtotal < 500 ? 10 : 20 // Flat platform fee based on order value
-  const total = subtotal + giftPackagingFee + deliveryFee + platformFee
+  
+  // Add two-way delivery charges if applicable
+  const twoWayDeliveryFee = (twoWayCharges.inbound ?? 0) + (twoWayCharges.outbound ?? 0)
+  const total = subtotal + giftPackagingFee + deliveryFee + platformFee + twoWayDeliveryFee
 
   // Helpers to update/remove items in displayedItems (works for buy-now or full cart)
   const handleUpdateDisplayedQuantity = (item, newQty) => {
@@ -266,7 +269,9 @@ export default function CheckoutClient() {
         giftPackagingFee: giftPackagingFee,
         codFee: 0,
         platformFee: platformFee,
-        twoWayDelivery: hasTwoWayDelivery
+        twoWayDelivery: hasTwoWayDelivery,
+        twoWayInboundCharge: twoWayCharges.inbound ?? 0,
+        twoWayOutboundCharge: twoWayCharges.outbound ?? 0
       }
 
       console.log('Step 2: Creating order with data:', orderData)
@@ -274,6 +279,8 @@ export default function CheckoutClient() {
         subtotal,
         giftPackagingFee,
         deliveryFee,
+        twoWayInbound: twoWayCharges.inbound,
+        twoWayOutbound: twoWayCharges.outbound,
         platformFee,
         total
       })
