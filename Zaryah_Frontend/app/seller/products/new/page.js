@@ -264,9 +264,12 @@ export default function AddProductPage() {
     const { name, value, type, checked } = e.target
 
     if (type !== 'checkbox' && WORD_LIMITS[name]) {
+      const wordCount = countWords(value)
       setFormData(prev => ({
         ...prev,
-        [name]: limitWords(value, WORD_LIMITS[name])
+        [name]: wordCount <= WORD_LIMITS[name]
+          ? value
+          : limitWords(value, WORD_LIMITS[name])
       }))
       return
     }
