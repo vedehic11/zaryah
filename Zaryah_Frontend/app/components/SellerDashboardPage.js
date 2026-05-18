@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   Package, ShoppingCart, TrendingUp, DollarSign, Eye, Edit, Trash2,
@@ -23,6 +23,7 @@ const DEFAULT_SECTION_IMAGE = '/assets/logo.png'
 export default function SellerDashboardPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('products')
   const [productView, setProductView] = useState('active')
@@ -74,6 +75,28 @@ export default function SellerDashboardPage() {
   const [updatingOrders, setUpdatingOrders] = useState(new Set())
   const dashboardFetchInProgress = useRef(false)
   const dashboardLastFetchAt = useRef(0)
+
+  // Read tab and orderId from URL query params on component mount
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    const orderIdParam = searchParams.get('orderId')
+    
+    if (tabParam) {
+      setActiveTab(tabParam)
+    }
+    
+    if (orderIdParam) {
+      // Expand the order so user can see it
+      setExpandedOrders(prev => new Set(prev).add(orderIdParam))
+      // Scroll to the order (with small delay to ensure it's rendered)
+      setTimeout(() => {
+        const orderElement = document.getElementById(`order-${orderIdParam}`)
+        if (orderElement) {
+          orderElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        }
+      }, 100)
+    }
+  }, [searchParams])
 
   // Log pending breakdown when modal opens
   useEffect(() => {
@@ -1524,7 +1547,7 @@ export default function SellerDashboardPage() {
                           }
                           
                           return (
-                            <div key={order.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                            <div key={order.id} id={`order-${order.id}`} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                               {/* Compact Header - Always Visible */}
                               <div className="p-4">
                                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">

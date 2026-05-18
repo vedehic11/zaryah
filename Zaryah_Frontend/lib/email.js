@@ -271,7 +271,7 @@ export async function sendSellerOrderPlacedEmail({
                 </table>
               </div>
               <div style="text-align:center;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL}/seller/dashboard?tab=orders" class="button">View order</a>
+                <a href="${process.env.NEXT_PUBLIC_APP_URL}/seller/dashboard?tab=orders&orderId=${orderId}" class="button">View order in dashboard</a>
               </div>
             </div>
           </div>
@@ -281,5 +281,6 @@ export async function sendSellerOrderPlacedEmail({
     text: `New order received\nOrder #${orderShort}\nTotal: ₹${formattedTotal}\nBuyer: ${safeBuyerName}`,
   };
 
+  console.log('Sending seller order email to:', to, 'order:', orderShort);
   return transporter.sendMail(mailOptions);
 }

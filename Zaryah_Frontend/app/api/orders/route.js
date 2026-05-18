@@ -610,34 +610,71 @@ export async function POST(request) {
 
     console.log('=== Order Creation Completed Successfully ===')
 
-    try {
-      const { data: sellerProfile } = await supabase
-        .from('sellers')
-        .select('business_name, username, users:id(email, name, full_name)')
-        .eq('id', sellerId)
-        .single()
+    const emailStatus = []
 
-      const sellerEmail = sellerProfile?.users?.email
-      if (sellerEmail) {
-        const buyerName = user?.name || user?.full_name || 'Buyer'
-        await sendSellerOrderPlacedEmail({
-          to: sellerEmail,
-          sellerName: sellerProfile?.business_name || sellerProfile?.users?.name || sellerProfile?.users?.full_name,
-          orderId: order.id,
-          buyerName,
-          totalAmount,
-          items: orderItems.map((orderItem) => ({
-            name: orderItem.product_name,
-            quantity: orderItem.quantity,
-            price: orderItem.price
-          }))
-        })
+    try {
+      const buyerName = user?.name || user?.full_name || 'Buyer'
+      const itemsBySeller = orderItems.reduce((acc, item) => {
+        const key = item.seller_id
+        if (!key) return acc
+        if (!acc.has(key)) acc.set(key, [])
+        acc.get(key).push(item)
+        return acc
+      }, new Map())
+
+      for (const [sellerIdForEmail, sellerItems] of itemsBySeller.entries()) {
+        console.log('📧 Fetching seller profile for ID:', sellerIdForEmail)
+        
+        // Query seller profile to get business_name
+        const { data: sellerProfile, error: sellerError } = await supabase
+          .from('sellers')
+          .select('id, business_name, username, full_name')
+          .eq('id', sellerIdForEmail)
+          .single()
+
+        console.log('📧 Seller profile result:', { sellerProfile, sellerError })
+        
+        // Separately query users table to get email (relation may not work properly)
+        const { data: sellerUser, error: userError } = await supabase
+          .from('users')
+          .select('id, email, name')
+          .eq('id', sellerIdForEmail)
+          .single()
+
+        console.log('📧 Seller user result:', { sellerUser, userError })
+        
+        let sellerEmail = sellerUser?.email
+        let sellerName = sellerProfile?.business_name || sellerProfile?.full_name || sellerUser?.name
+
+        console.log('📧 Final lookup - Email:', sellerEmail, 'Name:', sellerName)
+
+        if (sellerEmail) {
+          console.log('Preparing seller order email for:', sellerEmail)
+          await sendSellerOrderPlacedEmail({
+            to: sellerEmail,
+            sellerName,
+            orderId: order.id,
+            buyerName,
+            totalAmount,
+            items: sellerItems.map((orderItem) => ({
+              name: orderItem.product_name,
+              quantity: orderItem.quantity,
+              price: orderItem.price
+            }))
+          })
+          console.log('Seller order email sent for order:', order.id, 'seller:', sellerIdForEmail)
+          emailStatus.push({ sellerId: sellerIdForEmail, to: sellerEmail, status: 'sent' })
+        } else {
+          console.warn('Seller email missing for seller:', sellerIdForEmail)
+          emailStatus.push({ sellerId: sellerIdForEmail, status: 'missing-email' })
+        }
       }
     } catch (emailError) {
       console.error('Error sending seller order email:', emailError)
+      emailStatus.push({ status: 'error', message: emailError?.message || String(emailError) })
     }
 
-    return NextResponse.json({ order: completeOrder || order }, { status: 201 })
+    return NextResponse.json({ order: completeOrder || order, emailStatus }, { status: 201 })
   } catch (error) {
     console.error('=== Order Creation Failed ===')
     console.error('Error type:', error.constructor.name)
