@@ -170,4 +170,42 @@ describe('/api/products/[id] route handlers', () => {
     expect(payload.error).toContain('existing order items')
     expect(orderItemsEq).toHaveBeenCalledWith('product_id', '11111111-1111-1111-1111-111111111111')
   })
+
+  it('DELETE maps foreign key delete failure to a user-friendly error', async () => {
+    const productSelectEq = vi.fn(() => ({ single: async () => ({ data: { seller_id: 'some-seller' }, error: null }) }))
+    const orderItemsEq = vi.fn(async () => ({ count: 0, error: null }))
+    const productDeleteEq = vi.fn(async () => ({ error: {
+      message: 'insert or update on table "products" violates foreign key constraint "order_items_product_id_fkey"',
+      details: 'Key (id)=(11111111-1111-1111-1111-111111111111) is still referenced from table "order_items".'
+    } }))
+
+    const { DELETE } = await loadRoute({
+      requireAuthImpl: async () => ({ user: { id: 'auth-2' } }),
+      getUserBySupabaseAuthIdImpl: async () => ({ id: 'admin-1', user_type: 'Admin' }),
+      fromImpl: (table) => {
+        if (table === 'products') {
+          return {
+            select: () => ({ eq: productSelectEq }),
+            delete: () => ({ eq: productDeleteEq }),
+          }
+        }
+
+        if (table === 'order_items') {
+          return { select: () => ({ eq: orderItemsEq }) }
+        }
+
+        return { delete: () => ({ eq: vi.fn(async () => ({ error: null })) }) }
+      },
+    })
+
+    const response = await DELETE(
+      new Request('http://localhost/api/products/123', { method: 'DELETE' }),
+      { params: Promise.resolve({ id: '11111111-1111-1111-1111-111111111111' }) }
+    )
+
+    const payload = await response.json()
+    expect(response.status).toBe(400)
+    expect(payload.error).toContain('order history')
+    expect(productDeleteEq).toHaveBeenCalledWith('id', '11111111-1111-1111-1111-111111111111')
+  })
 })

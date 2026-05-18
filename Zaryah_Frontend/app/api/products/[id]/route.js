@@ -317,7 +317,7 @@ export async function DELETE(request, { params }) {
 
     if (orderItemsCount > 0) {
       return NextResponse.json({
-        error: 'Cannot delete product because it has existing order items. Please contact support if you need help removing this product.'
+        error: `Cannot delete product because it has ${orderItemsCount} existing order item${orderItemsCount === 1 ? '' : 's'}. Please contact support if you need help removing this product.`
       }, { status: 400 })
     }
 
@@ -348,6 +348,16 @@ export async function DELETE(request, { params }) {
       .eq('id', id)
 
     if (error) {
+      const foreignKeyFailure = String(error.message || '').toLowerCase().includes('foreign key') ||
+        String(error.message || '').includes('order_items_product_id_fkey') ||
+        String(error.details || '').includes('order_items_product_id_fkey')
+
+      if (foreignKeyFailure) {
+        return NextResponse.json({
+          error: 'Cannot delete product because it has order history and cannot be removed safely. Please contact support if you need help.'
+        }, { status: 400 })
+      }
+
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
