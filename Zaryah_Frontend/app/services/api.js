@@ -212,6 +212,10 @@ class ApiService {
     return this.request(`/products/${id}`, { method: 'DELETE' })
   }
 
+  async unarchiveProduct(id) {
+    return this.request(`/products/${id}/unarchive`, { method: 'POST' })
+  }
+
   // Cart endpoints
   async getCart() {
     return this.request('/cart', { method: 'GET' })

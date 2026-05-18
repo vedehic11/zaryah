@@ -265,7 +265,7 @@ export async function PUT(request, { params }) {
   }
 }
 
-// DELETE /api/products/[id] - Delete product (seller/admin only)
+// DELETE /api/products/[id] - Archive product (seller/admin only, soft delete)
 export async function DELETE(request, { params }) {
   try {
     // Authenticate user
@@ -304,66 +304,29 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Forbidden: You can only delete your own products' }, { status: 403 })
     }
 
-    // Prevent deleting products that are referenced by orders
-    const { count: orderItemsCount, error: orderItemsError } = await supabase
-      .from('order_items')
-      .select('id', { count: 'exact', head: true })
-      .eq('product_id', id)
-
-    if (orderItemsError) {
-      console.error('Error checking order items for product deletion:', orderItemsError)
-      return NextResponse.json({ error: 'Unable to verify product order history' }, { status: 500 })
-    }
-
-    if (orderItemsCount > 0) {
-      return NextResponse.json({
-        error: `Cannot delete product because it has ${orderItemsCount} existing order item${orderItemsCount === 1 ? '' : 's'}. Please contact support if you need help removing this product.`
-      }, { status: 400 })
-    }
-
-    // Clean up any non-order product references before deleting
-    const cleanupOperations = [
-      { table: 'cart_items', column: 'product_id' },
-      { table: 'wishlist', column: 'product_id' },
-      { table: 'product_ratings', column: 'product_id' },
-      { table: 'reviews', column: 'product_id' },
-      { table: 'notifications', column: 'related_product_id' }
-    ]
-
-    for (const { table, column } of cleanupOperations) {
-      const { error: cleanupError } = await supabase
-        .from(table)
-        .delete()
-        .eq(column, id)
-
-      if (cleanupError) {
-        console.error(`Error cleaning up ${table} before product deletion:`, cleanupError)
-        return NextResponse.json({ error: 'Unable to delete product dependencies' }, { status: 500 })
-      }
-    }
-
-    const { error } = await supabase
+    // Archive the product (soft delete) instead of permanently deleting
+    // This preserves order history and allows sellers to restore if needed
+    const { data: archivedProduct, error } = await supabase
       .from('products')
-      .delete()
+      .update({
+        archived: true,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', id)
+      .select()
+      .single()
 
     if (error) {
-      const foreignKeyFailure = String(error.message || '').toLowerCase().includes('foreign key') ||
-        String(error.message || '').includes('order_items_product_id_fkey') ||
-        String(error.details || '').includes('order_items_product_id_fkey')
-
-      if (foreignKeyFailure) {
-        return NextResponse.json({
-          error: 'Cannot delete product because it has order history and cannot be removed safely. Please contact support if you need help.'
-        }, { status: 400 })
-      }
-
-      return NextResponse.json({ error: error.message }, { status: 400 })
+      console.error('Error archiving product:', error)
+      return NextResponse.json({ error: 'Unable to archive product' }, { status: 500 })
     }
 
-    return NextResponse.json({ message: 'Product deleted successfully' })
+    return NextResponse.json({ 
+      message: 'Product archived successfully',
+      product: archivedProduct
+    })
   } catch (error) {
-    console.error('Error deleting product:', error)
+    console.error('Error archiving product:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

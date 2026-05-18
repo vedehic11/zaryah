@@ -29,44 +29,66 @@ export async function GET(request) {
       console.log('No authentication (public access)')
     }
 
-    let query = supabase
-      .from('products')
-      .select(`
-        *,
-        sellers:seller_id (
-          id,
-          business_name,
-          full_name,
-          username,
-          city,
-          business_address,
-          business_description,
-          allow_cod
-        ),
-        product_ratings (
-          rating
-        )
-      `)
-
-    // Apply filters
-    // Note: category filter works with both single category strings and category arrays
-    // We fetch all and filter in memory if categories is an array
-    if (sellerId) {
-      query = query.eq('seller_id', sellerId)
+    const includeArchived = searchParams.get('includeArchived') === 'true'
+    const isArchivedColumnMissing = (error) => {
+      const message = String(error?.message || error || '').toLowerCase()
+      return message.includes('column products.archived does not exist') ||
+        message.includes('could not find the') && message.includes('archived') ||
+        message.includes('archived column')
     }
 
-    // Status filter: default to showing approved for public, but allow explicit status filter
-    if (status) {
-      query = query.eq('status', status)
-      console.log('Filtering by status:', status)
-    } else if (!isAdmin) {
-      // Public users only see approved products
-      query = query.eq('status', 'approved')
-      console.log('Public user - filtering for approved products only')
+    const fetchProducts = async (shouldSkipArchivedFilter) => {
+      let query = supabase
+        .from('products')
+        .select(`
+          *,
+          sellers:seller_id (
+            id,
+            business_name,
+            full_name,
+            username,
+            city,
+            business_address,
+            business_description,
+            allow_cod
+          ),
+          product_ratings (
+            rating
+          )
+        `)
+
+      // Apply filters
+      // Note: category filter works with both single category strings and category arrays
+      // We fetch all and filter in memory if categories is an array
+      if (sellerId) {
+        query = query.eq('seller_id', sellerId)
+      }
+
+      // Exclude archived products from public listings unless explicitly requested
+      if (!shouldSkipArchivedFilter && !includeArchived) {
+        query = query.eq('archived', false)
+      }
+
+      // Status filter: default to showing approved for public, but allow explicit status filter
+      if (status) {
+        query = query.eq('status', status)
+        console.log('Filtering by status:', status)
+      } else if (!isAdmin) {
+        // Public users only see approved products
+        query = query.eq('status', 'approved')
+        console.log('Public user - filtering for approved products only')
+      }
+
+      console.log('Executing Supabase query...')
+      return query.order('created_at', { ascending: false })
     }
 
-    console.log('Executing Supabase query...')
-    let { data: products, error } = await query.order('created_at', { ascending: false })
+    let { data: products, error } = await fetchProducts(false)
+
+    if (error && !includeArchived && isArchivedColumnMissing(error)) {
+      console.warn('Archived column is missing in the database, retrying without archived filter')
+      ;({ data: products, error } = await fetchProducts(true))
+    }
 
     // Filter by category if specified (handles both single and array categories)
     if (category && products) {
@@ -105,6 +127,7 @@ export async function GET(request) {
         name: product.name,
         description: product.description,
         price: parseFloat(product.price),
+        archived: Boolean(product.archived),
         images: product.images || [],
         video_url: product.video_url,
         // Return both formats for compatibility

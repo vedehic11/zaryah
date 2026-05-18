@@ -64,7 +64,11 @@ function createCookieStorage() {
     const isSecure = window.location.protocol === 'https:'
     const secureAttr = isSecure ? '; Secure' : ''
     const domainAttr = cookieDomain ? `; Domain=${cookieDomain}` : ''
-    document.cookie = `${key}=${encodeURIComponent(value)}; Path=/${domainAttr}; SameSite=Lax${secureAttr}`
+    // Set cookie to expire in 365 days so session persists across browser restarts
+    const expiryDate = new Date()
+    expiryDate.setTime(expiryDate.getTime() + (365 * 24 * 60 * 60 * 1000))
+    const expiresAttr = `; Expires=${expiryDate.toUTCString()}`
+    document.cookie = `${key}=${encodeURIComponent(value)}; Path=/${domainAttr}; SameSite=Lax${expiresAttr}${secureAttr}`
   }
 
   const removeCookieValue = (key) => {

@@ -25,6 +25,7 @@ export default function SellerDashboardPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('products')
+  const [productView, setProductView] = useState('active')
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalOrders: 0,
@@ -371,7 +372,7 @@ export default function SellerDashboardPage() {
 
       // Fetch all data in parallel for better performance
       const [productsData, ordersData, walletData, allOrdersData] = await Promise.allSettled([
-        apiService.getProducts({ sellerId: user.id }),
+        apiService.getProducts({ sellerId: user.id, includeArchived: true }),
         apiService.getSellerOrdersPaginated({
           page: ordersPage,
           pageSize: ordersPageSize,
@@ -879,14 +880,24 @@ export default function SellerDashboardPage() {
   }
 
   const handleDeleteProduct = async (productId) => {
-    if (!confirm('Are you sure you want to delete this product?')) return
+    if (!confirm('Are you sure you want to archive this product?')) return
 
     try {
       await apiService.deleteProduct(productId)
-      toast.success('Product deleted successfully')
+      toast.success('Product archived successfully')
       fetchDashboardData()
     } catch (error) {
-      toast.error(error?.message || 'Failed to delete product')
+      toast.error(error?.message || 'Failed to archive product')
+    }
+  }
+
+  const handleUnarchiveProduct = async (productId) => {
+    try {
+      await apiService.unarchiveProduct(productId)
+      toast.success('Product restored successfully')
+      fetchDashboardData()
+    } catch (error) {
+      toast.error(error?.message || 'Failed to restore product')
     }
   }
 
@@ -951,6 +962,147 @@ export default function SellerDashboardPage() {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
       </div>
     )
+  }
+
+  const isArchivedProduct = (product) => {
+    if (product?.archived) return true
+    return String(product?.status || '').toLowerCase() === 'archived'
+  }
+
+  const activeProducts = products.filter((product) => !isArchivedProduct(product))
+  const archivedProducts = products.filter((product) => isArchivedProduct(product))
+
+  const renderProductCard = (product) => {
+    const isArchived = isArchivedProduct(product)
+
+    return (
+    <div key={product.id} className="bg-white border border-gray-200 rounded-lg overflow-visible hover:shadow-md transition-shadow">
+      <div className="aspect-square bg-gray-100 relative">
+        {product.images && product.images.length > 0 ? (
+          <Image
+            src={product.images[0]}
+            alt={product.name}
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <ImageIcon className="w-12 h-12 text-gray-400" />
+          </div>
+        )}
+        <span className={`absolute top-2 right-2 px-2 py-1 text-xs font-medium rounded-full ${
+          isArchived ? 'bg-gray-100 text-gray-700' :
+          product.status === 'approved' ? 'bg-green-100 text-green-700' :
+          product.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+          'bg-red-100 text-red-700'
+        }`}>
+          {isArchived ? 'archived' : product.status}
+        </span>
+        <div className="absolute top-2 left-2 md:hidden">
+          <button
+            type="button"
+            onClick={() => setOpenMenuProductId(openMenuProductId === product.id ? null : product.id)}
+            className="inline-flex items-center justify-center p-2 bg-white/90 border border-gray-200 rounded-full shadow-sm hover:bg-white"
+            aria-expanded={openMenuProductId === product.id}
+            aria-label="Open product actions"
+          >
+            <MoreVertical className="w-5 h-5 text-gray-700" />
+          </button>
+
+          {openMenuProductId === product.id && (
+            <div className="absolute left-0 top-full mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <button
+                type="button"
+                onClick={() => { setOpenMenuProductId(null); router.push(`/product/${product.id}`) }}
+                className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
+              >
+                <Eye className="w-4 h-4" />
+                <span>View</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setOpenMenuProductId(null); router.push(`/seller/products/${product.id}/edit`) }}
+                className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
+              >
+                <Edit className="w-4 h-4" />
+                <span>Edit</span>
+              </button>
+              {isArchived ? (
+                <button
+                  type="button"
+                  onClick={() => { setOpenMenuProductId(null); handleUnarchiveProduct(product.id) }}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-emerald-600"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Unarchive</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setOpenMenuProductId(null); handleDeleteProduct(product.id) }}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-red-600"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Archive</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="p-4">
+        <h4 className="font-semibold text-gray-900 mb-1">{product.name}</h4>
+        <div className="flex items-center space-x-2 mb-2">
+          <p className="text-gray-900 text-sm font-bold">₹{product.price}</p>
+          {product.mrp && product.mrp > product.price && (
+            <>
+              <p className="text-gray-500 text-xs line-through">₹{product.mrp}</p>
+              <span className="text-xs font-semibold text-orange-500">
+                {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
+              </span>
+            </>
+          )}
+        </div>
+        <p className="text-gray-500 text-xs mb-3">Stock: {product.stock}</p>
+        <div className="hidden md:flex items-center space-x-2">
+          <Link
+            href={`/product/${product.id}`}
+            className="flex-1 inline-flex items-center justify-center space-x-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Eye className="w-4 h-4" />
+            <span>View</span>
+          </Link>
+          <Link
+            href={`/seller/products/${product.id}/edit`}
+            className="flex-1 inline-flex items-center justify-center space-x-1 bg-primary-100 hover:bg-primary-200 text-primary-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Edit className="w-4 h-4" />
+            <span>Edit</span>
+          </Link>
+          {isArchived ? (
+            <button
+              onClick={() => handleUnarchiveProduct(product.id)}
+              className="flex-1 inline-flex items-center justify-center space-x-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-2 rounded-lg transition-colors"
+              aria-label={`Unarchive ${product.name}`}
+            >
+              <CheckCircle className="w-4 h-4" />
+              <span>Unarchive</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => handleDeleteProduct(product.id)}
+              className="flex-1 inline-flex items-center justify-center space-x-1 bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-lg transition-colors"
+              aria-label={`Archive ${product.name}`}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Archive</span>
+            </button>
+          )}
+        </div>
+
+      </div>
+    </div>
+  )
   }
 
   // Stats Cards
@@ -1234,127 +1386,59 @@ export default function SellerDashboardPage() {
                   </div>
                 </div>
 
-                {products.length === 0 ? (
-                  <div className="text-center py-12 bg-gray-50 rounded-lg">
-                    <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-4">No products yet</p>
-                    <Link
-                      href="/seller/products/new"
-                      className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
-                    >
-                      <Plus className="w-5 h-5" />
-                      <span>Add Your First Product</span>
-                    </Link>
+                <div>
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Products</h3>
+                    <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1">
+                      <button
+                        type="button"
+                        onClick={() => setProductView('active')}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                          productView === 'active'
+                            ? 'bg-gray-900 text-white'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Active ({activeProducts.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProductView('archived')}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                          productView === 'archived'
+                            ? 'bg-gray-900 text-white'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Archived ({archivedProducts.length})
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
-                    {products.map((product) => (
-                      <div key={product.id} className="bg-white border border-gray-200 rounded-lg overflow-visible hover:shadow-md transition-shadow">
-                        <div className="aspect-square bg-gray-100 relative">
-                          {product.images && product.images.length > 0 ? (
-                            <Image
-                              src={product.images[0]}
-                              alt={product.name}
-                              fill
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon className="w-12 h-12 text-gray-400" />
-                            </div>
-                          )}
-                          <span className={`absolute top-2 right-2 px-2 py-1 text-xs font-medium rounded-full ${
-                            product.status === 'approved' ? 'bg-green-100 text-green-700' :
-                            product.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {product.status}
-                          </span>
-                          <div className="absolute top-2 left-2 md:hidden">
-                            <button
-                              type="button"
-                              onClick={() => setOpenMenuProductId(openMenuProductId === product.id ? null : product.id)}
-                              className="inline-flex items-center justify-center p-2 bg-white/90 border border-gray-200 rounded-full shadow-sm hover:bg-white"
-                              aria-expanded={openMenuProductId === product.id}
-                              aria-label="Open product actions"
-                            >
-                              <MoreVertical className="w-5 h-5 text-gray-700" />
-                            </button>
 
-                            {openMenuProductId === product.id && (
-                              <div className="absolute left-0 top-full mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                                <button
-                                  type="button"
-                                  onClick={() => { setOpenMenuProductId(null); router.push(`/product/${product.id}`) }}
-                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  <span>View</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => { setOpenMenuProductId(null); router.push(`/seller/products/${product.id}/edit`) }}
-                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                  <span>Edit</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => { setOpenMenuProductId(null); handleDeleteProduct(product.id) }}
-                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-red-600"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  <span>Delete</span>
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <h4 className="font-semibold text-gray-900 mb-1">{product.name}</h4>
-                          <div className="flex items-center space-x-2 mb-2">
-                            <p className="text-gray-900 text-sm font-bold">₹{product.price}</p>
-                            {product.mrp && product.mrp > product.price && (
-                              <>
-                                <p className="text-gray-500 text-xs line-through">₹{product.mrp}</p>
-                                <span className="text-xs font-semibold text-orange-500">
-                                  {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
-                                </span>
-                              </>
-                            )}
-                          </div>
-                          <p className="text-gray-500 text-xs mb-3">Stock: {product.stock}</p>
-                          <div className="hidden md:flex items-center space-x-2">
-                            <Link
-                              href={`/product/${product.id}`}
-                              className="flex-1 inline-flex items-center justify-center space-x-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                            >
-                              <Eye className="w-4 h-4" />
-                              <span>View</span>
-                            </Link>
-                            <Link
-                              href={`/seller/products/${product.id}/edit`}
-                              className="flex-1 inline-flex items-center justify-center space-x-1 bg-primary-100 hover:bg-primary-200 text-primary-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                            >
-                              <Edit className="w-4 h-4" />
-                              <span>Edit</span>
-                            </Link>
-                            <button
-                              onClick={() => handleDeleteProduct(product.id)}
-                              className="flex-1 inline-flex items-center justify-center space-x-1 bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-lg transition-colors"
-                              aria-label={`Delete ${product.name}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              <span>Delete</span>
-                            </button>
-                          </div>
-
-                        </div>
+                  {productView === 'active' ? (
+                    activeProducts.length === 0 ? (
+                      <div className="text-center py-10 bg-gray-50 rounded-lg">
+                        <Package className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-600">No active products yet</p>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
+                        {activeProducts.map(renderProductCard)}
+                      </div>
+                    )
+                  ) : (
+                    archivedProducts.length === 0 ? (
+                      <div className="text-center py-10 bg-gray-50 rounded-lg">
+                        <Package className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-600">No archived products yet</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
+                        {archivedProducts.map(renderProductCard)}
+                      </div>
+                    )
+                  )}
+                </div>
               </div>
             )}
 
