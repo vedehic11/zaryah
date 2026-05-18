@@ -404,19 +404,6 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
           )}
           {/* Right Side - User Menu */}
           <div className="flex items-center space-x-2">
-            {returnToSeller && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    window.location.href = returnToSeller
-                  }
-                }}
-                className="hidden xl:inline-flex items-center rounded-xl border border-primary-200 bg-white px-3 py-1.5 text-sm font-semibold text-primary-700 hover:bg-primary-50 transition-colors"
-              >
-                Back to Seller
-              </button>
-            )}
             {/* Notification Bell Icon */}
             {user && (
               <button
