@@ -873,37 +873,31 @@ export default function CheckoutClient() {
                   </div>
                 </div>
 
-                <div
-                  onClick={() => {
-                    if (!canUseCod) {
-                      toast.error(codUnavailableReason)
-                      return
-                    }
-                    setPaymentMethod('cod')
-                  }}
-                  className={`p-4 border-2 rounded-lg transition-all ${
-                    !canUseCod
-                      ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
-                      : paymentMethod === 'cod'
-                        ? 'border-primary-600 bg-primary-50 cursor-pointer'
-                        : 'border-gray-200 hover:border-primary-300 cursor-pointer'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Package className="w-5 h-5 text-secondary-600" />
-                      <div>
-                        <p className="font-semibold text-charcoal-900">Cash on Delivery</p>
-                        <p className="text-sm text-charcoal-600">
-                          {canUseCod ? 'Pay when you receive (₹10 extra)' : 'Unavailable for this seller'}
-                        </p>
+                {canUseCod && (
+                  <div
+                    onClick={() => {
+                      setPaymentMethod('cod')
+                    }}
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      paymentMethod === 'cod'
+                        ? 'border-primary-600 bg-primary-50'
+                        : 'border-gray-200 hover:border-primary-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Package className="w-5 h-5 text-secondary-600" />
+                        <div>
+                          <p className="font-semibold text-charcoal-900">Cash on Delivery</p>
+                          <p className="text-sm text-charcoal-600">Pay when you receive (₹10 extra)</p>
+                        </div>
                       </div>
+                      {paymentMethod === 'cod' && (
+                        <CheckCircle className="w-6 h-6 text-primary-600" />
+                      )}
                     </div>
-                    {paymentMethod === 'cod' && canUseCod && (
-                      <CheckCircle className="w-6 h-6 text-primary-600" />
-                    )}
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -1028,15 +1022,6 @@ export default function CheckoutClient() {
                   <span>₹{total}</span>
                 </div>
               </div>
-
-              {!canUseCod && (
-                <div className="mt-3 p-3 bg-amber-50 rounded-lg flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-800">
-                    Cash on Delivery is disabled by this seller.
-                  </p>
-                </div>
-              )}
 
               {dynamicDeliveryCharge !== null && selectedAddress && (
                 <div className="mt-3 p-3 bg-blue-50 rounded-lg">

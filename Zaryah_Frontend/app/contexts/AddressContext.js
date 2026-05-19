@@ -262,7 +262,48 @@ export const AddressProvider = ({ children }) => {
 
   // Auto-detect location on first visit if user is logged in
   useEffect(() => {
-    if (user?.id && !userCity && !localStorage.getItem('locationRequested')) {
+    // Skip auto-detect on username brand pages (avoid prompting for location when
+    // visiting public seller username pages).
+    const isUsernameBrandPage = () => {
+      if (typeof window === 'undefined') return false
+      const ROOT_DOMAIN = 'zaryah.in'
+      const host = window.location.hostname.toLowerCase()
+
+      let hostSubdomain = null
+      if (host.endsWith(`.${ROOT_DOMAIN}`) && host !== ROOT_DOMAIN && host !== `www.${ROOT_DOMAIN}`) {
+        hostSubdomain = host.slice(0, -(ROOT_DOMAIN.length + 1))
+      }
+
+      const pathname = window.location.pathname || ''
+      const pathSegments = pathname.split('/').filter(Boolean)
+      const reservedTopLevelRoutes = new Set([
+        '',
+        'shop',
+        'product',
+        'login',
+        'register',
+        'admin',
+        'seller',
+        'orders',
+        'cart',
+        'support',
+        'gift-suggester',
+        'hamper-builder',
+        'checkout',
+        'wishlist',
+        'addresses',
+        'reset-password',
+        'api'
+      ])
+
+      const pathSellerUsername = (pathSegments.length === 1 && !reservedTopLevelRoutes.has(pathSegments[0]))
+        ? pathSegments[0]
+        : null
+
+      return Boolean(hostSubdomain || pathSellerUsername)
+    }
+
+    if (user?.id && !userCity && !localStorage.getItem('locationRequested') && !isUsernameBrandPage()) {
       localStorage.setItem('locationRequested', 'true')
       requestLocation()
     }
