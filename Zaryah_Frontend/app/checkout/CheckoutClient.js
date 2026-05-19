@@ -25,9 +25,7 @@ export default function CheckoutClient() {
   const { addresses = [], addAddress, loadUserAddresses } = useAddress()
 
   const [selectedAddress, setSelectedAddress] = useState(null)
-  const [paymentMethod, setPaymentMethod] = useState(
-    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ? 'online' : 'cod'
-  ) // 'online' or 'cod'
+  const [paymentMethod, setPaymentMethod] = useState('online') // 'online' or 'cod'
   const [isProcessing, setIsProcessing] = useState(false)
   const [showAddressForm, setShowAddressForm] = useState(false)
   const [calculatingDelivery, setCalculatingDelivery] = useState(false)

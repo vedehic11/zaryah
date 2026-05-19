@@ -288,12 +288,13 @@ export default function SellerDashboardPage() {
     facebook: '',
     x: '',
     linkedin: '',
-    allow_cod: true,
+    allow_cod: false,
     account_holder_name: '',
     upi_id: '',
     id_type: '',
     id_number: ''
   })
+  const [isUpdatingCod, setIsUpdatingCod] = useState(false)
 
   const hasValue = (value) => {
     if (!value) return false
@@ -771,7 +772,7 @@ export default function SellerDashboardPage() {
           facebook: response.facebook || '',
           x: response.x || '',
           linkedin: response.linkedin || '',
-          allow_cod: response.allow_cod !== undefined ? Boolean(response.allow_cod) : true,
+          allow_cod: response.allow_cod !== undefined ? Boolean(response.allow_cod) : false,
           account_holder_name: response.account_holder_name || '',
           upi_id: response.upi_id || '',
           id_type: response.id_type || '',
@@ -781,6 +782,26 @@ export default function SellerDashboardPage() {
       }
     } catch (error) {
       console.error('Error fetching seller profile:', error)
+    }
+  }
+
+  const handleAllowCodToggle = async (nextValue) => {
+    if (isUpdatingCod) {
+      return
+    }
+
+    setIsUpdatingCod(true)
+    setProfileData(prev => ({ ...prev, allow_cod: nextValue }))
+    try {
+      await apiService.request('/sellers', {
+        method: 'PUT',
+        body: JSON.stringify({ allow_cod: nextValue })
+      })
+    } catch (error) {
+      setProfileData(prev => ({ ...prev, allow_cod: !nextValue }))
+      toast.error(error.message || 'Failed to update COD setting')
+    } finally {
+      setIsUpdatingCod(false)
     }
   }
   
@@ -895,6 +916,8 @@ export default function SellerDashboardPage() {
       
       toast.success('Profile updated successfully!')
       setShowEditProfile(false)
+      // Always refresh profile after saving to get latest data from backend
+      await fetchSellerProfile()
       fetchDashboardData()
     } catch (error) {
       console.error('Error updating profile:', error)
@@ -2995,8 +3018,9 @@ export default function SellerDashboardPage() {
                         <input
                           type="checkbox"
                           checked={Boolean(profileData.allow_cod)}
-                          onChange={(e) => setProfileData(prev => ({ ...prev, allow_cod: e.target.checked }))}
-                          className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          onChange={(e) => handleAllowCodToggle(e.target.checked)}
+                          disabled={isUpdatingCod}
+                          className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-60"
                         />
                         <span className="space-y-1">
                           <span className="block text-sm font-semibold text-gray-900">Allow Cash on Delivery</span>
