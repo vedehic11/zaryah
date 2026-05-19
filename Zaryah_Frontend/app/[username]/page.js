@@ -118,15 +118,13 @@ export default function SellerProfilePage({ params }) {
   const products = seller?.products || []
 
   const sectionOptions = useMemo(() => {
-    const dynamicSections = products
-      .map(product => product.section)
-      .filter(Boolean)
-      .map(section => String(section).trim())
+    const sellerDefinedSections = (seller?.sections || [])
+      .map(section => String(section?.name || '').trim())
       .filter(section => section.length > 0 && section !== 'New Arrivals')
 
-    const uniqueSections = [...new Set(dynamicSections)]
+    const uniqueSections = [...new Set(sellerDefinedSections)]
     return ['All', 'New Arrivals', ...uniqueSections]
-  }, [products])
+  }, [seller?.sections])
 
   const baseSections = ['All', 'New Arrivals']
   const extraSections = useMemo(
