@@ -135,10 +135,16 @@ export default function CheckoutClient() {
   }, [user, cart, addresses, router, searchParams])
 
   // Determine displayed items (supports buy-now single-item checkout)
-  const displayedItems = buyNowMode && buyNowItem ? [buyNowItem] : cart
+  const displayedItems = useMemo(
+    () => (buyNowMode && buyNowItem ? [buyNowItem] : cart),
+    [buyNowMode, buyNowItem, cart]
+  )
 
   // Calculate delivery charge dynamically when address changes
-  const hasTwoWayDelivery = displayedItems.some(item => item.two_way_delivery || item.twoWayDelivery)
+  const hasTwoWayDelivery = useMemo(
+    () => displayedItems.some(item => item.two_way_delivery || item.twoWayDelivery),
+    [displayedItems]
+  )
   const canUseCod = useMemo(() => {
     if (!displayedItems.length) {
       return false

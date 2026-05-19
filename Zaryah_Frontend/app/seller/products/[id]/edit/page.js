@@ -60,6 +60,7 @@ export default function EditSellerProductPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [product, setProduct] = useState(null)
+  const [sellerAllowsCod, setSellerAllowsCod] = useState(true)
   const [sectionOptions, setSectionOptions] = useState(DEFAULT_SECTION_OPTIONS)
   const [hasCustomSections, setHasCustomSections] = useState(false)
   const imageInputRef = useRef(null)
@@ -147,6 +148,25 @@ export default function EditSellerProductPage() {
       } catch (error) {
         console.error('Failed to load seller sections for edit product:', error)
         setHasCustomSections(false)
+      }
+    }
+
+    const loadSellerProfile = async () => {
+      try {
+        const profile = await apiService.request('/api/seller/profile', { method: 'GET' })
+        setSellerAllowsCod(Boolean(profile?.allow_cod))
+       
+         // Auto-disable COD on product if seller has disabled it globally
+         if (!Boolean(profile?.allow_cod)) {
+           setFormData(prev => ({
+             ...prev,
+             cod_available: false
+           }))
+         }
+      } catch (error) {
+        console.error('Failed to load seller profile:', error)
+        // Default to true if fetch fails
+        setSellerAllowsCod(true)
       }
     }
 
@@ -239,6 +259,7 @@ export default function EditSellerProductPage() {
 
     loadSections()
     loadProduct()
+     loadSellerProfile()
   }, [authLoading, productId, router, user])
 
   const sectionSelectOptions = useMemo(() => {
@@ -1037,13 +1058,22 @@ export default function EditSellerProductPage() {
               ['return_available', 'Returns available'],
               ['exchange_available', 'Exchanges available']
             ].map(([field, label]) => (
+               field === 'cod_available' && !sellerAllowsCod ? null : (
               <label key={field} className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
                 <input type="checkbox" name={field} checked={Boolean(formData[field])} onChange={handleChange} className="h-4 w-4 rounded border-gray-300" />
                 <span className="text-sm text-gray-700">{label}</span>
               </label>
+               )
             ))}
           </div>
 
+           {!sellerAllowsCod && (
+             <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+               <p className="text-sm text-amber-800">
+                 <span className="font-semibold">Cash on Delivery is disabled</span> in your seller profile. Enable it there to allow COD for your products.
+               </p>
+             </div>
+           )}
           <div className="flex items-center justify-end gap-3 pt-2">
             <Link href="/seller/dashboard" className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
               Cancel
