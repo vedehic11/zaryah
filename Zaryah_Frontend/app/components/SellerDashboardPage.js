@@ -318,7 +318,10 @@ export default function SellerDashboardPage() {
     }
 
     try {
-      await navigator.clipboard.writeText(profileUrl)
+      const urlToCopy = /^https?:\/\//i.test(profileUrl)
+        ? profileUrl
+        : `https://${profileUrl}`
+      await navigator.clipboard.writeText(urlToCopy)
       toast.success('Profile link copied')
     } catch (error) {
       console.error('Failed to copy profile link:', error)

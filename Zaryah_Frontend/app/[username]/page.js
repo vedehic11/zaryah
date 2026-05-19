@@ -27,6 +27,7 @@ export default function SellerProfilePage({ params }) {
   const [isOverlaySearchOpen, setIsOverlaySearchOpen] = useState(false)
   const [isSectionDrawerOpen, setIsSectionDrawerOpen] = useState(false)
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false)
+  const [isInstagramWebView, setIsInstagramWebView] = useState(false)
   const overlaySearchInputRef = useRef(null)
   const { totalItems, setIsCartOpen } = useCart()
   const { wishlistCount } = useWishlist()
@@ -39,6 +40,13 @@ export default function SellerProfilePage({ params }) {
   const zaryahOrdersUrl = getMainDomainUrl(`/orders?redirect=${redirectParam}`)
   const zaryahLoginUrl = getMainDomainUrl(`/login?redirect=${encodeURIComponent(sellerHomeUrl)}`)
   const zaryahRegisterUrl = getMainDomainUrl(`/register?redirect=${encodeURIComponent(sellerHomeUrl)}`)
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      const ua = navigator.userAgent || ''
+      setIsInstagramWebView(/Instagram/i.test(ua))
+    }
+  }, [])
 
   useEffect(() => {
     const fetchSeller = async () => {
@@ -205,6 +213,26 @@ export default function SellerProfilePage({ params }) {
   if (error || !seller || !isSeller) {
     return (
       <Layout>
+        {isInstagramWebView && (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <div className="flex items-center justify-between gap-3">
+              <span>
+                Instagram browser can block loading. Tap Open in Browser if this page fails.
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.open(window.location.href, '_blank', 'noopener,noreferrer')
+                  }
+                }}
+                className="rounded-lg bg-amber-900 px-3 py-2 text-xs font-semibold text-white"
+              >
+                Open in Browser
+              </button>
+            </div>
+          </div>
+        )}
         <div className="min-h-screen flex items-center justify-center bg-gradient-elegant">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
