@@ -259,6 +259,10 @@ export default function SellerProfilePage({ params }) {
   const aboutDescription = String(seller.business_description || seller.story || '').trim()
   const sellerSections = seller.sections || []
   const DEFAULT_SECTION_IMAGE = '/assets/logo.png'
+  const showRating = Number(stats.averageRating) > 0
+  const ratingValue = showRating
+    ? Number(stats.averageRating).toFixed(1)
+    : '4.0'
 
   const getSelectedSectionImage = () => {
     if (selectedSection === 'All' || selectedSection === 'New Arrivals') {
@@ -540,7 +544,7 @@ export default function SellerProfilePage({ params }) {
                       <p className="text-[11px] uppercase tracking-wider text-white/80">Rating</p>
                       <p className="mt-0.5 text-white font-bold text-base inline-flex items-center gap-1">
                         <Star className="w-4 h-4 fill-yellow-300 text-yellow-300" />
-                        {stats.averageRating > 0 ? Number(stats.averageRating).toFixed(1) : '0.0'}
+                        {ratingValue}
                       </p>
                     </div>
                     <div className="rounded-2xl border border-white/25 bg-white/15 px-2.5 py-1.5">
