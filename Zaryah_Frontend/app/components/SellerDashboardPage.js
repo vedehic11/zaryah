@@ -302,6 +302,16 @@ export default function SellerDashboardPage() {
     return normalized !== '' && normalized !== 'pending' && normalized !== 'null'
   }
 
+  const normalizeUsername = (value) => {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[_\s]+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+  }
+
   const isKycMissing = !(hasValue(profileData.account_holder_name) && hasValue(profileData.upi_id))
   const profileUrl = profileData?.username ? getSellerUrl(profileData.username) : ''
   const qrPreviewUrl = profileUrl
@@ -903,6 +913,7 @@ export default function SellerDashboardPage() {
       await apiService.request(`/sellers`, {
         method: 'PUT',
         body: JSON.stringify({
+          username: profileData.username,
           business_description: profileData.business_description,
           story: profileData.story,
           instagram: profileData.instagram,
@@ -3337,6 +3348,24 @@ export default function SellerDashboardPage() {
                       <h3 className="text-lg font-semibold mb-4">Business Information</h3>
                       
                       <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Username
+                          </label>
+                          <input
+                            type="text"
+                            value={profileData.username}
+                            onChange={(e) => {
+                              const normalized = normalizeUsername(e.target.value)
+                              setProfileData(prev => ({ ...prev, username: normalized }))
+                            }}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="your-store"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Only letters, numbers, and hyphens. Your link will be https://{profileData.username || 'your-store'}.zaryah.in
+                          </p>
+                        </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Business Description
