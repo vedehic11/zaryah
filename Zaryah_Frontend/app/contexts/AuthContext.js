@@ -523,14 +523,30 @@ export const AuthProvider = ({ children }) => {
 
   // Login function - uses Supabase Auth
   const login = async (email, password, userType = 'Buyer') => {
+    const timeoutMs = 15000
+    let timeoutId = null
+
     try {
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error('Login request timed out. Please try again.'))
+        }, timeoutMs)
+      })
+
+      const signInPromise = supabaseClient.auth.signInWithPassword({
         email,
         password,
       })
 
+      const { data, error } = await Promise.race([signInPromise, timeoutPromise])
+
       if (error) {
         toast.error(error.message || 'Login failed')
+        return false
+      }
+
+      if (!data?.user) {
+        toast.error('Login failed. Please try again.')
         return false
       }
 
@@ -539,8 +555,10 @@ export const AuthProvider = ({ children }) => {
       return true
     } catch (error) {
       console.error('Login error:', error)
-      toast.error('Login failed')
+      toast.error(error?.message || 'Login failed')
       return false
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId)
     }
   }
 
