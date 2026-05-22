@@ -523,7 +523,7 @@ export const AuthProvider = ({ children }) => {
 
   // Login function - uses Supabase Auth
   const login = async (email, password, userType = 'Buyer') => {
-    const timeoutMs = 15000
+    const timeoutMs = 5000
     let timeoutId = null
 
     try {
