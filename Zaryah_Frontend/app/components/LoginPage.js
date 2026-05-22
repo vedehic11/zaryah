@@ -88,7 +88,7 @@ export const LoginPage = () => {
   const [errors, setErrors] = useState({})
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { login, isLoading } = useAuth()
+  const { login, isLoading, user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTarget = String(searchParams.get('redirect') || '').trim()
@@ -136,7 +136,7 @@ export const LoginPage = () => {
 
     setIsSubmitting(true)
     try {
-      const timeoutMs = 5000
+      const timeoutMs = 3000
       const timeoutPromise = new Promise(resolve => {
         setTimeout(() => resolve('timeout'), timeoutMs)
       })
@@ -155,6 +155,22 @@ export const LoginPage = () => {
       const success = Boolean(result)
       
       if (success) {
+        // Wait briefly for AuthContext to finish syncing user state before redirecting.
+        const maxWaitMs = 3000
+        const pollInterval = 150
+        let waited = 0
+
+        while (waited < maxWaitMs && isLoading) {
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise(r => setTimeout(r, pollInterval))
+          waited += pollInterval
+        }
+
+        // If user still not available after wait, proceed anyway but show a notice
+        if (!user) {
+          toast('Logged in, finishing setup...', { icon: '⚠️' })
+        }
+
         if (safeRedirectTarget) {
           if (safeRedirectTarget.startsWith('http') && typeof window !== 'undefined') {
             window.location.href = safeRedirectTarget

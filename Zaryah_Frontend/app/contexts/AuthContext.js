@@ -32,6 +32,29 @@ export const AuthProvider = ({ children }) => {
     return message.includes('invalid refresh token') || message.includes('refresh token not found')
   }
 
+  const getCachedUser = () => {
+    if (typeof window === 'undefined') return null
+
+    try {
+      const cachedUser = sessionStorage.getItem('zaryah_user_cache')
+      if (!cachedUser) return null
+      return JSON.parse(cachedUser)
+    } catch (error) {
+      console.error('Failed to parse cached user:', error)
+      return null
+    }
+  }
+
+  const restoreCachedUser = (reason) => {
+    const cachedUser = getCachedUser()
+    if (!cachedUser) return false
+
+    console.warn(`Auth fallback: restoring cached user (${reason})`, cachedUser.email)
+    setUser(cachedUser)
+    setIsLoading(false)
+    return true
+  }
+
   const clearLocalAuthState = () => {
     setUser(null)
     setSupabaseUser(null)
@@ -54,14 +77,14 @@ export const AuthProvider = ({ children }) => {
 
     // Add timeout fallback to prevent infinite loading
     loadingTimeout = setTimeout(() => {
-      if (isMounted) {
-        console.warn('Auth loading timeout - resetting to logged out state')
+      if (!isMounted) return
+
+      console.warn('Auth loading timeout - using cached user if available')
+      const restored = restoreCachedUser('loading_timeout')
+      if (!restored) {
         setIsLoading(false)
-        setUser(null)
-        setSupabaseUser(null)
-        sessionStorage.removeItem('zaryah_user_cache')
       }
-    }, 10000) // 10 second timeout
+    }, 3000) // 3 second timeout
 
     // Get initial session
     ;(async () => {
@@ -91,12 +114,18 @@ export const AuthProvider = ({ children }) => {
         if (loadingTimeout) clearTimeout(loadingTimeout)
 
         if (isInvalidRefreshTokenError(error)) {
-          clearLocalAuthState()
+          const restored = restoreCachedUser('invalid_refresh')
+          if (!restored) {
+            clearLocalAuthState()
+          }
           return
         }
 
         console.error('Auth session error:', error)
-        clearLocalAuthState()
+        const restored = restoreCachedUser('session_error')
+        if (!restored) {
+          clearLocalAuthState()
+        }
       }
     })()
 
@@ -145,7 +174,10 @@ export const AuthProvider = ({ children }) => {
           }
         } catch (error) {
           if (isInvalidRefreshTokenError(error)) {
-            clearLocalAuthState()
+            const restored = restoreCachedUser('visibility_refresh')
+            if (!restored) {
+              clearLocalAuthState()
+            }
             return
           }
 
@@ -173,7 +205,17 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      setIsLoading(true)
+      const cachedUser = getCachedUser()
+      const cacheMatchesAuth = cachedUser?.supabaseAuthId && cachedUser.supabaseAuthId === authUser?.id
+
+      if (cacheMatchesAuth) {
+        console.log('Using cached user data for immediate login:', cachedUser.email)
+        setSupabaseUser(authUser)
+        setUser(cachedUser)
+        setIsLoading(false)
+      } else {
+        setIsLoading(true)
+      }
 
       console.log('syncUser called for authUser:', {
         id: authUser?.id,
@@ -182,20 +224,9 @@ export const AuthProvider = ({ children }) => {
       }, 'isAfterRegistration:', isAfterRegistration)
       
       // Try to use cached user data if available and auth IDs match
-      const cachedUser = sessionStorage.getItem('zaryah_user_cache')
       if (cachedUser && !isAfterRegistration) {
-        try {
-          const parsedCache = JSON.parse(cachedUser)
-          if (parsedCache.supabaseAuthId === authUser.id) {
-            console.log('Using cached user data for:', parsedCache.email)
-            setSupabaseUser(authUser)
-            setUser(parsedCache)
-            setIsLoading(false)
-            return
-          }
-        } catch (e) {
-          console.error('Failed to parse cached user', e)
-          sessionStorage.removeItem('zaryah_user_cache')
+        if (cachedUser?.supabaseAuthId === authUser.id) {
+          console.log('Cached user already applied for:', cachedUser.email)
         }
       }
       
@@ -515,15 +546,17 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false)
     } catch (error) {
       console.error('Error syncing user:', error)
-      setUser(null)
-      setIsLoading(false)
+      const restored = restoreCachedUser('sync_error')
+      if (!restored) {
+        setIsLoading(false)
+      }
     }
   }
 
 
   // Login function - uses Supabase Auth
   const login = async (email, password, userType = 'Buyer') => {
-    const timeoutMs = 5000
+    const timeoutMs = 3000
     let timeoutId = null
 
     try {

@@ -23,7 +23,6 @@ import {
 import { apiService } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
-import { supabaseClient } from '@/lib/supabase-client'
 
 export const AdminSupportPage = () => {
   const { user, isLoading } = useAuth()
@@ -59,22 +58,8 @@ export const AdminSupportPage = () => {
 
   const fetchUnreadCounts = async () => {
     try {
-      const { data: { session } } = await supabaseClient.auth.getSession()
-      const token = session?.access_token
-      
-      if (!token) return
-
-      const response = await fetch('/api/support/tickets/unread-count', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include'
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setUnreadCounts(data.unreadByTicket || {})
-      }
+      const data = await apiService.request('/support/tickets/unread-count', { method: 'GET', timeoutMs: 10000 })
+      setUnreadCounts(data?.unreadByTicket || {})
     } catch (error) {
       console.error('Error fetching unread counts:', error)
     }
@@ -83,27 +68,9 @@ export const AdminSupportPage = () => {
   const fetchTickets = async () => {
     try {
       setLoading(true)
-      
-      // Get auth token
-      const { data: { session } } = await supabaseClient.auth.getSession()
-      const token = session?.access_token
-      
-      if (!token) {
-        throw new Error('Not authenticated')
-      }
-
-      const response = await fetch('/api/support/tickets', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include'
-      })
-      
-      if (!response.ok) throw new Error('Failed to fetch tickets')
-      
-      const data = await response.json()
-      setTickets(data)
-      setFilteredTickets(data)
+      const data = await apiService.request('/support/tickets', { method: 'GET', timeoutMs: 15000 })
+      setTickets(data || [])
+      setFilteredTickets(data || [])
     } catch (error) {
       console.error('Error fetching tickets:', error)
       toast.error('Failed to load support tickets')
@@ -115,20 +82,7 @@ export const AdminSupportPage = () => {
   const fetchMessages = async (ticketId) => {
     try {
       setLoadingMessages(true)
-      
-      const { data: { session } } = await supabaseClient.auth.getSession()
-      const token = session?.access_token
-      
-      const response = await fetch(`/api/support/tickets/${ticketId}/messages`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include'
-      })
-      
-      if (!response.ok) throw new Error('Failed to fetch messages')
-      
-      const data = await response.json()
+      const data = await apiService.request(`/support/tickets/${ticketId}/messages`, { method: 'GET', timeoutMs: 15000 })
       setMessages(data || [])
       // Clear unread count for this ticket
       setUnreadCounts(prev => ({ ...prev, [ticketId]: 0 }))
@@ -145,23 +99,11 @@ export const AdminSupportPage = () => {
 
     try {
       setSendingMessage(true)
-      
-      const { data: { session } } = await supabaseClient.auth.getSession()
-      const token = session?.access_token
-      
-      const response = await fetch(`/api/support/tickets/${selectedTicket.id}/messages`, {
+      const data = await apiService.request(`/support/tickets/${selectedTicket.id}/messages`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include',
-        body: JSON.stringify({ message: newMessage.trim() })
+        body: JSON.stringify({ message: newMessage.trim() }),
+        timeoutMs: 15000
       })
-      
-      if (!response.ok) throw new Error('Failed to send message')
-      
-      const data = await response.json()
       setMessages([...messages, data])
       setNewMessage('')
       
@@ -184,21 +126,12 @@ export const AdminSupportPage = () => {
     if (!selectedTicket) return
     
     try {
-      const { data: { session } } = await supabaseClient.auth.getSession()
-      const token = session?.access_token
-      
-      const response = await fetch(`/api/support/tickets/${selectedTicket.id}`, {
+      await apiService.request(`/support/tickets/${selectedTicket.id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include',
-        body: JSON.stringify({ status: 'resolved' })
+        body: JSON.stringify({ status: 'resolved' }),
+        timeoutMs: 10000
       })
-      
-      if (!response.ok) throw new Error('Failed to resolve ticket')
-      
+
       toast.success('Ticket marked as resolved')
       setSelectedTicket({ ...selectedTicket, status: 'resolved' })
       fetchTickets()
@@ -212,21 +145,12 @@ export const AdminSupportPage = () => {
     if (!selectedTicket) return
     
     try {
-      const { data: { session } } = await supabaseClient.auth.getSession()
-      const token = session?.access_token
-      
-      const response = await fetch(`/api/support/tickets/${selectedTicket.id}`, {
+      await apiService.request(`/support/tickets/${selectedTicket.id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include',
-        body: JSON.stringify({ status: 'closed' })
+        body: JSON.stringify({ status: 'closed' }),
+        timeoutMs: 10000
       })
-      
-      if (!response.ok) throw new Error('Failed to close ticket')
-      
+
       toast.success('Ticket closed')
       setSelectedTicket(null)
       fetchTickets()

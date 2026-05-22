@@ -5,7 +5,6 @@ import { motion } from 'framer-motion'
 import { MessageCircle, Send, HelpCircle, FileText, Clock, CheckCircle, AlertCircle, X } from 'lucide-react'
 import { apiService } from '../services/api'
 import toast from 'react-hot-toast'
-import { supabaseClient } from '@/lib/supabase-client'
 
 export function BuyerSupportPage() {
   const [formData, setFormData] = useState({
@@ -35,22 +34,8 @@ export function BuyerSupportPage() {
 
   const fetchUnreadCounts = async () => {
     try {
-      const { data: { session } } = await supabaseClient.auth.getSession()
-      const token = session?.access_token
-      
-      if (!token) return
-
-      const response = await fetch('/api/support/tickets/unread-count', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include'
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setUnreadCounts(data.unreadByTicket || {})
-      }
+      const data = await apiService.request('/support/tickets/unread-count', { method: 'GET', timeoutMs: 10000 })
+      setUnreadCounts(data?.unreadByTicket || {})
     } catch (error) {
       console.error('Error fetching unread counts:', error)
     }
@@ -59,28 +44,7 @@ export function BuyerSupportPage() {
   const fetchTickets = async () => {
     try {
       setFetchingTickets(true)
-      
-      // Get auth token
-      const { data: { session } } = await supabaseClient.auth.getSession()
-      const token = session?.access_token
-      
-      if (!token) {
-        console.log('No auth token, skipping ticket fetch')
-        return
-      }
-
-      const response = await fetch('/api/support/tickets', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include'
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch tickets')
-      }
-      
-      const data = await response.json()
+      const data = await apiService.request('/support/tickets', { method: 'GET', timeoutMs: 15000 })
       setTickets(data || [])
     } catch (error) {
       console.error('Error fetching tickets:', error)
@@ -94,20 +58,7 @@ export function BuyerSupportPage() {
   const fetchMessages = async (ticketId) => {
     try {
       setLoadingMessages(true)
-      
-      const { data: { session } } = await supabaseClient.auth.getSession()
-      const token = session?.access_token
-      
-      const response = await fetch(`/api/support/tickets/${ticketId}/messages`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include'
-      })
-      
-      if (!response.ok) throw new Error('Failed to fetch messages')
-      
-      const data = await response.json()
+      const data = await apiService.request(`/support/tickets/${ticketId}/messages`, { method: 'GET', timeoutMs: 15000 })
       setMessages(data || [])
       // Clear unread count for this ticket
       setUnreadCounts(prev => ({ ...prev, [ticketId]: 0 }))
@@ -124,23 +75,11 @@ export function BuyerSupportPage() {
 
     try {
       setSendingMessage(true)
-      
-      const { data: { session } } = await supabaseClient.auth.getSession()
-      const token = session?.access_token
-      
-      const response = await fetch(`/api/support/tickets/${selectedTicket.id}/messages`, {
+      const data = await apiService.request(`/support/tickets/${selectedTicket.id}/messages`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include',
-        body: JSON.stringify({ message: newMessage.trim() })
+        body: JSON.stringify({ message: newMessage.trim() }),
+        timeoutMs: 15000
       })
-      
-      if (!response.ok) throw new Error('Failed to send message')
-      
-      const data = await response.json()
       setMessages([...messages, data])
       setNewMessage('')
       
@@ -313,31 +252,7 @@ export function BuyerSupportPage() {
                     <option value="technical">Technical Issue</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-charcoal-700 mb-2">
-                    Priority
-                  </label>
-                  <select
-                    name="priority"
-                    value={formData.priority}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-charcoal-700 mb-2">
-                  Your Message <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  name="message"
+                    await apiService.request('/support/tickets', { method: 'POST', body: JSON.stringify(formData), timeoutMs: 15000 })
                   value={formData.message}
                   onChange={handleChange}
                   rows="5"
