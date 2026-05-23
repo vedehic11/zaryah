@@ -136,21 +136,8 @@ export const LoginPage = () => {
 
     setIsSubmitting(true)
     try {
-      const timeoutMs = 5000
-      const timeoutPromise = new Promise(resolve => {
-        setTimeout(() => resolve('timeout'), timeoutMs)
-      })
-
       // Login with Supabase Auth
-      const result = await Promise.race([
-        login(formData.email, formData.password, formData.userType),
-        timeoutPromise
-      ])
-
-      if (result === 'timeout') {
-        toast.error('Login is taking too long. Please try again.')
-        return
-      }
+      const result = await login(formData.email, formData.password, formData.userType)
 
       const success = Boolean(result)
       
