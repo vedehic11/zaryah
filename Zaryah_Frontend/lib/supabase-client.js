@@ -15,11 +15,54 @@ export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storage: typeof window !== 'undefined' ? createCookieStorage() : undefined,
+    // Hybrid storage keeps sessions stable on mobile while still syncing to cookies.
+    storage: typeof window !== 'undefined' ? createHybridStorage() : undefined,
     storageKey: 'zaryah-auth-token',
     flowType: 'pkce'
   }
 })
+
+function createHybridStorage() {
+  const cookieStorage = createCookieStorage()
+
+  const hasLocalStorage = () => {
+    try {
+      return typeof window !== 'undefined' && window.localStorage
+    } catch {
+      return false
+    }
+  }
+
+  return {
+    getItem(key) {
+      if (hasLocalStorage()) {
+        const value = window.localStorage.getItem(key)
+        if (value) return value
+      }
+      return cookieStorage.getItem(key)
+    },
+    setItem(key, value) {
+      if (hasLocalStorage()) {
+        try {
+          window.localStorage.setItem(key, value)
+        } catch {
+          // Ignore localStorage quota or access errors.
+        }
+      }
+      cookieStorage.setItem(key, value)
+    },
+    removeItem(key) {
+      if (hasLocalStorage()) {
+        try {
+          window.localStorage.removeItem(key)
+        } catch {
+          // Ignore localStorage access errors.
+        }
+      }
+      cookieStorage.removeItem(key)
+    }
+  }
+}
 
 function createCookieStorage() {
   const cookieKey = 'zaryah-auth-token'

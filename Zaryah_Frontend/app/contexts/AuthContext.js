@@ -55,11 +55,8 @@ export const AuthProvider = ({ children }) => {
     // Add timeout fallback to prevent infinite loading
     loadingTimeout = setTimeout(() => {
       if (isMounted) {
-        console.warn('Auth loading timeout - resetting to logged out state')
+        console.warn('Auth loading timeout - leaving session as-is')
         setIsLoading(false)
-        setUser(null)
-        setSupabaseUser(null)
-        sessionStorage.removeItem('zaryah_user_cache')
       }
     }, 10000) // 10 second timeout
 
