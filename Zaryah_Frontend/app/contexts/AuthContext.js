@@ -521,16 +521,53 @@ export const AuthProvider = ({ children }) => {
   // Login function - uses Supabase Auth
   const login = async (email, password, userType = 'Buyer') => {
     try {
+      const waitForAuthEvent = (timeoutMs = 20000) => new Promise((resolve, reject) => {
+        let timeoutId = null
+        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            if (timeoutId) clearTimeout(timeoutId)
+            subscription.unsubscribe()
+            resolve({ session, event })
+          }
+        })
+
+        timeoutId = setTimeout(async () => {
+          subscription.unsubscribe()
+          reject(new Error('auth-event-timeout'))
+        }, timeoutMs)
+      })
+
       const signInPromise = supabaseClient.auth.signInWithPassword({
         email,
         password,
       })
 
-      const { data, error } = await signInPromise
+      let result = null
+      try {
+        result = await Promise.race([signInPromise, waitForAuthEvent()])
+      } catch (error) {
+        if (error?.message === 'auth-event-timeout') {
+          const { data: { session } } = await supabaseClient.auth.getSession()
+          if (session?.user) {
+            toast.success('Logged in successfully!')
+            return true
+          }
+        }
+        throw error
+      }
+
+      const data = result?.data
+      const error = result?.error
+      const sessionUser = result?.session?.user
 
       if (error) {
         toast.error(error.message || 'Login failed')
         return false
+      }
+
+      if (sessionUser) {
+        toast.success('Logged in successfully!')
+        return true
       }
 
       if (!data?.user) {
