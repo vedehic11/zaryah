@@ -18,17 +18,108 @@ class ApiService {
         throw error
       }
 
-      return session?.access_token || null
+      if (session?.expires_at) {
+        const expiresAtMs = session.expires_at * 1000
+        if (expiresAtMs <= Date.now() + 60_000) {
+          const { data: refreshed, error: refreshError } = await supabaseClient.auth.refreshSession()
+          if (refreshError) {
+            throw refreshError
+          }
+          return refreshed?.session?.access_token || null
+        }
+      }
+
+      if (session?.access_token) {
+        return session.access_token
+      }
+
+      return this.getTokenFromStorage()
     } catch (error) {
       const message = String(error?.message || error || '').toLowerCase()
       const isInvalidRefreshToken = message.includes('invalid refresh token') || message.includes('refresh token not found')
 
       if (isInvalidRefreshToken && typeof window !== 'undefined') {
         window.localStorage.removeItem('zaryah-auth-token')
+        this.clearAuthCookies()
       }
 
+      return this.getTokenFromStorage()
+    }
+  }
+
+  getTokenFromStorage() {
+    if (typeof window === 'undefined') return null
+
+    const raw = window.localStorage.getItem('zaryah-auth-token')
+    const token = this.extractAccessToken(raw)
+    if (token) return token
+
+    const cookieToken = this.extractAccessTokenFromCookie('zaryah-auth-token')
+    if (cookieToken) return cookieToken
+
+    const chunkedToken = this.extractAccessTokenFromChunkedCookie('zaryah-auth-token')
+    if (chunkedToken) return chunkedToken
+
+    return null
+  }
+
+  extractAccessToken(rawValue) {
+    if (!rawValue) return null
+    try {
+      const parsed = JSON.parse(rawValue)
+      return parsed?.access_token || parsed?.currentSession?.access_token || null
+    } catch {
+      return rawValue
+    }
+  }
+
+  extractAccessTokenFromCookie(cookieKey) {
+    if (typeof document === 'undefined') return null
+    const match = document.cookie.match(new RegExp(`(?:^|; )${cookieKey}=([^;]*)`))
+    if (!match) return null
+    return this.extractAccessToken(decodeURIComponent(match[1]))
+  }
+
+  extractAccessTokenFromChunkedCookie(cookieKey) {
+    if (typeof document === 'undefined') return null
+    const chunkCountMatch = document.cookie.match(new RegExp(`(?:^|; )${cookieKey}\\.chunks=([^;]*)`))
+    if (!chunkCountMatch) return null
+    const chunkCount = Number(decodeURIComponent(chunkCountMatch[1]))
+    if (!chunkCount) return null
+
+    let combined = ''
+    for (let i = 0; i < chunkCount; i += 1) {
+      const partMatch = document.cookie.match(new RegExp(`(?:^|; )${cookieKey}\\.${i}=([^;]*)`))
+      if (!partMatch) return null
+      combined += decodeURIComponent(partMatch[1])
+    }
+
+    try {
+      const decoded = atob(combined)
+      return this.extractAccessToken(decoded)
+    } catch {
       return null
     }
+  }
+
+  clearAuthCookies() {
+    if (typeof document === 'undefined') return
+    const cookieKey = 'zaryah-auth-token'
+    const chunkCountMatch = document.cookie.match(new RegExp(`(?:^|; )${cookieKey}\\.chunks=([^;]*)`))
+    const chunkCount = chunkCountMatch ? Number(decodeURIComponent(chunkCountMatch[1])) : 0
+
+    const expire = (name) => {
+      document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax`
+    }
+
+    if (chunkCount) {
+      for (let i = 0; i < chunkCount; i += 1) {
+        expire(`${cookieKey}.${i}`)
+      }
+      expire(`${cookieKey}.chunks`)
+    }
+
+    expire(cookieKey)
   }
 
   // Helper method to handle API calls

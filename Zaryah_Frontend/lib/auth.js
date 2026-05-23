@@ -38,7 +38,12 @@ async function getSession(request) {
       if (cookieHeader) {
         // Extract sb-<project-ref>-auth-token from cookies
         const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
-          const [key, value] = cookie.trim().split('=')
+          const trimmed = cookie.trim()
+          if (!trimmed) return acc
+          const eqIndex = trimmed.indexOf('=')
+          if (eqIndex === -1) return acc
+          const key = trimmed.slice(0, eqIndex)
+          const value = trimmed.slice(eqIndex + 1)
           acc[key] = value
           return acc
         }, {})
@@ -53,7 +58,7 @@ async function getSession(request) {
         if (supabaseTokenCookie) {
           try {
             const tokenData = JSON.parse(decodeURIComponent(cookies[supabaseTokenCookie]))
-            token = tokenData?.access_token || tokenData
+            token = tokenData?.access_token || tokenData?.currentSession?.access_token || tokenData
             console.log('Token extracted from cookie, length:', token?.length)
           } catch (e) {
             // Cookie might not be JSON, try as direct token
@@ -82,7 +87,7 @@ async function getSession(request) {
               try {
                 const decoded = Buffer.from(combined, 'base64').toString('utf8')
                 const tokenData = JSON.parse(decoded)
-                token = tokenData?.access_token || tokenData
+                token = tokenData?.access_token || tokenData?.currentSession?.access_token || tokenData
                 console.log('Token extracted from chunked cookie, length:', token?.length)
               } catch (e) {
                 console.error('Failed to parse chunked auth cookie:', e)
@@ -92,7 +97,7 @@ async function getSession(request) {
             try {
               const raw = decodeURIComponent(cookies[customCookieKey])
               const tokenData = JSON.parse(raw)
-              token = tokenData?.access_token || tokenData
+              token = tokenData?.access_token || tokenData?.currentSession?.access_token || tokenData
               console.log('Token extracted from custom cookie, length:', token?.length)
             } catch (e) {
               token = decodeURIComponent(cookies[customCookieKey])
