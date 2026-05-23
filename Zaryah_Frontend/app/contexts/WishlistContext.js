@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
-import { apiService } from '../services/api'
+import { supabaseClient } from '@/lib/supabase-client'
 import toast from 'react-hot-toast'
 
 const WishlistContext = createContext()
@@ -32,12 +32,37 @@ export const WishlistProvider = ({ children }) => {
   const fetchWishlist = async () => {
     try {
       setLoading(true)
-      // Use centralized apiService which handles token retrieval, timeouts, and refresh
-      const data = await apiService.request('/wishlist', { method: 'GET', timeoutMs: 10000 })
-      if (!data) {
+      
+      // Get token from Supabase session
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      const token = session?.access_token
+
+      if (!token) {
         setWishlist([])
         return
       }
+      
+      const response = await fetch('/api/wishlist', {
+        credentials: 'include',
+        headers: token ? {
+          'Authorization': `Bearer ${token}`
+        } : {}
+      })
+
+      // If unauthorized, just set empty wishlist (user not logged in)
+      if (response.status === 401) {
+        setWishlist([])
+        return
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Error fetching wishlist:', errorData)
+        setWishlist([])
+        return
+      }
+
+      const data = await response.json()
       setWishlist(data)
     } catch (error) {
       console.error('Error fetching wishlist:', error)
@@ -54,21 +79,40 @@ export const WishlistProvider = ({ children }) => {
     }
 
     try {
-      const result = await apiService.request('/wishlist', {
+      // Get token from Supabase session
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      const token = session?.access_token
+      
+      const response = await fetch('/api/wishlist', {
         method: 'POST',
-        body: JSON.stringify({ product_id: productId }),
-        timeoutMs: 10000
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        credentials: 'include',
+        body: JSON.stringify({ product_id: productId })
       })
 
-      if (!result) {
-        toast.error('Failed to add to wishlist')
+      const data = await response.json()
+
+      // Handle unauthorized
+      if (response.status === 401) {
+        toast.error('Please login to add to wishlist')
         return false
       }
 
-      // apiService.request throws on non-OK responses, so success here means added
-      await fetchWishlist()
-      toast.success('Added to wishlist')
-      return true
+      if (response.ok) {
+        await fetchWishlist()
+        toast.success('Added to wishlist')
+        return true
+      } else if (data.exists) {
+        toast.info('Already in wishlist')
+        return true
+      } else {
+        console.error('Error adding to wishlist:', data)
+        toast.error(data.error || 'Failed to add to wishlist')
+        return false
+      }
     } catch (error) {
       console.error('Error adding to wishlist:', error)
       toast.error('Failed to add to wishlist')
@@ -82,14 +126,26 @@ export const WishlistProvider = ({ children }) => {
     }
 
     try {
-      await apiService.request(`/wishlist?product_id=${encodeURIComponent(productId)}`, {
+      // Get token from Supabase session
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      const token = session?.access_token
+      
+      const response = await fetch(`/api/wishlist?product_id=${productId}`, {
         method: 'DELETE',
-        timeoutMs: 10000
+        credentials: 'include',
+        headers: token ? {
+          'Authorization': `Bearer ${token}`
+        } : {}
       })
 
-      await fetchWishlist()
-      toast.success('Removed from wishlist')
-      return true
+      if (response.ok) {
+        await fetchWishlist()
+        toast.success('Removed from wishlist')
+        return true
+      } else {
+        toast.error('Failed to remove from wishlist')
+        return false
+      }
     } catch (error) {
       console.error('Error removing from wishlist:', error)
       toast.error('Failed to remove from wishlist')

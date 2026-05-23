@@ -29,6 +29,7 @@ import { UserAvatar } from './UserAvatar'
 import { DocumentViewerModal } from './DocumentViewerModal'
 import { apiService } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
+import { supabaseClient } from '@/lib/supabase-client'
 import toast from 'react-hot-toast'
 
 export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
@@ -157,11 +158,32 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
 
   const handleToggleFeaturedStory = async (sellerId, currentValue) => {
     try {
-      await apiService.request('/admin/sellers', {
+      // Get auth token
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      const token = session?.access_token
+      
+      if (!token) {
+        toast.error('Not authenticated')
+        return
+      }
+      
+      const response = await fetch('/api/admin/sellers', {
         method: 'PATCH',
-        body: JSON.stringify({ sellerId, featured_story: !currentValue }),
-        timeoutMs: 10000
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          sellerId,
+          featured_story: !currentValue
+        })
       })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Featured story update failed:', errorData)
+        throw new Error(errorData.error || 'Failed to update featured story')
+      }
       
       toast.success(!currentValue ? 'Story featured on homepage!' : 'Story removed from homepage')
       

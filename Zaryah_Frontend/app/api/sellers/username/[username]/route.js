@@ -42,15 +42,37 @@ export async function GET(request, { params }) {
 		}
 
 		// Fetch seller products (only approved)
-		const { data: products, error: productError } = await supabase
-			.from('products')
-			.select(`
-				*,
-				product_ratings (rating)
-			`)
-			.eq('seller_id', seller.id)
-			.eq('status', 'approved')
-			.order('created_at', { ascending: false })
+		const isArchivedColumnMissing = (error) => {
+			const message = String(error?.message || error || '').toLowerCase()
+			return message.includes('column products.archived does not exist') ||
+				message.includes('could not find the') && message.includes('archived') ||
+				message.includes('archived column')
+		}
+
+		const fetchSellerProducts = async (shouldSkipArchivedFilter) => {
+			let query = supabase
+				.from('products')
+				.select(`
+					*,
+					product_ratings (rating)
+				`)
+				.eq('seller_id', seller.id)
+				.eq('status', 'approved')
+				.order('created_at', { ascending: false })
+
+			if (!shouldSkipArchivedFilter) {
+				query = query.eq('archived', false)
+			}
+
+			return query
+		}
+
+		let { data: products, error: productError } = await fetchSellerProducts(false)
+
+		if (productError && isArchivedColumnMissing(productError)) {
+			console.warn('Archived column is missing for seller profile, retrying without archived filter')
+			;({ data: products, error: productError } = await fetchSellerProducts(true))
+		}
 
 		if (productError) {
 			return NextResponse.json({ error: productError.message }, { status: 500 })
@@ -110,28 +132,19 @@ export async function GET(request, { params }) {
 				: 0
 		}
 
-		// Fetch seller sections with images, but keep the profile usable if the query is unavailable
-		let sellerSections = []
-		try {
-			const { data: sections, error: sectionsError } = await supabase
-				.from('seller_sections')
-				.select('id, name, image_url, created_at')
-				.eq('seller_id', seller.id)
-				.order('created_at', { ascending: true })
+		// Fetch seller sections with images
+		const { data: sections, error: sectionsError } = await supabase
+			.from('seller_sections')
+			.select('id, name, image_url, created_at')
+			.eq('seller_id', seller.id)
+			.order('created_at', { ascending: true })
 
-			if (sectionsError) {
-				console.warn('Seller sections query failed:', sectionsError.message)
-			} else {
-				sellerSections = (sections || []).map(section => ({
-					id: section.id,
-					name: section.name,
-					imageUrl: section.image_url,
-					image_url: section.image_url
-				}))
-			}
-		} catch (sectionsError) {
-			console.warn('Seller sections query failed, continuing without sections:', sectionsError?.message || sectionsError)
-		}
+		const sellerSections = (sections || []).map(section => ({
+			id: section.id,
+			name: section.name,
+			imageUrl: section.image_url,
+			image_url: section.image_url
+		}))
 
 		// Combine seller and user data for response
 		const responseData = {

@@ -625,32 +625,26 @@ export async function POST(request) {
       for (const [sellerIdForEmail, sellerItems] of itemsBySeller.entries()) {
         console.log('📧 Fetching seller profile for ID:', sellerIdForEmail)
         
-        // Query seller profile and linked user email in one round trip when possible
+        // Query seller profile to get business_name
         const { data: sellerProfile, error: sellerError } = await supabase
           .from('sellers')
-          .select('business_name, username, users!sellers_id_fkey(email, name, full_name)')
+          .select('id, business_name, username, full_name')
           .eq('id', sellerIdForEmail)
           .single()
 
         console.log('📧 Seller profile result:', { sellerProfile, sellerError })
         
-        let sellerEmail = sellerProfile?.users?.email
-        let sellerName = sellerProfile?.business_name || sellerProfile?.users?.full_name || sellerProfile?.users?.name
+        // Separately query users table to get email (relation may not work properly)
+        const { data: sellerUser, error: userError } = await supabase
+          .from('users')
+          .select('id, email, name')
+          .eq('id', sellerIdForEmail)
+          .single()
 
-        if (!sellerEmail) {
-          const { data: sellerUser, error: userError } = await supabase
-            .from('users')
-            .select('id, email, name')
-            .eq('id', sellerIdForEmail)
-            .single()
-
-          console.log('📧 Seller user result:', { sellerUser, userError })
-
-          sellerEmail = sellerUser?.email
-          sellerName = sellerName || sellerUser?.name
-        } else {
-          console.log('📧 Seller user result:', { sellerUser: sellerProfile?.users, userError: null })
-        }
+        console.log('📧 Seller user result:', { sellerUser, userError })
+        
+        let sellerEmail = sellerUser?.email
+        let sellerName = sellerProfile?.business_name || sellerProfile?.full_name || sellerUser?.name
 
         console.log('📧 Final lookup - Email:', sellerEmail, 'Name:', sellerName)
 

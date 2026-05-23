@@ -2,18 +2,6 @@ import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 
-function applyUserModelFilter(query, userModelMatches) {
-  if (userModelMatches.length === 0) {
-    return query
-  }
-
-  if (typeof query.in === 'function') {
-    return query.in('user_model', userModelMatches)
-  }
-
-  return query.eq('user_model', userModelMatches[0])
-}
-
 export async function GET(request) {
   try {
     const session = await requireAuth(request)
@@ -30,16 +18,12 @@ export async function GET(request) {
       userModel.toUpperCase()
     ].filter(Boolean)))
 
-    let query = supabase
+    const { count, error } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
-
-    query = applyUserModelFilter(query, userModelMatches)
-
-    query = query.eq('is_read', false)
-
-    const { count, error } = await query
+      .in('user_model', userModelMatches)
+      .eq('is_read', false)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })

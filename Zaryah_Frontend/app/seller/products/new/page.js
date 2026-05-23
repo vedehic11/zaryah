@@ -695,16 +695,62 @@ export default function AddProductPage() {
         formDataToSend.append('sizeCharts', JSON.stringify(validSizeCharts))
       }
 
-      toast.loading(`Uploading images (${images.length} files)...`, { id: toastId })
+      // Get auth token from Supabase
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      const token = session?.access_token
 
-      const result = await apiService.request('/products', {
-        method: 'POST',
-        body: formDataToSend,
-        timeoutMs: 180000
-      })
+      if (!token) {
+        throw new Error('You must be logged in to create products')
+      }
 
-      if (!result) {
-        throw new Error('Failed to create product')
+      // Add timeout and better progress indication
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 180000) // 3 minute timeout
+      
+      let response
+      try {
+        toast.loading(`Uploading images (${images.length} files)...`, { id: toastId })
+        
+        response = await fetch('/api/products', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formDataToSend,
+          signal: controller.signal
+        })
+        
+        clearTimeout(timeoutId)
+      } catch (fetchError) {
+        clearTimeout(timeoutId)
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Upload took too long (timeout after 3 minutes). Please try with fewer/smaller images.')
+        }
+        throw fetchError
+      }
+
+      toast.loading('Processing product...', { id: toastId })
+
+      // Safely parse response: prefer JSON, but fall back to plain text
+      let data = null
+      try {
+        const contentType = response.headers.get('content-type') || ''
+        if (contentType.includes('application/json')) {
+          data = await response.json()
+        } else {
+          const text = await response.text()
+          data = text
+        }
+      } catch (parseError) {
+        console.error('Failed to parse response body:', parseError)
+        const text = await response.text().catch(() => '')
+        data = text || null
+      }
+
+      if (!response.ok) {
+        const errMsg = (data && typeof data === 'object' && (data.error || data.details)) || (typeof data === 'string' && data) || 'Failed to create product'
+        throw new Error(errMsg)
       }
 
       toast.success('Product created successfully!', { id: toastId })

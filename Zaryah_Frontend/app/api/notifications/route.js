@@ -2,18 +2,6 @@ import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 
-function applyUserModelFilter(query, userModelMatches) {
-	if (userModelMatches.length === 0) {
-		return query
-	}
-
-	if (typeof query.in === 'function') {
-		return query.in('user_model', userModelMatches)
-	}
-
-	return query.eq('user_model', userModelMatches[0])
-}
-
 export async function GET(request) {
 	try {
 		const session = await requireAuth(request)
@@ -30,16 +18,13 @@ export async function GET(request) {
 			userModel.toUpperCase()
 		].filter(Boolean)))
 
-		let query = supabase
+		const { data, error } = await supabase
 			.from('notifications')
 			.select('*')
 			.eq('user_id', user.id)
-
-		query = applyUserModelFilter(query, userModelMatches)
-
-		query = query.order('created_at', { ascending: false }).limit(100)
-
-		const { data, error } = await query
+			.in('user_model', userModelMatches)
+			.order('created_at', { ascending: false })
+			.limit(100)
 
 		if (error) {
 			return NextResponse.json({ error: error.message }, { status: 500 })
@@ -75,17 +60,15 @@ export async function PATCH(request) {
 			userModel.toUpperCase()
 		].filter(Boolean)))
 
-		let query = supabase
+		const { error } = await supabase
 			.from('notifications')
 			.update({
 				is_read: true,
 				read_at: new Date().toISOString()
 			})
 			.eq('user_id', user.id)
-
-		query = applyUserModelFilter(query, userModelMatches)
-
-		const { error } = await query.eq('is_read', false)
+			.in('user_model', userModelMatches)
+			.eq('is_read', false)
 
 		if (error) {
 			return NextResponse.json({ error: error.message }, { status: 500 })
@@ -113,14 +96,11 @@ export async function DELETE(request) {
 			userModel.toUpperCase()
 		].filter(Boolean)))
 
-		let query = supabase
+		const { error } = await supabase
 			.from('notifications')
 			.delete()
 			.eq('user_id', user.id)
-
-		query = applyUserModelFilter(query, userModelMatches)
-
-		const { error } = await query
+			.in('user_model', userModelMatches)
 
 		if (error) {
 			return NextResponse.json({ error: error.message }, { status: 500 })

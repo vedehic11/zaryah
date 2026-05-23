@@ -5,7 +5,6 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/unit/**/*.test.js'],
-    fileParallelism: false,
     clearMocks: true,
     restoreMocks: true,
     mockReset: true,
