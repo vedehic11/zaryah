@@ -245,12 +245,149 @@ class ApiService {
 
   // Product endpoints
   async getApprovedProducts() {
-    return this.request('/products', { method: 'GET' })
+    try {
+      return await this.request('/products', { method: 'GET' })
+    } catch (error) {
+      const fallback = await this.fetchPublicProducts()
+      if (fallback.length > 0) return fallback
+      throw error
+    }
   }
 
   async getProducts(filters = {}) {
     const params = new URLSearchParams(filters)
     return this.request(`/products?${params.toString()}`, { method: 'GET' })
+  }
+
+  async fetchPublicProducts() {
+    if (typeof window === 'undefined') return []
+
+    const selectFields = `
+      *,
+      sellers:seller_id (
+        id,
+        business_name,
+        full_name,
+        username,
+        city,
+        business_address,
+        business_description,
+        allow_cod
+      ),
+      product_ratings (
+        rating
+      )
+    `
+
+    const isArchivedColumnMissing = (error) => {
+      const message = String(error?.message || error || '').toLowerCase()
+      return message.includes('column products.archived does not exist') ||
+        message.includes('could not find the') && message.includes('archived') ||
+        message.includes('archived column')
+    }
+
+    const runQuery = async (skipArchivedFilter) => {
+      let query = supabaseClient
+        .from('products')
+        .select(selectFields)
+        .eq('status', 'approved')
+
+      if (!skipArchivedFilter) {
+        query = query.eq('archived', false)
+      }
+
+      return query.order('created_at', { ascending: false })
+    }
+
+    try {
+      let { data, error } = await runQuery(false)
+      if (error && isArchivedColumnMissing(error)) {
+        ;({ data, error } = await runQuery(true))
+      }
+      if (error) throw error
+      return this.normalizeProducts(data || [])
+    } catch (error) {
+      console.error('Public product fallback failed:', error)
+      return []
+    }
+  }
+
+  normalizeProducts(products = []) {
+    return (products || []).map(product => {
+      const ratings = product.product_ratings || []
+      const avgRating = ratings.length > 0
+        ? (ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1)
+        : 0
+
+      const seller = product.sellers || {}
+      const categories = Array.isArray(product.categories) ? product.categories :
+        (product.category ? [product.category] : [])
+      const sections = Array.isArray(product.sections) ? product.sections :
+        (product.section ? [product.section] : [])
+
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: parseFloat(product.price),
+        archived: Boolean(product.archived),
+        images: product.images || [],
+        video_url: product.video_url,
+        categories,
+        category: categories[0] || null,
+        sections,
+        section: sections[0] || null,
+        weight: product.weight,
+        stock: product.stock,
+        customisable: product.customisable,
+        custom_questions: product.custom_questions,
+        features: product.features || [],
+        delivery_time_min: product.delivery_time_min,
+        delivery_time_max: product.delivery_time_max,
+        delivery_time_unit: product.delivery_time_unit,
+        instant_delivery: product.instant_delivery,
+        instantDeliveryEligible: product.instant_delivery,
+        mrp: product.mrp ? parseFloat(product.mrp) : null,
+        size_options: product.size_options || [],
+        size_price_options: product.size_price_options || [],
+        sizePriceOptions: product.size_price_options || [],
+        material: product.material,
+        care_instructions: product.care_instructions,
+        return_available: product.return_available,
+        return_days: product.return_days,
+        cod_available: product.cod_available,
+        two_way_delivery: product.two_way_delivery,
+        twoWayDelivery: product.two_way_delivery,
+        color_options: product.color_options || [],
+        colorOptions: product.color_options || [],
+        legal_disclaimer: product.legal_disclaimer,
+        size_charts: product.size_charts || [],
+        sizeCharts: product.size_charts || [],
+        size_chart_url: null,
+        sizeChartUrl: null,
+        is_genuine: product.is_genuine,
+        is_quality_checked: product.is_quality_checked,
+        status: product.status,
+        createdAt: product.created_at,
+        created_at: product.created_at,
+        averageRating: parseFloat(avgRating),
+        ratingCount: ratings.length,
+        seller_id: product.seller_id,
+        sellerId: product.seller_id,
+        seller: {
+          id: seller.id,
+          business_name: seller.business_name,
+          full_name: seller.full_name,
+          businessName: seller.business_name,
+          sellerName: seller.business_name,
+          username: seller.username,
+          city: seller.city,
+          businessAddress: seller.business_address,
+          businessDescription: seller.business_description,
+          allowCod: seller.allow_cod !== false
+        }
+      }
+    })
   }
 
   async getProduct(id) {
@@ -439,11 +576,57 @@ class ApiService {
 
   // Seller endpoints
   async getSellers() {
-    return this.request('/sellers', { method: 'GET' })
+    try {
+      return await this.request('/sellers', { method: 'GET' })
+    } catch (error) {
+      const fallback = await this.fetchPublicSellers()
+      if (fallback.length > 0) return fallback
+      throw error
+    }
   }
 
   async getSellerById(sellerId) {
     return this.request(`/sellers?id=${sellerId}`, { method: 'GET' })
+  }
+
+  async fetchPublicSellers() {
+    if (typeof window === 'undefined') return []
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('sellers')
+        .select(`
+          id,
+          business_name,
+          username,
+          cover_photo,
+          business_description,
+          story,
+          featured_story,
+          city,
+          primary_mobile,
+          instagram,
+          facebook,
+          x,
+          linkedin,
+          registration_date,
+          users!sellers_id_fkey (
+            id,
+            name,
+            profile_photo,
+            is_approved
+          )
+        `)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      const approved = (data || []).filter(item => item?.users?.is_approved)
+      return approved
+    } catch (error) {
+      console.error('Public seller fallback failed:', error)
+      return []
+    }
   }
 
   async getSellerByUsername(username) {
