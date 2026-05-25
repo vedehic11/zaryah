@@ -197,11 +197,16 @@ export const RegisterPage = () => {
     
     if (name.startsWith('address.')) {
       const addressField = name.split('.')[1]
+      let newValue = value
+      // For phone field, allow only digits and limit to 10 characters while typing
+      if (addressField === 'phone') {
+        newValue = value.replace(/\D/g, '').slice(0, 10)
+      }
       setFormData(prev => ({
         ...prev,
         address: {
           ...prev.address,
-          [addressField]: value
+          [addressField]: newValue
         }
       }))
     } else {
@@ -247,6 +252,7 @@ export const RegisterPage = () => {
     if (currentStep === 2) {
       // Address validation
       if (!formData.address.phone.trim()) newErrors['address.phone'] = 'Phone number is required'
+      else if (!/^\d{10}$/.test(formData.address.phone)) newErrors['address.phone'] = 'Please enter valid 10-digit phone number'
       if (!formData.address.address.trim()) newErrors['address.address'] = 'Address is required'
       if (!formData.address.city.trim()) newErrors['address.city'] = 'City is required'
       if (!formData.address.pincode.trim()) newErrors['address.pincode'] = 'Pincode is required'
@@ -712,6 +718,10 @@ export const RegisterPage = () => {
               type="tel"
               value={formData.address.phone}
               onChange={handleInputChange}
+              inputMode="numeric"
+              maxLength={10}
+              pattern="\d{10}"
+              autoComplete="tel"
               className={`block w-full pl-10 pr-3 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
                 errors['address.phone'] ? 'border-red-300' : 'border-gray-300'
               }`}

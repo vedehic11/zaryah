@@ -43,13 +43,20 @@ export async function POST(request) {
     }
 
     // Create buyer record using service role (bypasses RLS)
+    // Server-side phone validation: ensure phone (if provided) is exactly 10 digits
+    const providedPhone = (phone || '').toString().trim()
+    if (providedPhone && !/^\d{10}$/.test(providedPhone)) {
+      console.warn('Invalid phone provided to /api/buyers:', providedPhone)
+      return NextResponse.json({ error: 'Invalid phone number. Must be 10 digits.' }, { status: 400 })
+    }
+
     const buyerRecord = {
       id: userIdToUse,
       city: city || 'Mumbai',
       address: address || '',
       state: state || '',
       pincode: pincode || '',
-      phone: phone || ''
+      phone: providedPhone || ''
     }
 
     const { data: newBuyer, error: createError } = await supabase

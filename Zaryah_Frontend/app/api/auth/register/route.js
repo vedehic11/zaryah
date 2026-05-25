@@ -19,6 +19,13 @@ export async function POST(request) {
 
     console.log('Creating database records for user:', email);
 
+    // Server-side phone validation: ensure any provided phone is exactly 10 digits
+    const providedPhone = (mobile || address?.phone || '').toString().trim()
+    if (providedPhone && !/^\d{10}$/.test(providedPhone)) {
+      console.warn('Invalid phone provided during registration:', providedPhone)
+      return Response.json({ success: false, error: 'Invalid phone number. Must be 10 digits.' }, { status: 400 })
+    }
+
     // Check if user already exists by email
     const { data: existingUser } = await supabaseAdmin
       .from('users')
