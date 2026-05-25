@@ -42,6 +42,14 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
   const deliveryCharge = dynamicDeliveryCharge !== null ? dynamicDeliveryCharge : (subtotal > 500 ? 0 : 60)
   const total = subtotal + deliveryCharge
 
+  const isProd = process.env.NODE_ENV === 'production'
+  const debugWarn = (...args) => {
+    if (!isProd) console.warn(...args)
+  }
+  const debugError = (...args) => {
+    if (!isProd) console.error(...args)
+  }
+
   // Calculate delivery charge when address changes
   useEffect(() => {
     const calculateDeliveryCharge = async () => {
@@ -71,11 +79,11 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
         if (data.success && data.deliveryCharge) {
           setDynamicDeliveryCharge(data.deliveryCharge)
           if (data.fallback) {
-            console.warn('Using fallback delivery charge:', data.error)
+            debugWarn('Using fallback delivery charge:', data.error)
           }
         }
       } catch (error) {
-        console.error('Failed to calculate delivery charge:', error)
+        debugError('Failed to calculate delivery charge:', error)
         // Keep using static fallback
       } finally {
         setCalculatingDelivery(false)

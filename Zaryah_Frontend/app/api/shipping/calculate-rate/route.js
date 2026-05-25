@@ -7,6 +7,7 @@ import { normalizeWeightToKg } from '@/lib/weight'
 // POST /api/shipping/calculate-rate - Calculate delivery charges
 export async function POST(request) {
   try {
+    const includeDebug = process.env.NODE_ENV !== 'production'
     const body = await request.json()
     const { 
       deliveryPincode, 
@@ -95,12 +96,16 @@ export async function POST(request) {
           weight: totalWeight,
           pickupPincode,
           deliveryPincode,
-          debug: {
-            baseRate: outboundDetails.baseRate,
-            markup: outboundDetails.markup,
-            buffer: outboundDetails.buffer,
-            fallback: outboundDetails.fallback
-          }
+          ...(includeDebug
+            ? {
+                debug: {
+                  baseRate: outboundDetails.baseRate,
+                  markup: outboundDetails.markup,
+                  buffer: outboundDetails.buffer,
+                  fallback: outboundDetails.fallback
+                }
+              }
+            : {})
         })
       }
 
@@ -120,20 +125,24 @@ export async function POST(request) {
         weight: totalWeight,
         pickupPincode,
         deliveryPincode,
-        debug: {
-          outbound: {
-            baseRate: outboundDetails.baseRate,
-            markup: outboundDetails.markup,
-            buffer: outboundDetails.buffer,
-            fallback: outboundDetails.fallback
-          },
-          inbound: {
-            baseRate: inboundDetails.baseRate,
-            markup: inboundDetails.markup,
-            buffer: inboundDetails.buffer,
-            fallback: inboundDetails.fallback
-          }
-        }
+        ...(includeDebug
+          ? {
+              debug: {
+                outbound: {
+                  baseRate: outboundDetails.baseRate,
+                  markup: outboundDetails.markup,
+                  buffer: outboundDetails.buffer,
+                  fallback: outboundDetails.fallback
+                },
+                inbound: {
+                  baseRate: inboundDetails.baseRate,
+                  markup: inboundDetails.markup,
+                  buffer: inboundDetails.buffer,
+                  fallback: inboundDetails.fallback
+                }
+              }
+            }
+          : {})
       })
     }
 

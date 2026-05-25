@@ -157,6 +157,17 @@ export default function CheckoutClient() {
       ? 'Online payment is not available at the moment.'
       : ''
 
+  const isProd = process.env.NODE_ENV === 'production'
+  const debugLog = (...args) => {
+    if (!isProd) console.log(...args)
+  }
+  const debugWarn = (...args) => {
+    if (!isProd) console.warn(...args)
+  }
+  const debugError = (...args) => {
+    if (!isProd) console.error(...args)
+  }
+
   useEffect(() => {
     if (!canUseCod && paymentMethod === 'cod') {
       setPaymentMethod(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ? 'online' : 'cod')
@@ -172,7 +183,7 @@ export default function CheckoutClient() {
       }
 
       setCalculatingDelivery(true)
-      console.log('🚚 Calculating delivery charge for pincode:', selectedAddress.pincode)
+      debugLog('🚚 Calculating delivery charge for pincode:', selectedAddress.pincode)
 
       try {
         const response = await fetch('/api/shipping/calculate-rate', {
@@ -192,7 +203,7 @@ export default function CheckoutClient() {
         })
 
         const data = await response.json()
-        console.log('🚚 Delivery charge response:', data)
+        debugLog('🚚 Delivery charge response:', data)
 
         if (data.success && data.deliveryCharge !== undefined) {
           setDynamicDeliveryCharge(data.deliveryCharge)
@@ -200,16 +211,16 @@ export default function CheckoutClient() {
             inbound: typeof data.inboundCharge === 'number' ? data.inboundCharge : null,
             outbound: typeof data.outboundCharge === 'number' ? data.outboundCharge : null
           })
-          console.log('✅ Dynamic delivery charge set:', data.deliveryCharge)
+          debugLog('✅ Dynamic delivery charge set:', data.deliveryCharge)
           if (data.fallback) {
-            console.warn('⚠️ Using fallback delivery charge:', data.error)
+            debugWarn('⚠️ Using fallback delivery charge:', data.error)
             toast.error(`Using standard delivery rate: ${data.error}`, { duration: 3000 })
           }
         } else {
-          console.error('❌ Failed to get delivery charge:', data)
+          debugError('❌ Failed to get delivery charge:', data)
         }
       } catch (error) {
-        console.error('❌ Error calculating delivery charge:', error)
+        debugError('❌ Error calculating delivery charge:', error)
         toast.error('Could not calculate delivery charge, using standard rate')
       } finally {
         setCalculatingDelivery(false)
