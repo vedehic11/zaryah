@@ -442,20 +442,81 @@ export async function calculateShippingRates({
  * @param {Object} params - Same as calculateShippingRates
  * @returns {Promise<number>} Cheapest delivery charge (includes ₹10 markup)
  */
-export async function getCheapestShippingRate(params) {
+function readNumberEnv(name, fallbackValue) {
+  const raw = process.env[name]
+  if (raw === undefined || raw === null || raw === '') return fallbackValue
+  const value = Number(raw)
+  return Number.isFinite(value) ? value : fallbackValue
+}
+
+function applyRateBuffer(baseRate) {
+  const base = Math.ceil(baseRate)
+  const markup = readNumberEnv('SHIPROCKET_RATE_MARKUP', 10)
+  const bufferPercent = readNumberEnv('SHIPROCKET_BUFFER_PERCENT', 20)
+  const bufferFlat = readNumberEnv('SHIPROCKET_BUFFER_FLAT', 0)
+  const bufferMin = readNumberEnv('SHIPROCKET_BUFFER_MIN', 0)
+  const bufferFromPercent = (base * bufferPercent) / 100
+  const buffer = Math.max(bufferFlat, bufferMin, bufferFromPercent, 0)
+  const total = base + markup + Math.ceil(buffer)
+
+  return {
+    base,
+    markup,
+    buffer: Math.ceil(buffer),
+    total
+  }
+}
+
+export async function getCheapestShippingRateDetails(params) {
   try {
     const couriers = await calculateShippingRates(params)
     if (couriers.length === 0) {
-      // Fallback to standard rate + markup
-      return 50 + 10
+      // Fallback to standard rate + markup + buffer
+      const fallback = applyRateBuffer(50)
+      return {
+        deliveryCharge: fallback.total,
+        baseRate: fallback.base,
+        markup: fallback.markup,
+        buffer: fallback.buffer,
+        courier: null,
+        fallback: true
+      }
     }
-    // Add ₹10 hidden markup to Shiprocket rate
-    return Math.ceil(couriers[0].total_charge) + 10
+
+    const cheapest = couriers[0]
+    const buffered = applyRateBuffer(cheapest.total_charge)
+
+    return {
+      deliveryCharge: buffered.total,
+      baseRate: buffered.base,
+      markup: buffered.markup,
+      buffer: buffered.buffer,
+      courier: cheapest,
+      fallback: false
+    }
   } catch (error) {
     console.error('Error fetching shipping rates:', error)
-    // Fallback to standard rate + markup on error
-    return 50 + 10
+    const fallback = applyRateBuffer(50)
+    return {
+      deliveryCharge: fallback.total,
+      baseRate: fallback.base,
+      markup: fallback.markup,
+      buffer: fallback.buffer,
+      courier: null,
+      fallback: true,
+      error: error.message
+    }
   }
+}
+
+/**
+ * Get the cheapest shipping rate for a route
+ * @param {Object} params - Same as calculateShippingRates
+ * @returns {Promise<number>} Cheapest delivery charge (includes markup + buffer)
+ */
+export async function getCheapestShippingRate(params) {
+  const details = await getCheapestShippingRateDetails(params)
+  return details.deliveryCharge
 }
 
 /**

@@ -1,6 +1,6 @@
 // API endpoint to calculate shipping rates dynamically
 import { NextResponse } from 'next/server'
-import { calculateShippingRates, getCheapestShippingRate } from '@/lib/shiprocket'
+import { calculateShippingRates, getCheapestShippingRate, getCheapestShippingRateDetails } from '@/lib/shiprocket'
 import { supabase } from '@/lib/supabase'
 import { normalizeWeightToKg } from '@/lib/weight'
 
@@ -80,12 +80,13 @@ export async function POST(request) {
       })
     } else {
       // Return only cheapest option
-      const outboundCharge = await getCheapestShippingRate({
+      const outboundDetails = await getCheapestShippingRateDetails({
         pickupPincode,
         deliveryPincode,
         weight: totalWeight,
         codAmount
       })
+      const outboundCharge = outboundDetails.deliveryCharge
 
       if (!twoWayDelivery) {
         return NextResponse.json({
@@ -93,16 +94,23 @@ export async function POST(request) {
           deliveryCharge: outboundCharge,
           weight: totalWeight,
           pickupPincode,
-          deliveryPincode
+          deliveryPincode,
+          debug: {
+            baseRate: outboundDetails.baseRate,
+            markup: outboundDetails.markup,
+            buffer: outboundDetails.buffer,
+            fallback: outboundDetails.fallback
+          }
         })
       }
 
-      const inboundCharge = await getCheapestShippingRate({
+      const inboundDetails = await getCheapestShippingRateDetails({
         pickupPincode: deliveryPincode,
         deliveryPincode: pickupPincode,
         weight: totalWeight,
         codAmount: 0
       })
+      const inboundCharge = inboundDetails.deliveryCharge
 
       return NextResponse.json({
         success: true,
@@ -111,7 +119,21 @@ export async function POST(request) {
         inboundCharge,
         weight: totalWeight,
         pickupPincode,
-        deliveryPincode
+        deliveryPincode,
+        debug: {
+          outbound: {
+            baseRate: outboundDetails.baseRate,
+            markup: outboundDetails.markup,
+            buffer: outboundDetails.buffer,
+            fallback: outboundDetails.fallback
+          },
+          inbound: {
+            baseRate: inboundDetails.baseRate,
+            markup: inboundDetails.markup,
+            buffer: inboundDetails.buffer,
+            fallback: inboundDetails.fallback
+          }
+        }
       })
     }
 
