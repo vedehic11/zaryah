@@ -425,17 +425,17 @@ export async function POST(request) {
     const totalAmount = frontendTotal || subtotal
     
     // Calculate commission breakdown
-    const sellerCommission = parseFloat((subtotal * 0.025).toFixed(2)) // 2.5% from seller
+    const sellerCommission = parseFloat((subtotal * 0.03).toFixed(2)) // 3% from seller
     const buyerPlatformFee = parseFloat(platformFee || 0) // Platform fee from buyer (₹10 or ₹20)
-    const sellerProductShare = parseFloat((subtotal * 0.975).toFixed(2)) // Seller gets 97.5% of products
+    const sellerProductShare = parseFloat((subtotal * 0.97).toFixed(2)) // Seller gets 97% of products
     const giftPackagingTotal = parseFloat(giftPackagingFee || 0) // Gift fees go 100% to seller
     const sellerAmount = parseFloat((sellerProductShare + giftPackagingTotal).toFixed(2)) // Total seller earnings
     
     console.log(`Product subtotal: ${subtotal}`)
     console.log(`Gift packaging fees: ${giftPackagingTotal} (100% to seller)`)
     console.log(`Total order amount (with fees): ${totalAmount}`)
-    console.log(`Commission breakdown: Seller commission (2.5%)=${sellerCommission}, Buyer Platform Fee=${buyerPlatformFee}`)
-    console.log(`Seller earnings: ${sellerAmount} (97.5% of products + 100% of gift fees)`)
+    console.log(`Commission breakdown: Seller commission (3%)=${sellerCommission}, Buyer Platform Fee=${buyerPlatformFee}`)
+    console.log(`Seller earnings: ${sellerAmount} (97% of products + 100% of gift fees)`)
     console.log(`Order items count: ${orderItems.length}`)
 
     // Get seller ID (assuming all items are from same seller, or handle multiple sellers)
@@ -458,8 +458,8 @@ export async function POST(request) {
         delivery_fee: deliveryFee || 0,
         gift_packaging_fee: giftPackagingTotal, // Gift packaging fees (100% to seller)
         platform_fee: buyerPlatformFee, // ₹10 or ₹20 platform fee from buyer
-        commission_amount: sellerCommission, // 2.5% seller commission only
-        seller_amount: sellerAmount, // 97.5% of products + 100% gift fees
+        commission_amount: sellerCommission, // 3% seller commission only
+        seller_amount: sellerAmount, // 97% of products + 100% gift fees
         two_way_delivery: hasTwoWayDelivery
       })
       .select()
@@ -540,13 +540,13 @@ export async function POST(request) {
     if (paymentMethod === 'cod') {
       console.log('Updating seller wallet (COD order)...')
       const sellerEarnings = parseFloat(order.seller_amount || 0) // Use seller_amount from order (includes gift fees)
-      const platformCommission = parseFloat((subtotal * 0.025).toFixed(2)) // 2.5% from seller
+      const platformCommission = parseFloat((subtotal * 0.03).toFixed(2)) // 3% from seller
       
       console.log('💰 SELLER EARNINGS CALCULATED:')
       console.log('  Product subtotal:', `₹${subtotal}`)
       console.log('  Gift packaging fees:', `₹${giftPackagingTotal}`)
-      console.log('  Seller earnings (97.5% + gift fees):', `₹${sellerEarnings}`)
-      console.log('  Platform commission (2.5%):', `₹${platformCommission}`)
+      console.log('  Seller earnings (97% + gift fees):', `₹${sellerEarnings}`)
+      console.log('  Platform commission (3%):', `₹${platformCommission}`)
       
       // Ensure wallet exists and update pending balance
       const { data: existingWallet } = await supabase

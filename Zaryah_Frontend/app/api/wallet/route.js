@@ -39,7 +39,7 @@ export async function GET(request) {
       return NextResponse.json({ error: ordersError.message }, { status: 500 })
     }
 
-    // Calculate pending balance: Sum of 97.5% of products + 100% of gift fees for pending/confirmed/dispatched orders
+      // Calculate pending balance: Sum of 97% of products + 100% of gift fees for pending/confirmed/dispatched orders
     // Include: online orders with payment_status='paid' OR COD orders (payment on delivery)
     const pendingOrders = orders.filter(o => 
       ['pending', 'confirmed', 'dispatched'].includes(o.status) && 
@@ -54,13 +54,13 @@ export async function GET(request) {
         count + (item.gift_packaging ? item.quantity : 0), 0
       )
       const giftFees = giftItemsCount * 10
-      return sum + parseFloat((productSubtotal * 0.975).toFixed(2)) + giftFees
+      return sum + parseFloat((productSubtotal * 0.97).toFixed(2)) + giftFees
     }, 0)
 
-    // Calculate total earned: Sum of 97.5% of products + 100% of gift fees for all delivered orders
+    // Calculate total earned: Sum of 97% of products + 100% of gift fees for all delivered orders
     const deliveredOrders = orders.filter(o => o.status === 'delivered')
 
-    const total_earned = deliveredOrders.reduce((sum, order) => {
+      const total_earned = deliveredOrders.reduce((sum, order) => {
       const productSubtotal = (order.order_items || []).reduce((itemSum, item) => 
         itemSum + (item.quantity * item.price), 0
       )
@@ -68,7 +68,7 @@ export async function GET(request) {
         count + (item.gift_packaging ? item.quantity : 0), 0
       )
       const giftFees = giftItemsCount * 10
-      return sum + parseFloat((productSubtotal * 0.975).toFixed(2)) + giftFees
+      return sum + parseFloat((productSubtotal * 0.97).toFixed(2)) + giftFees
     }, 0)
 
     // Get total withdrawn amount

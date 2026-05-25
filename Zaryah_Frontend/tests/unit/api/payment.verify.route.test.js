@@ -116,7 +116,7 @@ describe('/api/payment/verify POST', () => {
                   data: {
                     id: 'order-1',
                     seller_id: 'seller-1',
-                    seller_amount: 975,
+                    seller_amount: 970,
                     order_items: [{ price: 100, quantity: 10 }],
                     gift_packaging_fee: 0,
                     platform_fee: 20,

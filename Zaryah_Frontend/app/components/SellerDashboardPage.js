@@ -120,7 +120,7 @@ export default function SellerDashboardPage() {
         const giftFees = order.order_items?.reduce((sum, item) => 
           sum + (item.gift_packaging ? 10 * item.quantity : 0), 0
         ) || 0
-        const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+        const sellerShare = parseFloat((productSubtotal * 0.97).toFixed(2))
         const totalForOrder = sellerShare + giftFees
         calculatedTotal += totalForOrder
         
@@ -133,10 +133,10 @@ export default function SellerDashboardPage() {
           console.log(`      Item ${i + 1}: ${item.products?.name || 'Unknown'}${giftLabel} - Qty: ${item.quantity} × ₹${item.price} = ₹${item.quantity * item.price}`)
         })
         console.log(`    Product Subtotal: ₹${productSubtotal.toLocaleString()}`)
-        console.log(`    Your Share (97.5%): ₹${sellerShare.toLocaleString()}`)
+        console.log(`    Your Share (97%): ₹${sellerShare.toLocaleString()}`)
         console.log(`    Gift Packaging Fees: ₹${giftFees}`)
         console.log(`    Total for this order: ₹${totalForOrder.toLocaleString()}`)
-        console.log(`    Commission (2.5%): ₹${(productSubtotal * 0.025).toFixed(2)}`)
+        console.log(`    Commission (3%): ₹${(productSubtotal * 0.03).toFixed(2)}`)
       })
       
       console.log(`\n💰 CALCULATED TOTAL: ₹${calculatedTotal.toLocaleString()}`)
@@ -184,7 +184,7 @@ export default function SellerDashboardPage() {
         const giftFees = order.order_items?.reduce((giftSum, item) => 
           giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
         ) || 0
-        const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+        const sellerShare = parseFloat((productSubtotal * 0.97).toFixed(2))
         return sum + sellerShare + giftFees
       }, 0)
   }, [walletSourceOrders])
@@ -198,7 +198,7 @@ export default function SellerDashboardPage() {
         const giftFees = order.order_items?.reduce((giftSum, item) => 
           giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
         ) || 0
-        const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+        const sellerShare = parseFloat((productSubtotal * 0.97).toFixed(2))
         return sum + sellerShare + giftFees
       }, 0)
   }, [walletSourceOrders])
@@ -473,7 +473,7 @@ export default function SellerDashboardPage() {
       const completedCount = orders.filter(o => o.status === 'delivered').length
       
       // Calculate revenue from delivered orders only
-      // Seller gets 97.5% of product subtotal (2.5% commission deducted)
+      // Seller gets 97% of product subtotal (3% commission deducted)
       console.log('🔍 REVENUE CALCULATION - Starting...')
       const deliveredOrders = orders.filter(o => o.status === 'delivered')
       console.log(`📦 Total delivered orders: ${deliveredOrders.length}`)
@@ -483,19 +483,19 @@ export default function SellerDashboardPage() {
         const productSubtotal = (order.order_items || []).reduce((itemSum, item) => 
           itemSum + (parseFloat(item.price || 0) * (item.quantity || 1)), 0
         )
-        const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2)) // 97.5% to seller
+        const sellerShare = parseFloat((productSubtotal * 0.97).toFixed(2)) // 97% to seller
         
         console.log(`  Order ${index + 1} (${order.id}):`, {
           productSubtotal: `₹${productSubtotal}`,
-          sellerShare: `₹${sellerShare} (97.5%)`,
-          commission: `₹${(productSubtotal * 0.025).toFixed(2)} (2.5%)`,
+          sellerShare: `₹${sellerShare} (97%)`,
+          commission: `₹${(productSubtotal * 0.03).toFixed(2)} (3%)`,
           orderItems: order.order_items?.length || 0
         })
         
         return sum + sellerShare
       }, 0)
       
-      console.log(`💰 TOTAL REVENUE (97.5% of delivered orders): ₹${totalRevenue.toFixed(2)}`)
+      console.log(`💰 TOTAL REVENUE (97% of delivered orders): ₹${totalRevenue.toFixed(2)}`)
 
       setStats({
         totalProducts: products.length,
@@ -535,7 +535,7 @@ export default function SellerDashboardPage() {
         const giftItemsCount = (order.order_items || []).reduce((count, item) => 
           count + (item.gift_packaging ? item.quantity : 0), 0
         )
-        const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+        const sellerShare = parseFloat((productSubtotal * 0.97).toFixed(2))
         const totalForOrder = sellerShare + giftFees
         
         const giftInfo = giftFees > 0 ? ` + ₹${giftFees} gift fees` : ''
@@ -545,7 +545,7 @@ export default function SellerDashboardPage() {
           paymentMethod: order.payment_method,
           paymentStatus: order.payment_status,
           productSubtotal: `₹${productSubtotal}`,
-          sellerShare: `₹${sellerShare} (97.5%)`,
+          sellerShare: `₹${sellerShare} (97%)`,
           giftFees: giftItemsCount > 0 ? `₹${giftFees} (${giftItemsCount} items)` : 'None',
           totalForThisOrder: `₹${totalForOrder}`
         })
@@ -3575,9 +3575,9 @@ export default function SellerDashboardPage() {
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
                           <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Product Amount</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Your Share (97.5%)</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Your Share (97%)</th>
                           <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Gift Fees</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Commission (2.5%)</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Commission (3%)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
@@ -3590,8 +3590,8 @@ export default function SellerDashboardPage() {
                             const giftFees = order.order_items?.reduce((sum, item) => 
                               sum + (item.gift_packaging ? 10 * item.quantity : 0), 0
                             ) || 0
-                            const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
-                            const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
+                            const sellerShare = parseFloat((productSubtotal * 0.97).toFixed(2))
+                            const commission = parseFloat((productSubtotal * 0.03).toFixed(2))
 
                             return (
                               <tr key={order.id} className="hover:bg-gray-50 transition-colors">
@@ -3643,7 +3643,7 @@ export default function SellerDashboardPage() {
                                 const giftFees = order.order_items?.reduce((giftSum, item) => 
                                   giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
                                 ) || 0
-                                const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+                                const sellerShare = parseFloat((productSubtotal * 0.97).toFixed(2))
                                 return sum + sellerShare + giftFees
                               }, 0)
                               .toLocaleString()}
@@ -3691,7 +3691,7 @@ export default function SellerDashboardPage() {
                     const giftFees = order.order_items?.reduce((giftSum, item) => 
                       giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
                     ) || 0
-                    const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+                    const sellerShare = parseFloat((productSubtotal * 0.97).toFixed(2))
                     return sum + sellerShare + giftFees
                   }, 0)
                   
@@ -3765,9 +3765,9 @@ export default function SellerDashboardPage() {
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Delivered Date</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
                           <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Product Amount</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Your Share (97.5%)</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Your Share (97%)</th>
                           <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Gift Fees</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Commission (2.5%)</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Commission (3%)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
@@ -3780,8 +3780,8 @@ export default function SellerDashboardPage() {
                             const giftFees = order.order_items?.reduce((sum, item) => 
                               sum + (item.gift_packaging ? 10 * item.quantity : 0), 0
                             ) || 0
-                            const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
-                            const commission = parseFloat((productSubtotal * 0.025).toFixed(2))
+                            const sellerShare = parseFloat((productSubtotal * 0.97).toFixed(2))
+                            const commission = parseFloat((productSubtotal * 0.03).toFixed(2))
 
                             return (
                               <tr key={order.id} className="hover:bg-gray-50 transition-colors">
@@ -3825,7 +3825,7 @@ export default function SellerDashboardPage() {
                               const giftFees = order.order_items?.reduce((giftSum, item) => 
                                 giftSum + (item.gift_packaging ? 10 * item.quantity : 0), 0
                               ) || 0
-                              const sellerShare = parseFloat((productSubtotal * 0.975).toFixed(2))
+                              const sellerShare = parseFloat((productSubtotal * 0.97).toFixed(2))
                               return sum + sellerShare + giftFees
                             }, 0)
                           const availableTotal = deliveredTotal - withdrawnTotal
@@ -3982,3 +3982,4 @@ export default function SellerDashboardPage() {
     </div>
   )
 }
+

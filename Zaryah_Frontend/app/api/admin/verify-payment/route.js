@@ -61,7 +61,7 @@ export async function POST(request) {
 
     // Calculate and update seller wallet
     const totalAmount = parseFloat(order.total_amount || 0)
-    const sellerAmount = parseFloat(order.seller_amount || (totalAmount * 0.975).toFixed(2))
+    const sellerAmount = parseFloat(order.seller_amount || (totalAmount * 0.97).toFixed(2))
     const commissionAmount = parseFloat(order.commission_amount || (totalAmount - sellerAmount).toFixed(2))
 
     // Get or create seller wallet

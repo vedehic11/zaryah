@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { requireRole } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 
-const SELLER_COMMISSION_RATE = 2.5
+const SELLER_COMMISSION_RATE = 3
 
 // GET /api/admin/earnings - Get platform commission earnings
 export async function GET(request) {
@@ -110,7 +110,7 @@ export async function GET(request) {
         sum + (item.quantity * item.price), 0
       ) || 0
 
-        // Calculate commission (2.5% of product amount)
+        // Calculate commission (3% of product amount)
         const commission = parseFloat((productSubtotal * (SELLER_COMMISSION_RATE / 100)).toFixed(2))
       
       // Platform fee (₹10 or ₹20 from buyer)
@@ -125,7 +125,7 @@ export async function GET(request) {
 
       console.log(`\nOrder #${order.id.slice(0, 8)} (${order.payment_method.toUpperCase()}, ${order.payment_status}):`)
       console.log(`  Product Amount: ₹${productSubtotal.toFixed(2)}`)
-      console.log(`  Commission (2.5%): ₹${commission}`)
+      console.log(`  Commission (3%): ₹${commission}`)
       console.log(`  Platform Fee: ₹${platformFee}`)
       console.log(`  Delivery Markup: ₹${deliveryMarkup}`)
       console.log(`  Total Admin Revenue: ₹${totalRevenue.toFixed(2)}`)
