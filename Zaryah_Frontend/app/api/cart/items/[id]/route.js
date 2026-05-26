@@ -39,19 +39,6 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    // If updating quantity, check stock
-    if (quantity !== undefined) {
-      const { data: product } = await supabase
-        .from('products')
-        .select('stock')
-        .eq('id', item.product_id)
-        .single()
-
-      if (!product || product.stock < quantity) {
-        return NextResponse.json({ error: 'Insufficient stock' }, { status: 400 })
-      }
-    }
-
     // Update item
     const updates = {}
     if (quantity !== undefined) updates.quantity = quantity

@@ -271,6 +271,9 @@ export async function POST(request) {
       deliveryTimeUnit = 'days'
     }
 
+    const INFINITE_STOCK = 999999
+    const parsedStock = parseInt(formData.get('stock'))
+    const stockValue = Number.isFinite(parsedStock) ? parsedStock : INFINITE_STOCK
     const productData = {
       name: formData.get('name'),
       description: formData.get('description'),
@@ -281,7 +284,7 @@ export async function POST(request) {
       sections: sections,
       section: sections[0] || null,
       weight: parseFloat(formData.get('weight')),
-      stock: parseInt(formData.get('stock')),
+      stock: stockValue,
       customisable: formData.get('customisable') === 'true',
       delivery_time_min: deliveryTimeMin,
       delivery_time_max: deliveryTimeMax,

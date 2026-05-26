@@ -1137,14 +1137,6 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                       <p className="text-sm font-semibold text-charcoal-900">{formatWeightDisplay(product.weight)}</p>
                     </div>
                   )}
-                  {product.stock !== undefined && product.stock !== null && (
-                    <div className="bg-gradient-to-br from-primary-50 to-cream-50 border border-primary-200 rounded-lg p-3">
-                      <p className="text-xs text-charcoal-600 mb-1">Stock</p>
-                      <p className="text-sm font-semibold text-charcoal-900">
-                        {product.stock > 0 ? `${product.stock} units` : 'Out of Stock'}
-                      </p>
-                    </div>
-                  )}
                   {product.category && (
                     <div className="bg-gradient-to-br from-primary-50 to-cream-50 border border-primary-200 rounded-lg p-3">
                       <p className="text-xs text-charcoal-600 mb-1">Category</p>

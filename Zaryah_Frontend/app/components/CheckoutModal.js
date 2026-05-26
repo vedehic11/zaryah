@@ -39,8 +39,15 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
 
   // Calculate totals with dynamic delivery charge
   const subtotal = totalPrice || 0
-  const deliveryCharge = dynamicDeliveryCharge !== null ? dynamicDeliveryCharge : (subtotal > 500 ? 0 : 60)
-  const total = subtotal + deliveryCharge
+  const giftPackagingFee = cart.reduce((sum, item) => {
+    return sum + (item.giftPackaging ? 10 * item.quantity : 0)
+  }, 0)
+  const deliveryCharge = dynamicDeliveryCharge !== null ? dynamicDeliveryCharge : (subtotal >= 500 ? 0 : 60)
+  const platformFee = subtotal < 500 ? 10 : 20
+  const hasTwoWayDelivery = cart.some(item => (
+    item.product?.two_way_delivery || item.two_way_delivery || item.twoWayDelivery
+  ))
+  const total = subtotal + giftPackagingFee + deliveryCharge + platformFee
 
   const isProd = process.env.NODE_ENV === 'production'
   const debugWarn = (...args) => {
@@ -71,12 +78,13 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
               weight: item.product?.weight || 500,
               quantity: item.quantity
             })),
-            codAmount: paymentMethod === 'cod' ? total : 0
+            twoWayDelivery: hasTwoWayDelivery,
+            codAmount: paymentMethod === 'cod' ? subtotal : 0
           })
         })
 
         const data = await response.json()
-        if (data.success && data.deliveryCharge) {
+        if (data.success && data.deliveryCharge !== undefined) {
           setDynamicDeliveryCharge(data.deliveryCharge)
           if (data.fallback) {
             debugWarn('Using fallback delivery charge:', data.error)
@@ -172,7 +180,12 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
         })),
         address: selectedAddress,
         paymentMethod,
-        totalAmount: total
+        totalAmount: total,
+        deliveryFee: deliveryCharge,
+        giftPackagingFee: giftPackagingFee,
+        codFee: 0,
+        platformFee: platformFee,
+        twoWayDelivery: hasTwoWayDelivery
       }
 
       const order = await apiService.createOrder(orderData)
@@ -542,6 +555,12 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
                         <span className="text-gray-600">Subtotal</span>
                         <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                       </div>
+                      {giftPackagingFee > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Gift Packaging</span>
+                          <span className="font-medium">₹{giftPackagingFee.toFixed(2)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-sm items-center">
                         <span className="text-gray-600 flex items-center gap-2">
                           Delivery
@@ -552,6 +571,10 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
                         <span className="font-medium">
                           {deliveryCharge === 0 ? 'FREE' : `₹${deliveryCharge}`}
                         </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Platform Fee</span>
+                        <span className="font-medium">₹{platformFee.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
                         <span>Total</span>

@@ -143,7 +143,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
     }
 
-    // Verify product exists and has stock
+    // Verify product exists
     const { data: product, error: productError } = await supabase
       .from('products')
       .select('id, price, stock, name')
@@ -154,9 +154,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
-    if (product.stock < quantity) {
-      return NextResponse.json({ error: 'Insufficient stock' }, { status: 400 })
-    }
 
     // Get or create cart for this buyer (single cart for all items)
     let { data: cart, error: cartError } = await supabase
@@ -203,10 +200,6 @@ export async function POST(request) {
     if (existingItem) {
       // Update quantity
       const newQuantity = existingItem.quantity + quantity
-
-      if (product.stock < newQuantity) {
-        return NextResponse.json({ error: 'Insufficient stock' }, { status: 400 })
-      }
 
       const { data: updatedItem, error: updateError } = await supabase
         .from('cart_items')

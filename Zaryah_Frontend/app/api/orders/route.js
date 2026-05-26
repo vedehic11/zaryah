@@ -399,11 +399,6 @@ export async function POST(request) {
         return NextResponse.json({ error: codReason }, { status: 400 })
       }
 
-      if (product.stock < item.quantity) {
-        console.error(`Insufficient stock for product ${item.productId}: available=${product.stock}, requested=${item.quantity}`)
-        return NextResponse.json({ error: `Insufficient stock for product ${item.productId}` }, { status: 400 })
-      }
-
       const itemTotal = parseFloat(item.unitPrice || product.price) * item.quantity
       subtotal += itemTotal
 
@@ -493,30 +488,6 @@ export async function POST(request) {
       // Rollback order creation
       await supabase.from('orders').delete().eq('id', order.id)
       return NextResponse.json({ error: itemsError.message }, { status: 400 })
-    }
-
-    // Update product stock (try RPC first, fallback to direct update)
-    for (const item of items) {
-      try {
-        await supabase.rpc('decrement_stock', {
-          product_id: item.productId,
-          quantity: item.quantity
-        })
-      } catch (rpcError) {
-        // Fallback if RPC doesn't exist
-        const { data: product } = await supabase
-          .from('products')
-          .select('stock')
-          .eq('id', item.productId)
-          .single()
-
-        if (product) {
-          await supabase
-            .from('products')
-            .update({ stock: product.stock - item.quantity })
-            .eq('id', item.productId)
-        }
-      }
     }
 
     // Clear cart

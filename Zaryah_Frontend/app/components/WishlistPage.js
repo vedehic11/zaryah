@@ -239,13 +239,6 @@ export const WishlistPage = () => {
                     />
                   </Link>
 
-                  {/* Stock Badge */}
-                  {item.product?.stock === 0 && (
-                    <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium shadow-soft">
-                      Out of Stock
-                    </div>
-                  )}
-
                   {/* Remove Button */}
                   <motion.button
                     whileHover={{ scale: 1.1 }}
@@ -294,12 +287,7 @@ export const WishlistPage = () => {
                   <div className="mt-3">
                     <button
                       onClick={() => handleMoveToCart(item.product)}
-                      disabled={item.product?.stock === 0}
-                      className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all shadow-soft flex items-center justify-center space-x-2 ${
-                        item.product?.stock === 0
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                          : 'bg-primary-600 hover:bg-primary-700 text-white border border-primary-700'
-                      }`}
+                      className="w-full py-2.5 rounded-lg text-sm font-medium transition-all shadow-soft flex items-center justify-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white border border-primary-700"
                     >
                       <ShoppingBag className="w-5 h-5" />
                       <span>Move to Cart</span>

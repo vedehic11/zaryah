@@ -588,7 +588,6 @@ export default function EditSellerProductPage() {
         mrp: formData.mrp ? Number(formData.mrp) : null,
         categories: formData.categories,
         sections: formData.sections,
-        stock: formData.stock === '' ? 0 : Number(formData.stock),
         weight: formData.weight === '' ? null : Number(formData.weight),
         delivery_time_min: formData.delivery_time_min === '' ? null : Number(formData.delivery_time_min),
         delivery_time_max: formData.delivery_time_max === '' ? null : Number(formData.delivery_time_max),
@@ -732,10 +731,6 @@ export default function EditSellerProductPage() {
             <label className="block">
               <span className="block text-sm font-medium text-gray-700 mb-1">MRP</span>
               <input type="number" min="0" step="0.01" name="mrp" value={formData.mrp} onChange={handleChange} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
-            </label>
-            <label className="block">
-              <span className="block text-sm font-medium text-gray-700 mb-1">Stock</span>
-              <input type="number" min="0" step="1" name="stock" value={formData.stock} onChange={handleChange} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
             </label>
             <label className="block">
               <span className="block text-sm font-medium text-gray-700 mb-1">Weight (grams)</span>

@@ -35,7 +35,6 @@ export const ProductCard = ({ product, backHref }) => {
       ? `/product/${productId}?back=${encodeURIComponent(normalizedBackHref)}`
       : `/product/${productId}`
     : '#'
-  const isOutOfStock = Number(product?.stock ?? 0) <= 0
   const isLiked = isInWishlist(productId)
 
   const checkAuthAndRedirect = () => {
@@ -49,11 +48,6 @@ export const ProductCard = ({ product, backHref }) => {
   const handleQuickAdd = async (e) => {
     e.preventDefault() // Prevent navigation
     if (!checkAuthAndRedirect()) return;
-    if (isOutOfStock) {
-      toast.error('This product is out of stock')
-      return
-    }
-
     if (product.customisable && customizationQuestions.length > 0) {
       toast.error('Please answer all customization questions before adding to cart')
       return
@@ -65,11 +59,6 @@ export const ProductCard = ({ product, backHref }) => {
   const handleGiftAdd = async (e) => {
     e.preventDefault() // Prevent navigation
     if (!checkAuthAndRedirect()) return;
-    if (isOutOfStock) {
-      toast.error('This product is out of stock')
-      return
-    }
-
     if (product.customisable && customizationQuestions.length > 0) {
       toast.error('Please answer all customization questions before adding to cart')
       return
@@ -108,12 +97,12 @@ export const ProductCard = ({ product, backHref }) => {
   const totalReviews = product.ratings?.length || 0
 
   return (
-    <div className="block h-full">
+    <div className="block">
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ y: -8 }}
-        className="bg-cream-50 rounded-2xl shadow-soft border border-primary-100 overflow-hidden flex flex-col h-full p-2 sm:p-4 lg:p-6 hover:shadow-medium transition-all duration-300"
+        className="bg-cream-50 rounded-2xl shadow-soft border border-primary-100 overflow-hidden flex flex-col p-2 sm:p-3 lg:p-4 hover:shadow-medium transition-all duration-300"
         onHoverStart={() => setShowQuickAdd(true)}
         onHoverEnd={() => setShowQuickAdd(false)}
       >
@@ -121,7 +110,7 @@ export const ProductCard = ({ product, backHref }) => {
         <div className="relative overflow-hidden">
           <Link 
             href={productHref}
-            className="block relative w-full h-32 sm:h-48 lg:h-64"
+            className="block relative w-full h-36 sm:h-52 lg:h-64"
           >
             <Image
               src={product.images && product.images.length > 0 ? product.images[0] : '/placeholder.jpg'}
@@ -205,11 +194,8 @@ export const ProductCard = ({ product, backHref }) => {
         </div>
 
         {/* Product Info */}
-        <div className="p-2 sm:p-4 flex-1 flex flex-col">
-          <Link 
-            href={productHref}
-            className="flex-1"
-          >
+        <div className="p-2 sm:p-3 flex flex-col">
+          <Link href={productHref}>
             <div className="flex items-start justify-between mb-2">
               <h3 className="font-bold text-charcoal-800 text-sm sm:text-base lg:text-lg line-clamp-2 leading-tight flex-1 mr-2 font-serif">
                 {product.name}
@@ -243,29 +229,13 @@ export const ProductCard = ({ product, backHref }) => {
               </button>
             </div>
 
-            {/* Rating */}
-            <div className="flex items-center space-x-1 mt-auto">
-              <div className="flex items-center space-x-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-3 h-3 sm:w-4 sm:h-4 ${
-                      i < Math.floor(averageRating) ? 'text-warm-500 fill-current' : 'text-charcoal-400'
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="text-xs sm:text-sm text-charcoal-700 font-semibold">({averageRating})</span>
-              <span className="text-xs text-charcoal-500 hidden sm:inline">• {totalReviews} reviews</span>
-            </div>
           </Link>
 
           {/* Mobile Quick Add Buttons - Always Visible on Mobile */}
-          <div className="flex space-x-2 mt-3 lg:hidden">
+          <div className="flex space-x-2 mt-2 lg:hidden">
             <button
               onClick={handleQuickAdd}
-              disabled={isOutOfStock}
-              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2.5 rounded-lg text-sm font-medium transition-all shadow-soft border border-primary-700 flex items-center justify-center"
+              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2 rounded-lg text-sm font-medium transition-all shadow-soft border border-primary-700 flex items-center justify-center"
               title="Add to Cart"
             >
               <ShoppingBag className="w-5 h-5 text-white" />
@@ -273,8 +243,7 @@ export const ProductCard = ({ product, backHref }) => {
             
             <button
               onClick={handleGiftAdd}
-              disabled={isOutOfStock}
-              className="flex-1 bg-secondary-600 hover:bg-secondary-700 text-white py-2.5 rounded-lg text-sm font-medium transition-all shadow-soft border border-secondary-700 flex items-center justify-center"
+              className="flex-1 bg-secondary-600 hover:bg-secondary-700 text-white py-2 rounded-lg text-sm font-medium transition-all shadow-soft border border-secondary-700 flex items-center justify-center"
               title="Add as Gift"
             >
               <Gift className="w-5 h-5 text-white" />

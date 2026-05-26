@@ -52,7 +52,6 @@ export default function AddProductPage() {
     categories: [],
     sections: [],
     weight: '',
-    stock: '',
     customisable: false,
     deliveryTimeMin: '',
     deliveryTimeMax: '',
@@ -578,7 +577,6 @@ export default function AddProductPage() {
     if (formData.categories.length === 0) newErrors.categories = 'At least one category is required'
     if (formData.sections.length === 0) newErrors.sections = 'At least one section is required'
     if (!formData.weight || parseFloat(formData.weight) <= 0) newErrors.weight = 'Valid weight is required'
-    if (!formData.stock || parseInt(formData.stock) < 0) newErrors.stock = 'Valid stock is required'
     if (!formData.deliveryTimeMin || parseInt(formData.deliveryTimeMin) <= 0) newErrors.deliveryTimeMin = 'Min delivery time required'
     if (!formData.deliveryTimeMax || parseInt(formData.deliveryTimeMax) <= 0) newErrors.deliveryTimeMax = 'Max delivery time required'
     if (parseInt(formData.deliveryTimeMin) > parseInt(formData.deliveryTimeMax)) {
@@ -879,21 +877,6 @@ export default function AddProductPage() {
                   {errors.weight && <p className="text-sm text-red-600 mt-1">{errors.weight}</p>}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Stock Quantity <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="stock"
-                    value={formData.stock}
-                    onChange={handleInputChange}
-                    min="0"
-                    className={`w-full px-4 py-2 border ${errors.stock ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
-                    placeholder="100"
-                  />
-                  {errors.stock && <p className="text-sm text-red-600 mt-1">{errors.stock}</p>}
-                </div>
               </div>
 
               <div>

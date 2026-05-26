@@ -209,7 +209,8 @@ class ApiService {
           }
         }
         const errorMsg = data?.error || data?.message || `HTTP ${response.status}: ${response.statusText}`
-        if (!silentErrors) {
+        const isExpected = typeof errorMsg === 'string' && /insufficient\s+stock/i.test(errorMsg)
+        if (!silentErrors && !isExpected) {
           console.error(`API Error [${url}]:`, errorMsg)
         }
         throw new Error(errorMsg)

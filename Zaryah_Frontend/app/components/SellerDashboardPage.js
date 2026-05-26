@@ -1123,7 +1123,6 @@ export default function SellerDashboardPage() {
             </>
           )}
         </div>
-        <p className="text-gray-500 text-xs mb-3">Stock: {product.stock}</p>
         <div className="hidden md:flex items-center space-x-2">
           <Link
             href={`/product/${product.id}`}

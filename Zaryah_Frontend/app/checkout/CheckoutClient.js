@@ -241,9 +241,8 @@ export default function CheckoutClient() {
   // Note: deliveryFee already includes ₹10 markup from Shiprocket API (getCheapestShippingRate)
   const platformFee = subtotal < 500 ? 10 : 20 // Flat platform fee based on order value
   
-  // Add two-way delivery charges if applicable
-  const twoWayDeliveryFee = (twoWayCharges.inbound ?? 0) + (twoWayCharges.outbound ?? 0)
-  const total = subtotal + giftPackagingFee + deliveryFee + platformFee + twoWayDeliveryFee
+  // For two-way delivery, `deliveryFee` already includes inbound + outbound
+  const total = subtotal + giftPackagingFee + deliveryFee + platformFee
 
   // Helpers to update/remove items in displayedItems (works for buy-now or full cart)
   const handleUpdateDisplayedQuantity = (item, newQty) => {

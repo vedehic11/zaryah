@@ -1145,23 +1145,6 @@ export const ProductDetailPage = ({ productId }) => {
                         </div>
                       )}
 
-                      {/* Stock */}
-                      {product.stock !== undefined && product.stock !== null && (
-                        <div className="bg-gradient-to-br from-primary-50 to-cream-50 border border-primary-200 rounded-lg p-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
-                              <Package className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                              <p className="text-sm text-charcoal-600 font-medium">Stock Available</p>
-                              <p className="text-lg font-semibold text-charcoal-900">
-                                {product.stock > 0 ? `${product.stock} units` : 'Out of Stock'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
                       {/* Category */}
                       {product.category && (
                         <div className="bg-gradient-to-br from-primary-50 to-cream-50 border border-primary-200 rounded-lg p-4">

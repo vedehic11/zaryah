@@ -226,6 +226,9 @@ export async function PUT(request, { params }) {
     
     // Handle categories - can be single value or array, normalize to array
     const updateBody = { ...body }
+    if ('stock' in updateBody) {
+      delete updateBody.stock
+    }
     if (body.categories) {
       updateBody.categories = Array.isArray(body.categories) ? body.categories : [body.categories]
       updateBody.category = updateBody.categories[0] || null

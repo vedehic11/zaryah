@@ -337,9 +337,12 @@ export const CartProvider = ({ children }) => {
         }
         setIsCartOpen(true);
       } catch (error) {
-        console.error('CartContext: Error adding to backend cart:', error);
-        console.error('CartContext: Error stack:', error.stack);
         const message = error?.message || 'Failed to add item to cart'
+        const isStockError = /insufficient\s+stock/i.test(String(message))
+        if (!isStockError) {
+          console.error('CartContext: Error adding to backend cart:', error);
+          console.error('CartContext: Error stack:', error.stack);
+        }
         const isAuthError = /unauthorized|log\s*in|login|session/i.test(String(message))
 
         if (isAuthError) {
