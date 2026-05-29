@@ -19,7 +19,7 @@ export async function POST(request) {
     }
 
     const body = await request.json()
-    const { amount, account_holder_name, upi_id, notes } = body
+    const { amount, account_holder_name, upi_id, account_number, ifsc_code, notes } = body
     const withdrawalAmount = parseFloat(amount)
 
     // Validate input
@@ -37,21 +37,28 @@ export async function POST(request) {
       .single()
 
     if (sellerError || !seller) {
-      return NextResponse.json({ error: 'Seller not found' }, { status: 404 })
+      return NextResponse.json({
+        error: 'Seller profile not found. Please complete your seller profile before withdrawing.',
+        action: 'seller_profile_missing'
+      }, { status: 404 })
     }
 
     // Check if KYC details exist
     if (!seller.upi_id) {
       return NextResponse.json({ 
-        error: 'Please complete KYC and add UPI ID before withdrawal',
+        error: 'Please complete KYC and add payout details before withdrawal',
         action: 'complete_kyc'
       }, { status: 400 })
     }
 
     const resolvedAccountHolderName = (account_holder_name || seller.account_holder_name || '').toString().trim()
     const resolvedUpiId = (upi_id || seller.upi_id || '').toString().trim()
+    const resolvedAccountNumber = (account_number || '').toString().trim()
+    const resolvedIfscCode = (ifsc_code || '').toString().trim()
+    const bankAccountNumber = resolvedAccountNumber || resolvedUpiId
+    const bankIfscCode = resolvedIfscCode || (resolvedUpiId ? 'UPI' : '')
 
-    if (!resolvedUpiId || !resolvedAccountHolderName) {
+    if (!bankAccountNumber || !bankIfscCode || !resolvedAccountHolderName) {
       return NextResponse.json({
         error: 'Payment details are required. Please update them in Profile before withdrawal.'
       }, { status: 400 })
@@ -97,7 +104,8 @@ export async function POST(request) {
       .select('id, status, requested_at')
       .eq('seller_id', user.id)
       .eq('amount', withdrawalAmount)
-      .eq('upi_id', resolvedUpiId)
+      .eq('bank_account_number', bankAccountNumber)
+      .eq('ifsc_code', bankIfscCode)
       .gte('requested_at', duplicateWindowStart)
       .order('requested_at', { ascending: false })
       .limit(1)
@@ -116,7 +124,8 @@ export async function POST(request) {
       .insert({
         seller_id: user.id,
         amount: withdrawalAmount,
-        upi_id: resolvedUpiId,
+        bank_account_number: bankAccountNumber,
+        ifsc_code: bankIfscCode,
         account_holder_name: resolvedAccountHolderName,
         status: 'pending',
         notes: notes || null

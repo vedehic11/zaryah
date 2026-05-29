@@ -256,8 +256,6 @@ export async function POST(request) {
       'id_number': ['idNumber', 'id_number'],
       'account_holder_name': ['accountHolderName', 'account_holder_name'],
       'upi_id': ['upiId', 'upi_id'],
-      'account_number': ['accountNumber', 'account_number', 'bankAccountNumber'],
-      'ifsc_code': ['ifscCode', 'ifsc_code'],
       'username': ['username'],
       'instagram': ['instagram'],
       'facebook': ['facebook'],
@@ -379,12 +377,9 @@ export async function POST(request) {
       'business_address': 'Business address',
       'business_description': 'Business description',
       'city': 'City',
-      'state': 'State',
-      'pincode': 'Pincode',
       'id_type': 'ID type',
       'id_number': 'ID number',
-      'account_holder_name': 'Account holder name',
-      'upi_id': 'UPI ID'
+      'account_holder_name': 'Account holder name'
     }
     
     const missingFields = []
@@ -404,13 +399,6 @@ export async function POST(request) {
         error: `Missing required fields: ${missingFields.join(', ')}`,
         received: Object.keys(sellerData).filter(k => sellerData[k]),
         missing: missingFields
-      }, { status: 400 })
-    }
-
-    // Validate at least one social media handle
-    if (!sellerData.instagram && !sellerData.facebook && !sellerData.x && !sellerData.linkedin) {
-      return NextResponse.json({ 
-        error: 'At least one social media handle is required (Instagram, Facebook, X/Twitter, or LinkedIn)' 
       }, { status: 400 })
     }
 
@@ -569,7 +557,7 @@ export async function POST(request) {
       'business_address', 'business_description', 'city', 'state', 'pincode',
       'gst_number', 'pan_number', 'id_type', 'id_number', 'id_document',
       'business_document', 'instagram', 'facebook', 'x', 'linkedin',
-      'alternate_mobile', 'account_holder_name', 'account_number', 'ifsc_code'
+      'alternate_mobile', 'account_holder_name', 'upi_id'
     ]
     
     const sellerDataForInsert = {}
@@ -644,7 +632,7 @@ export async function PUT(request) {
       'cover_photo', 'business_description', 'story', 'featured_story', 'instagram', 'facebook', 'x', 'linkedin',
       'allow_cod', 'username',
       'primary_mobile', 'business_address', 'city', 'alternate_mobile',
-      'account_holder_name', 'upi_id', 'account_number', 'ifsc_code', 'id_type', 'id_number'
+      'account_holder_name', 'upi_id', 'id_type', 'id_number'
     ]
     
     const allowedUserFields = ['profile_photo']

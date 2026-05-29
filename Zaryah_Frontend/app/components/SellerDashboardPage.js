@@ -48,15 +48,15 @@ export default function SellerDashboardPage() {
   const [editingSectionImageUploading, setEditingSectionImageUploading] = useState(false)
   const [orders, setOrders] = useState([])
   const [tickets, setTickets] = useState([])
-  
+
   // Order filters and expansion state
-  const [orderFilter, setOrderFilter] = useState('all') // all, pending, confirmed, ready, dispatched, delivered, cancelled
-  const [expandedOrders, setExpandedOrders] = useState(new Set()) // Track which orders are expanded
+  const [orderFilter, setOrderFilter] = useState('all')
+  const [expandedOrders, setExpandedOrders] = useState(new Set())
   const [ordersPage, setOrdersPage] = useState(1)
   const [ordersPageSize] = useState(20)
   const [ordersTotalPages, setOrdersTotalPages] = useState(1)
   const [ordersTotalCount, setOrdersTotalCount] = useState(0)
-  
+
   // Wallet state
   const [wallet, setWallet] = useState(null)
   const [walletOrders, setWalletOrders] = useState([])
@@ -70,8 +70,7 @@ export default function SellerDashboardPage() {
   const [withdrawalData, setWithdrawalData] = useState({
     amount: ''
   })
-  
-  // State to track which order is being updated (to prevent double-clicks)
+
   const [updatingOrders, setUpdatingOrders] = useState(new Set())
   const dashboardFetchInProgress = useRef(false)
   const dashboardLastFetchAt = useRef(0)
@@ -80,15 +79,13 @@ export default function SellerDashboardPage() {
   useEffect(() => {
     const tabParam = searchParams.get('tab')
     const orderIdParam = searchParams.get('orderId')
-    
+
     if (tabParam) {
       setActiveTab(tabParam)
     }
-    
+
     if (orderIdParam) {
-      // Expand the order so user can see it
       setExpandedOrders(prev => new Set(prev).add(orderIdParam))
-      // Scroll to the order (with small delay to ensure it's rendered)
       setTimeout(() => {
         const orderElement = document.getElementById(`order-${orderIdParam}`)
         if (orderElement) {
@@ -174,6 +171,13 @@ export default function SellerDashboardPage() {
       .filter((withdrawal) => withdrawal.status === 'completed')
       .reduce((sum, withdrawal) => sum + parseFloat(withdrawal.amount || 0), 0)
   }, [withdrawals])
+
+  const pendingWithdrawalTotal = useMemo(() => {
+    return (withdrawals || [])
+      .filter((withdrawal) => withdrawal.status === 'pending')
+      .reduce((sum, withdrawal) => sum + parseFloat(withdrawal.amount || 0), 0)
+  }, [withdrawals])
+
   const deliveredTotal = useMemo(() => {
     return walletSourceOrders
       .filter(order => order.status === 'delivered')
@@ -203,8 +207,8 @@ export default function SellerDashboardPage() {
       }, 0)
   }, [walletSourceOrders])
   const availableComputed = useMemo(() => {
-    return deliveredTotal - withdrawnTotal
-  }, [deliveredTotal, withdrawnTotal])
+    return deliveredTotal - withdrawnTotal - pendingWithdrawalTotal
+  }, [deliveredTotal, withdrawnTotal, pendingWithdrawalTotal])
 
   useEffect(() => {
     if (activeTab !== 'wallet') {
@@ -222,6 +226,7 @@ export default function SellerDashboardPage() {
     console.log('  deliveredTotal:', deliveredTotal.toFixed(2))
     console.log('  pendingTotal:', pendingTotal.toFixed(2))
     console.log('  withdrawnTotal:', withdrawnTotal.toFixed(2))
+    console.log('  pendingWithdrawalTotal:', pendingWithdrawalTotal.toFixed(2))
     console.log('  availableComputed:', availableComputed.toFixed(2))
     console.log('  completedWithdrawals:', completedWithdrawalsCount)
     console.log('  api.wallet.pending_balance:', wallet?.pending_balance || 0)
@@ -266,6 +271,11 @@ export default function SellerDashboardPage() {
       })
     return combined.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
   }, [transactions, walletSourceOrders])
+  const completedWithdrawals = useMemo(() => {
+    return (withdrawals || [])
+      .filter((withdrawal) => withdrawal.status === 'completed')
+      .sort((a, b) => new Date(b.requested_at || 0) - new Date(a.requested_at || 0))
+  }, [withdrawals])
   
   // Profile settings state
   const [showEditProfile, setShowEditProfile] = useState(false)
@@ -961,6 +971,8 @@ export default function SellerDashboardPage() {
     }
   }
 
+  const isArchivedProduct = (product) => Boolean(product?.archived)
+
   // Check if seller is approved
   if (!authLoading && user && !user.isApproved) {
     return (
@@ -995,174 +1007,163 @@ export default function SellerDashboardPage() {
           <div className="bg-gradient-to-br from-primary-50 to-secondary-50 border border-primary-200 rounded-2xl p-6 mb-8">
             <h3 className="text-sm font-bold text-primary-800 mb-3 flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-primary-600 rounded-full"></div>
-              What happens next?
+              What happens next
             </h3>
-            <p className="text-sm text-gray-700 leading-relaxed">
-              Our team is reviewing your business details and documents. 
-              This usually takes <span className="font-semibold text-primary-700">24-48 hours</span>. 
-              Once approved, you'll be able to add products and start selling!
-            </p>
+            <ul className="space-y-2 text-sm text-primary-900">
+              <li className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-primary-600 mt-0.5" />
+                <span>Our team reviews your documents and details.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-primary-600 mt-0.5" />
+                <span>You will receive an approval email once verified.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-primary-600 mt-0.5" />
+                <span>Then you can publish products and accept orders.</span>
+              </li>
+            </ul>
           </div>
 
-          {/* Button */}
-          <Link
-            href="/"
-            className="block w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white px-6 py-4 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl text-center"
-          >
-            Go to Homepage
-          </Link>
+          <p className="text-xs text-gray-500 text-center">Need help? Contact support@zaryah.in</p>
         </motion.div>
       </div>
     )
   }
 
-  if (loading || authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    )
-  }
-
-  const isArchivedProduct = (product) => {
-    if (product?.archived) return true
-    return String(product?.status || '').toLowerCase() === 'archived'
-  }
-
-  const activeProducts = products.filter((product) => !isArchivedProduct(product))
-  const archivedProducts = products.filter((product) => isArchivedProduct(product))
+  const activeProducts = (products || []).filter((product) => !isArchivedProduct(product))
+  const archivedProducts = (products || []).filter((product) => isArchivedProduct(product))
 
   const renderProductCard = (product) => {
     const isArchived = isArchivedProduct(product)
 
     return (
-    <div key={product.id} className="bg-white border border-gray-200 rounded-lg overflow-visible hover:shadow-md transition-shadow">
-      <div className="aspect-square bg-gray-100 relative">
-        {product.images && product.images.length > 0 ? (
-          <Image
-            src={product.images[0]}
-            alt={product.name}
-            fill
-            unoptimized
-            className="object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <ImageIcon className="w-12 h-12 text-gray-400" />
-          </div>
-        )}
-        <span className={`absolute top-2 right-2 px-2 py-1 text-xs font-medium rounded-full ${
-          isArchived ? 'bg-gray-100 text-gray-700' :
-          product.status === 'approved' ? 'bg-green-100 text-green-700' :
-          product.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-          'bg-red-100 text-red-700'
-        }`}>
-          {isArchived ? 'archived' : product.status}
-        </span>
-        <div className="absolute top-2 left-2 md:hidden">
-          <button
-            type="button"
-            onClick={() => setOpenMenuProductId(openMenuProductId === product.id ? null : product.id)}
-            className="inline-flex items-center justify-center p-2 bg-white/90 border border-gray-200 rounded-full shadow-sm hover:bg-white"
-            aria-expanded={openMenuProductId === product.id}
-            aria-label="Open product actions"
-          >
-            <MoreVertical className="w-5 h-5 text-gray-700" />
-          </button>
-
-          {openMenuProductId === product.id && (
-            <div className="absolute left-0 top-full mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <button
-                type="button"
-                onClick={() => { setOpenMenuProductId(null); router.push(`/product/${product.id}`) }}
-                className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
-              >
-                <Eye className="w-4 h-4" />
-                <span>View</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setOpenMenuProductId(null); router.push(`/seller/products/${product.id}/edit`) }}
-                className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
-              >
-                <Edit className="w-4 h-4" />
-                <span>Edit</span>
-              </button>
-              {isArchived ? (
-                <button
-                  type="button"
-                  onClick={() => { setOpenMenuProductId(null); handleUnarchiveProduct(product.id) }}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-emerald-600"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Unarchive</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => { setOpenMenuProductId(null); handleDeleteProduct(product.id) }}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-red-600"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Archive</span>
-                </button>
-              )}
+      <div key={product.id} className="bg-white border border-gray-200 rounded-lg overflow-visible hover:shadow-md transition-shadow">
+        <div className="aspect-square bg-gray-100 relative">
+          {product.images && product.images.length > 0 ? (
+            <Image
+              src={product.images[0]}
+              alt={product.name}
+              fill
+              unoptimized
+              className="object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <ImageIcon className="w-12 h-12 text-gray-400" />
             </div>
           )}
-        </div>
-      </div>
-      <div className="p-4">
-        <h4 className="font-semibold text-gray-900 mb-1">{product.name}</h4>
-        <div className="flex items-center space-x-2 mb-2">
-          <p className="text-gray-900 text-sm font-bold">₹{product.price}</p>
-          {product.mrp && product.mrp > product.price && (
-            <>
-              <p className="text-gray-500 text-xs line-through">₹{product.mrp}</p>
-              <span className="text-xs font-semibold text-orange-500">
-                {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
-              </span>
-            </>
-          )}
-        </div>
-        <div className="hidden md:flex items-center space-x-2">
-          <Link
-            href={`/product/${product.id}`}
-            className="flex-1 inline-flex items-center justify-center space-x-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            <Eye className="w-4 h-4" />
-            <span>View</span>
-          </Link>
-          <Link
-            href={`/seller/products/${product.id}/edit`}
-            className="flex-1 inline-flex items-center justify-center space-x-1 bg-primary-100 hover:bg-primary-200 text-primary-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            <Edit className="w-4 h-4" />
-            <span>Edit</span>
-          </Link>
-          {isArchived ? (
+          <span className={`absolute top-2 right-2 px-2 py-1 text-xs font-medium rounded-full ${
+            isArchived ? 'bg-gray-100 text-gray-700' :
+            product.status === 'approved' ? 'bg-green-100 text-green-700' :
+            product.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+            'bg-red-100 text-red-700'
+          }`}>
+            {isArchived ? 'archived' : product.status}
+          </span>
+          <div className="absolute top-2 left-2 md:hidden">
             <button
-              onClick={() => handleUnarchiveProduct(product.id)}
-              className="flex-1 inline-flex items-center justify-center space-x-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-2 rounded-lg transition-colors"
-              aria-label={`Unarchive ${product.name}`}
+              type="button"
+              onClick={() => setOpenMenuProductId(openMenuProductId === product.id ? null : product.id)}
+              className="inline-flex items-center justify-center p-2 bg-white/90 border border-gray-200 rounded-full shadow-sm hover:bg-white"
+              aria-expanded={openMenuProductId === product.id}
+              aria-label="Open product actions"
             >
-              <CheckCircle className="w-4 h-4" />
-              <span>Unarchive</span>
+              <MoreVertical className="w-5 h-5 text-gray-700" />
             </button>
-          ) : (
-            <button
-              onClick={() => handleDeleteProduct(product.id)}
-              className="flex-1 inline-flex items-center justify-center space-x-1 bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-lg transition-colors"
-              aria-label={`Archive ${product.name}`}
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Archive</span>
-            </button>
-          )}
-        </div>
 
+            {openMenuProductId === product.id && (
+              <div className="absolute left-0 top-full mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <button
+                  type="button"
+                  onClick={() => { setOpenMenuProductId(null); router.push(`/product/${product.id}`) }}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>View</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setOpenMenuProductId(null); router.push(`/seller/products/${product.id}/edit`) }}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>Edit</span>
+                </button>
+                {isArchived ? (
+                  <button
+                    type="button"
+                    onClick={() => { setOpenMenuProductId(null); handleUnarchiveProduct(product.id) }}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-emerald-600"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Unarchive</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { setOpenMenuProductId(null); handleDeleteProduct(product.id) }}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Archive</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="p-4">
+          <h4 className="font-semibold text-gray-900 mb-1">{product.name}</h4>
+          <div className="flex items-center space-x-2 mb-2">
+            <p className="text-gray-900 text-sm font-bold">₹{product.price}</p>
+            {product.mrp && product.mrp > product.price && (
+              <>
+                <p className="text-gray-500 text-xs line-through">₹{product.mrp}</p>
+                <span className="text-xs font-semibold text-orange-500">
+                  {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
+                </span>
+              </>
+            )}
+          </div>
+          <div className="hidden md:flex items-center space-x-2">
+            <Link
+              href={`/product/${product.id}`}
+              className="flex-1 inline-flex items-center justify-center space-x-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              <Eye className="w-4 h-4" />
+              <span>View</span>
+            </Link>
+            <Link
+              href={`/seller/products/${product.id}/edit`}
+              className="flex-1 inline-flex items-center justify-center space-x-1 bg-primary-100 hover:bg-primary-200 text-primary-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              <Edit className="w-4 h-4" />
+              <span>Edit</span>
+            </Link>
+            {isArchived ? (
+              <button
+                onClick={() => handleUnarchiveProduct(product.id)}
+                className="flex-1 inline-flex items-center justify-center space-x-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-2 rounded-lg transition-colors"
+                aria-label={`Unarchive ${product.name}`}
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>Unarchive</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleDeleteProduct(product.id)}
+                className="flex-1 inline-flex items-center justify-center space-x-1 bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-lg transition-colors"
+                aria-label={`Archive ${product.name}`}
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Archive</span>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  )
+    )
   }
 
   // Stats Cards
@@ -2771,6 +2772,13 @@ export default function SellerDashboardPage() {
                               setWallet(walletData.wallet)
                               setWithdrawals(walletData.withdrawals || [])
                             } catch (error) {
+                              if (error?.message?.toLowerCase()?.includes('seller profile not found')) {
+                                setActiveTab('profile')
+                                setShowEditProfile(true)
+                                fetchSellerProfile()
+                                toast.error('Please complete your seller profile before withdrawing')
+                                return
+                              }
                               if (error?.message?.toLowerCase()?.includes('complete kyc')) {
                                 setActiveTab('profile')
                                 setShowEditProfile(true)
@@ -2807,94 +2815,76 @@ export default function SellerDashboardPage() {
                   </motion.div>
                 )}
 
-                {/* Withdrawal Requests */}
+                {/* Pending Withdrawal Requests */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Withdrawal History</h3>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <Clock className="w-5 h-5 mr-2 text-amber-600" />
+                    Pending Withdrawals
+                  </h3>
                   <div className="space-y-3">
-                    {withdrawals && withdrawals.length > 0 ? (
-                      withdrawals.map((withdrawal) => (
+                    {withdrawals && withdrawals.filter(w => w.status === 'pending').length > 0 ? (
+                      withdrawals.filter(w => w.status === 'pending').map((withdrawal) => (
                         <div key={withdrawal.id} className="bg-white border border-gray-200 rounded-lg p-4">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="font-semibold text-gray-900">₹{withdrawal.amount?.toLocaleString()}</p>
-                              <p className="text-sm text-gray-500">{new Date(withdrawal.requested_at).toLocaleDateString()}</p>
+                              <p className="text-sm text-gray-500">Requested on {new Date(withdrawal.requested_at).toLocaleDateString()}</p>
                             </div>
                             <div className="text-right">
-                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                withdrawal.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                withdrawal.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                withdrawal.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                'bg-blue-100 text-blue-800'
-                              }`}>
-                                {withdrawal.status}
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
+                                <Clock className="w-3 h-3 mr-1" />
+                                Pending
                               </span>
-                              {withdrawal.status === 'completed' && (
-                                <div className="text-xs text-gray-600 mt-1 space-y-1">
-                                  <p>
-                                    Internal Transaction ID: {withdrawal.transaction_id || 'N/A'}
-                                  </p>
-                                  <p>
-                                    Manual Transaction ID / UTR: {withdrawal.manual_transaction_id || 'Not provided yet'}
-                                  </p>
-                                </div>
-                              )}
-                              {withdrawal.failure_reason && (
-                                <p className="text-xs text-red-600 mt-1">{withdrawal.failure_reason}</p>
-                              )}
+                              <p className="text-xs text-gray-600 mt-2">Awaiting admin approval</p>
                             </div>
                           </div>
                         </div>
                       ))
                     ) : (
                       <div className="text-center py-8 text-gray-500">
-                        <CreditCard className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                        <p>No withdrawal requests yet</p>
+                        <CheckCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                        <p>No pending withdrawal requests</p>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Transaction History */}
+                {/* Completed Withdrawal History */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Transaction History</h3>
-                  <div className="space-y-2">
-                    {normalizedTransactions.length > 0 ? (
-                      normalizedTransactions.map((txn) => {
-                        const isPendingCredit = txn.type === 'credit_pending'
-                        const isCredit = txn.type.includes('credit')
-                        const orderRef = txn.order_id ? `#${String(txn.order_id).slice(0, 8)}` : null
-
-                        return (
-                        <div key={txn.id} className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className={`p-2 rounded-full ${
-                              isPendingCredit ? 'bg-yellow-100' : isCredit ? 'bg-green-100' : 'bg-red-100'
-                            }`}>
-                              {isCredit ? (
-                                <ArrowDownCircle className={`w-5 h-5 ${isPendingCredit ? 'text-yellow-700' : 'text-green-600'}`} />
-                              ) : (
-                                <ArrowUpCircle className="w-5 h-5 text-red-600" />
-                              )}
-                            </div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                    Withdrawal History
+                  </h3>
+                  <div className="space-y-3">
+                    {withdrawals && withdrawals.filter(w => w.status === 'completed').length > 0 ? (
+                      withdrawals.filter(w => w.status === 'completed').map((withdrawal) => (
+                        <div key={withdrawal.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
                             <div>
-                              <p className="font-medium text-gray-900">{txn.description || txn.type.replace(/_/g, ' ')}</p>
-                              {orderRef && <p className="text-xs text-gray-500">Order: {orderRef}</p>}
-                              <p className="text-sm text-gray-500">{new Date(txn.created_at).toLocaleString()}</p>
+                              <p className="font-semibold text-gray-900">₹{withdrawal.amount?.toLocaleString()}</p>
+                              <p className="text-sm text-gray-500">Withdrawn on {new Date(withdrawal.requested_at).toLocaleDateString()}</p>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <p className={`font-semibold ${isPendingCredit ? 'text-yellow-700' : isCredit ? 'text-green-600' : 'text-red-600'}`}>
-                              {isCredit ? '+' : '-'}₹{Math.abs(txn.amount).toLocaleString()}
-                            </p>
-                            <p className="text-xs text-gray-500 capitalize">{isPendingCredit ? 'pending delivery' : txn.status}</p>
+                            <div className="text-right">
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Completed
+                              </span>
+                              <div className="text-xs text-gray-600 mt-2 space-y-1">
+                                {withdrawal.transaction_id && (
+                                  <p>ID: {withdrawal.transaction_id}</p>
+                                )}
+                                {withdrawal.manual_transaction_id && (
+                                  <p>UTR: {withdrawal.manual_transaction_id}</p>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        )
-                      })
+                      ))
                     ) : (
                       <div className="text-center py-8 text-gray-500">
-                        <FileText className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                        <p>No eligible transactions yet</p>
+                        <ArrowUpCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                        <p>No completed withdrawals yet</p>
                       </div>
                     )}
                   </div>
