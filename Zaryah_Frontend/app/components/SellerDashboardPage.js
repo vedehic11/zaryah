@@ -1043,6 +1043,7 @@ export default function SellerDashboardPage() {
             src={product.images[0]}
             alt={product.name}
             fill
+            unoptimized
             className="object-cover"
           />
         ) : (

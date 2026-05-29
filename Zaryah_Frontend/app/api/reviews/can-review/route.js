@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-// GET /api/reviews/can-review?productId=xxx - Check if user can review a product
+// GET /api/reviews/can-review?sellerId=xxx - Check if user can review a seller
 export async function GET(request) {
   try {
     const { requireAuth, getUserBySupabaseAuthId } = await import('@/lib/auth')
@@ -18,17 +18,17 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url)
-    const productId = searchParams.get('productId')
+    const sellerId = searchParams.get('sellerId')
 
-    if (!productId) {
-      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
+    if (!sellerId) {
+      return NextResponse.json({ error: 'Seller ID is required' }, { status: 400 })
     }
 
-    // Check if user has already reviewed this product
+    // Check if user has already reviewed this seller
     const { data: existingReview } = await supabase
-      .from('product_ratings')
+      .from('seller_reviews')
       .select('id')
-      .eq('product_id', productId)
+      .eq('seller_id', sellerId)
       .eq('user_id', user.id)
       .single()
 
@@ -39,19 +39,15 @@ export async function GET(request) {
       })
     }
 
-    // Check if user has purchased and received this product
+    // Check if user has purchased and received from this seller
     const { data: deliveredOrders, error: orderError } = await supabase
       .from('orders')
-      .select(`
-        id,
-        status,
-        order_items!inner (
-          product_id
-        )
-      `)
+      .select('id, status')
       .eq('buyer_id', user.id)
+      .eq('seller_id', sellerId)
       .eq('status', 'delivered')
-      .eq('order_items.product_id', productId)
+      .order('created_at', { ascending: false })
+      .limit(1)
 
     if (orderError) {
       console.error('Error checking order:', orderError)
@@ -61,7 +57,7 @@ export async function GET(request) {
     if (!deliveredOrders || deliveredOrders.length === 0) {
       return NextResponse.json({ 
         canReview: false, 
-        reason: 'Must purchase and receive product first' 
+        reason: 'Must purchase and receive from seller first' 
       })
     }
 

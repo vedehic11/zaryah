@@ -41,7 +41,7 @@ const LOGO_SRC = '/assets/image.png?v=20260501'
 const ROOT_DOMAIN = 'zaryah.in'
 
 // NotificationSidebar component (like CartSidebar)
-function NotificationSidebar({ isOpen, onClose }) {
+function NotificationSidebar({ isOpen, onClose, onUnreadCountChange }) {
   return (
     <div className={`fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       style={{ transitionProperty: 'transform' }}>
@@ -60,7 +60,7 @@ function NotificationSidebar({ isOpen, onClose }) {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-4">
-        <NotificationCenter />
+        <NotificationCenter isOpen={isOpen} onUnreadCountChange={onUnreadCountChange} />
       </div>
     </div>
   )
@@ -151,23 +151,11 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
     }
   }
 
-  // Load unread notification count
   useEffect(() => {
-    if (user && !authLoading) {
-      loadUnreadCount()
-    } else if (!user && !authLoading) {
+    if (!user && !authLoading) {
       setUnreadCount(0)
     }
   }, [user, authLoading])
-
-  const loadUnreadCount = async () => {
-    try {
-      const response = await apiService.getNotificationCount()
-      setUnreadCount(response.unreadCount || 0)
-    } catch (error) {
-      console.error('Error loading notification count:', error)
-    }
-  }
 
   // Auto-sync guest cart when user logs in - REMOVED
   // useEffect(() => {
@@ -656,7 +644,11 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
       </header>
       )}
       {/* Notification Sidebar */}
-      <NotificationSidebar isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} />
+      <NotificationSidebar
+        isOpen={isNotificationOpen}
+        onClose={() => setIsNotificationOpen(false)}
+        onUnreadCountChange={setUnreadCount}
+      />
       {/* Main Content */}
       <main className="flex-1">
         {children}

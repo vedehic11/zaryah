@@ -112,6 +112,7 @@ export const VideoCarousel = () => {
     <motion.div
       ref={ref}
       className="relative w-full h-[340px] md:h-[420px] lg:h-[500px] bg-gradient-to-br from-amber-50 to-orange-100 overflow-hidden"
+      style={{ position: 'relative' }}
       initial={{ opacity: 0, scale: 0.96 }}
       whileInView={{ opacity: 1, scale: 1 }}
       viewport={{ once: true, amount: 0.6 }}

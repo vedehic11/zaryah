@@ -24,6 +24,7 @@ export const ShopPage = () => {
   const [products, setProducts] = useState([])
   const [artisans, setArtisans] = useState([])
   const [loading, setLoading] = useState(true)
+  const [shuffleSeed, setShuffleSeed] = useState(() => Math.random())
 
   // Check for search query and category in URL params
   useEffect(() => {
@@ -56,6 +57,7 @@ export const ShopPage = () => {
         
         if (isMounted) {
           setProducts(productsData || []);
+          setShuffleSeed(Math.random());
           setLoading(false);
         }
         
@@ -137,6 +139,9 @@ export const ShopPage = () => {
       )
     }
 
+    // Order artisans by computed sellerRank (descending) when available
+    filtered.sort((a, b) => (b.sellerRank || 0) - (a.sellerRank || 0))
+
     return filtered
   }, [artisans, searchTerm, selectedCategory, searchType])
 
@@ -195,12 +200,62 @@ export const ShopPage = () => {
         break
       case 'newest':
       default:
-        filtered.sort((a, b) => new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at))
+        // Default ordering: prefer server-provided rank (productRank / sellerRank) when present.
+        // This ensures products are shown by relevance/rank while keeping the date fallback.
+        filtered.sort((a, b) => {
+          const ar = Number(a.productRank || a.sellerRank || 0)
+          const br = Number(b.productRank || b.sellerRank || 0)
+          if (br !== ar) return br - ar
+          return new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at)
+        })
         break
     }
 
+    if (searchType === 'products' && !sellerFilter && filtered.length > 1) {
+      const seededRandom = (seed) => {
+        let t = seed + 0x6d2b79f5
+        return () => {
+          t = Math.imul(t ^ (t >>> 15), t | 1)
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+        }
+      }
+
+      const getSellerKey = (product) => String(product?.seller?.id || product?.seller_id || 'unknown')
+      const sellers = new Map()
+
+      filtered.forEach((product) => {
+        const key = getSellerKey(product)
+        if (!sellers.has(key)) sellers.set(key, [])
+        sellers.get(key).push(product)
+      })
+
+      const sellerKeys = Array.from(sellers.keys())
+      const rand = seededRandom(Math.floor(shuffleSeed * 1e9))
+
+      for (let i = sellerKeys.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(rand() * (i + 1))
+        ;[sellerKeys[i], sellerKeys[j]] = [sellerKeys[j], sellerKeys[i]]
+      }
+
+      const interleaved = []
+      let remaining = filtered.length
+
+      while (remaining > 0) {
+        for (const key of sellerKeys) {
+          const bucket = sellers.get(key)
+          if (bucket && bucket.length > 0) {
+            interleaved.push(bucket.shift())
+            remaining -= 1
+          }
+        }
+      }
+
+      return interleaved
+    }
+
     return filtered
-  }, [products, sellerFilter, searchTerm, selectedCategory, priceRange, sortBy, searchType])
+  }, [products, sellerFilter, searchTerm, selectedCategory, priceRange, sortBy, searchType, shuffleSeed])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream-50 to-primary-50 py-4">

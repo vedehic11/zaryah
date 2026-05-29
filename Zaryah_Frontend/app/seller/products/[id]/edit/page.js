@@ -861,7 +861,7 @@ export default function EditSellerProductPage() {
                       {chart.url && (
                         <div className="mt-3 max-w-xs">
                           <div className="relative aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                            <Image src={chart.url} alt={chart.label || 'Chart'} fill className="object-contain" />
+                            <Image src={chart.url} alt={chart.label || 'Chart'} fill unoptimized className="object-contain" />
                           </div>
                           <p className="text-xs text-gray-500 mt-2">Shown on the product page for buyers.</p>
                         </div>

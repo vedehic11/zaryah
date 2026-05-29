@@ -156,6 +156,17 @@ describe('/api/sellers/username/[username] GET', () => {
           }
         }
 
+        if (table === 'seller_reviews') {
+          return {
+            select: () => ({
+              eq: async () => ({
+                data: [{ rating: 4 }, { rating: 5 }],
+                error: null,
+              }),
+            }),
+          }
+        }
+
         throw new Error(`unexpected table ${table}`)
       },
     })
@@ -168,6 +179,6 @@ describe('/api/sellers/username/[username] GET', () => {
     expect(response.status).toBe(200)
     expect(payload.products.length).toBe(1)
     expect(payload.products[0]).toMatchObject({ id: 'p1', averageRating: 4.5, ratingCount: 2 })
-    expect(payload.stats).toMatchObject({ productsCount: 1, averageRating: '4.5' })
+    expect(payload.stats).toMatchObject({ productsCount: 1, averageRating: 4.5, ratingCount: 2 })
   })
 })

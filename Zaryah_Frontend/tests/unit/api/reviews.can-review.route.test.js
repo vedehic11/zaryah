@@ -28,13 +28,13 @@ describe('/api/reviews/can-review GET', () => {
       fromImpl: () => ({ select: () => ({ eq: () => ({ eq: () => ({ single: async () => ({ data: null, error: null }) }) }) }) }),
     })
 
-    const response = await GET(new Request('http://localhost/api/reviews/can-review?productId=p1'))
+    const response = await GET(new Request('http://localhost/api/reviews/can-review?sellerId=s1'))
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toMatchObject({ canReview: false, reason: 'Not authenticated' })
   })
 
-  it('returns 400 when productId is missing', async () => {
+  it('returns 400 when sellerId is missing', async () => {
     const { GET } = await loadRoute({
       requireAuthImpl: async () => ({ user: { id: 'auth-1' } }),
       getUserBySupabaseAuthIdImpl: async () => ({ id: 'user-1' }),
@@ -44,15 +44,15 @@ describe('/api/reviews/can-review GET', () => {
     const response = await GET(new Request('http://localhost/api/reviews/can-review'))
 
     expect(response.status).toBe(400)
-    await expect(response.json()).resolves.toMatchObject({ error: 'Product ID is required' })
+    await expect(response.json()).resolves.toMatchObject({ error: 'Seller ID is required' })
   })
 
-  it('returns canReview false when product is already reviewed', async () => {
+  it('returns canReview false when seller is already reviewed', async () => {
     const { GET } = await loadRoute({
       requireAuthImpl: async () => ({ user: { id: 'auth-2' } }),
       getUserBySupabaseAuthIdImpl: async () => ({ id: 'user-2' }),
       fromImpl: (table) => {
-        if (table === 'product_ratings') {
+        if (table === 'seller_reviews') {
           return {
             select: () => ({
               eq: () => ({
@@ -67,7 +67,15 @@ describe('/api/reviews/can-review GET', () => {
         if (table === 'orders') {
           return {
             select: () => ({
-              eq: () => ({ eq: () => ({ eq: async () => ({ data: [{ id: 'o1' }], error: null }) }) }),
+              eq: () => ({
+                eq: () => ({
+                  eq: () => ({
+                    order: () => ({
+                      limit: async () => ({ data: [{ id: 'o1' }], error: null }),
+                    }),
+                  }),
+                }),
+              }),
             }),
           }
         }
@@ -76,7 +84,7 @@ describe('/api/reviews/can-review GET', () => {
       },
     })
 
-    const response = await GET(new Request('http://localhost/api/reviews/can-review?productId=p2'))
+    const response = await GET(new Request('http://localhost/api/reviews/can-review?sellerId=s2'))
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toMatchObject({ canReview: false, reason: 'Already reviewed' })
@@ -87,7 +95,7 @@ describe('/api/reviews/can-review GET', () => {
       requireAuthImpl: async () => ({ user: { id: 'auth-3' } }),
       getUserBySupabaseAuthIdImpl: async () => ({ id: 'user-3' }),
       fromImpl: (table) => {
-        if (table === 'product_ratings') {
+        if (table === 'seller_reviews') {
           return {
             select: () => ({
               eq: () => ({
@@ -104,7 +112,11 @@ describe('/api/reviews/can-review GET', () => {
             select: () => ({
               eq: () => ({
                 eq: () => ({
-                  eq: async () => ({ data: [{ id: 'o-delivered' }], error: null }),
+                  eq: () => ({
+                    order: () => ({
+                      limit: async () => ({ data: [{ id: 'o-delivered' }], error: null }),
+                    }),
+                  }),
                 }),
               }),
             }),
@@ -115,7 +127,7 @@ describe('/api/reviews/can-review GET', () => {
       },
     })
 
-    const response = await GET(new Request('http://localhost/api/reviews/can-review?productId=p3'))
+    const response = await GET(new Request('http://localhost/api/reviews/can-review?sellerId=s3'))
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toMatchObject({ canReview: true, orderId: 'o-delivered' })

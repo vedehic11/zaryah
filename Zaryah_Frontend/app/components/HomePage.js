@@ -15,21 +15,17 @@ export const HomePage = () => {
   const [sellers, setSellers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [productsLoaded, setProductsLoaded] = useState(false)
+  const [productsLoading, setProductsLoading] = useState(false)
   
   useEffect(() => {
     let isMounted = true;
     
-    const fetchData = async () => {
+    const fetchSellers = async () => {
       try {
         setLoading(true)
         setError(null)
-        
-        const approved = await apiService.getApprovedProducts();
-        
-        if (isMounted) {
-          setProducts(approved || []);
-        }
-        
+
         try {
           const response = await fetch('/api/sellers?featured_story=true&limit=3')
           const data = await response.json()
@@ -39,7 +35,7 @@ export const HomePage = () => {
         } catch (e) {
           console.error('Error fetching seller stories:', e)
         }
-        
+
         if (isMounted) {
           setLoading(false)
         }
@@ -52,13 +48,62 @@ export const HomePage = () => {
         }
       }
     };
-    
-    fetchData();
+
+    fetchSellers();
     
     return () => {
       isMounted = false;
     };
   }, []);
+
+  const productsSectionRef = useRef(null)
+
+  useEffect(() => {
+    if (productsLoaded || productsLoading) return
+    if (!productsSectionRef.current) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          observer.disconnect()
+          if (!productsLoaded && !productsLoading) {
+            loadProducts()
+          }
+        }
+      },
+      { rootMargin: '800px 0px' }
+    )
+
+    observer.observe(productsSectionRef.current)
+    return () => observer.disconnect()
+  }, [productsLoaded, productsLoading])
+
+  useEffect(() => {
+    if (productsLoaded || productsLoading) return
+    const timer = setTimeout(() => {
+      if (!productsLoaded && !productsLoading) {
+        loadProducts()
+      }
+    }, 1200)
+
+    return () => clearTimeout(timer)
+  }, [productsLoaded, productsLoading])
+
+  const loadProducts = async () => {
+    if (productsLoaded || productsLoading) return
+    setProductsLoading(true)
+    try {
+      const approved = await apiService.getApprovedProducts()
+      setProducts(approved || [])
+      setProductsLoaded(true)
+    } catch (e) {
+      console.error('Error fetching products:', e)
+      setError(e.message || 'Failed to load products')
+      setProducts([])
+    } finally {
+      setProductsLoading(false)
+    }
+  }
   
   const featuredProducts = (products || [])
     .filter(p => p.status === 'approved')
@@ -95,7 +140,7 @@ export const HomePage = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-elegant pt-0 md:pt-0">
+    <div className="relative min-h-screen bg-gradient-elegant pt-0 md:pt-0">
       <div ref={heroRef} className="relative w-full overflow-visible mt-0">
         <motion.div
           className="sticky top-0 z-30 w-full relative"
@@ -136,7 +181,11 @@ export const HomePage = () => {
       </section>
 
       {/* Featured Products */}
-      <section id="products-section" className="py-10 sm:py-12 bg-cream-100 w-full">
+      <section
+        id="products-section"
+        ref={productsSectionRef}
+        className="py-10 sm:py-12 bg-cream-100 w-full"
+      >
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}

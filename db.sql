@@ -229,6 +229,7 @@ CREATE TABLE public.products (
   size_charts jsonb DEFAULT '[]'::jsonb,
   categories ARRAY DEFAULT ARRAY[]::text[],
   sections ARRAY DEFAULT ARRAY[]::text[],
+  archived boolean NOT NULL DEFAULT false,
   CONSTRAINT products_pkey PRIMARY KEY (id),
   CONSTRAINT products_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.sellers(id),
   CONSTRAINT products_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(id),
@@ -248,6 +249,19 @@ CREATE TABLE public.reviews (
   CONSTRAINT reviews_pkey PRIMARY KEY (id),
   CONSTRAINT reviews_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id),
   CONSTRAINT reviews_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES public.buyers(id)
+);
+CREATE TABLE public.seller_reviews (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  seller_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  rating integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  title text,
+  comment text NOT NULL DEFAULT ''::text,
+  images ARRAY DEFAULT ARRAY[]::text[],
+  order_id uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT seller_reviews_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.seller_sections (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),

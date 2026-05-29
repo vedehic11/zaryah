@@ -41,7 +41,7 @@ export const OrderHistoryPage = () => {
   const [showOrderDetails, setShowOrderDetails] = useState(false)
   const [showSupportModal, setShowSupportModal] = useState(false)
   const [showReviewModal, setShowReviewModal] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [selectedSeller, setSelectedSeller] = useState(null)
   const [filter, setFilter] = useState('all') // all, pending, confirmed, ready, dispatched, delivered, cancelled
   const [cancellingOrderIds, setCancellingOrderIds] = useState(new Set())
 
@@ -239,7 +239,12 @@ export const OrderHistoryPage = () => {
   }
 
   const handleWriteReview = (product, order) => {
-    setSelectedProduct(product)
+    const seller = order?.seller || {}
+    setSelectedSeller({
+      id: order?.seller_id || seller?.id,
+      name: seller?.business_name || seller?.businessName || seller?.full_name || 'Seller',
+      profile_photo: seller?.profile_photo || seller?.profilePhoto || null
+    })
     setSelectedOrder(order)
     setShowReviewModal(true)
   }
@@ -952,10 +957,10 @@ export const OrderHistoryPage = () => {
           isOpen={showReviewModal}
           onClose={() => {
             setShowReviewModal(false)
-            setSelectedProduct(null)
+            setSelectedSeller(null)
             setSelectedOrder(null)
           }}
-          product={selectedProduct}
+          seller={selectedSeller}
         />
       </div>
     </div>

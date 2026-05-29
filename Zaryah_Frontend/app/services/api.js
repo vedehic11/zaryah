@@ -274,9 +274,6 @@ class ApiService {
         business_address,
         business_description,
         allow_cod
-      ),
-      product_ratings (
-        rating
       )
     `
 
@@ -315,12 +312,11 @@ class ApiService {
 
   normalizeProducts(products = []) {
     return (products || []).map(product => {
-      const ratings = product.product_ratings || []
+      const seller = product.sellers || {}
+      const ratings = seller.seller_reviews || []
       const avgRating = ratings.length > 0
         ? (ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1)
         : 0
-
-      const seller = product.sellers || {}
       const categories = Array.isArray(product.categories) ? product.categories :
         (product.category ? [product.category] : [])
       const sections = Array.isArray(product.sections) ? product.sections :
@@ -555,12 +551,12 @@ class ApiService {
   }
 
   // Review endpoints
-  async getProductReviews(productId) {
-    return this.request(`/reviews?productId=${productId}`, { method: 'GET' })
+  async getSellerReviews(sellerId) {
+    return this.request(`/reviews?sellerId=${sellerId}`, { method: 'GET' })
   }
 
-  async getReviews(productId = null) {
-    const url = productId ? `/reviews?productId=${productId}` : '/reviews'
+  async getReviews(sellerId = null) {
+    const url = sellerId ? `/reviews?sellerId=${sellerId}` : '/reviews'
     return this.request(url, { method: 'GET' })
   }
 

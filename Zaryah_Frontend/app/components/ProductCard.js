@@ -116,6 +116,7 @@ export const ProductCard = ({ product, backHref }) => {
               src={product.images && product.images.length > 0 ? product.images[0] : '/placeholder.jpg'}
               alt={product.name || 'Product Image'}
               fill
+              unoptimized
               className="object-cover group-hover:scale-105 transition-transform duration-700 rounded-lg"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />

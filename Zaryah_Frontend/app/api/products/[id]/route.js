@@ -33,17 +33,6 @@ export async function GET(request, { params }) {
           business_address,
           city,
           allow_cod
-        ),
-        product_ratings (
-          id,
-          user_id,
-          rating,
-          review,
-          date,
-          users:user_id (
-            name,
-            email
-          )
         )
       `)
       .eq('id', id)
@@ -59,11 +48,61 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
-    // Calculate average rating and format product data
-    const ratings = product.product_ratings || []
-    const avgRating = ratings.length > 0
-      ? (ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1)
+    const { data: sellerReviews, error: sellerReviewError } = await supabase
+      .from('seller_reviews')
+      .select('rating')
+      .eq('seller_id', product.seller_id)
+
+    if (sellerReviewError) {
+      console.error('Error fetching seller reviews:', sellerReviewError)
+    }
+
+    const sellerRatings = sellerReviews || []
+    const avgRating = sellerRatings.length > 0
+      ? (sellerRatings.reduce((sum, r) => sum + r.rating, 0) / sellerRatings.length).toFixed(1)
       : 0
+
+    // Compute sellerRank (used as productRank)
+    let sellerRank = 0
+    try {
+      const reviewsCount = sellerRatings.length
+      const { count: salesCount, error: salesErr } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('seller_id', product.seller_id)
+
+      const sales = salesErr ? 0 : (salesCount || 0)
+
+      const { data: lastOrder } = await supabase
+        .from('orders')
+        .select('created_at')
+        .eq('seller_id', product.seller_id)
+        .order('created_at', { ascending: false })
+
+      const { data: lastProduct } = await supabase
+        .from('products')
+        .select('created_at')
+        .eq('seller_id', product.seller_id)
+        .order('created_at', { ascending: false })
+
+      const lastDates = [seller.updated_at, lastOrder?.[0]?.created_at, lastProduct?.[0]?.created_at].filter(Boolean)
+      const lastActivity = lastDates.length > 0 ? new Date(Math.max(...lastDates.map(d => new Date(d).getTime()))) : null
+      const daysSince = lastActivity ? Math.floor((Date.now() - lastActivity.getTime()) / (1000*60*60*24)) : 365
+
+      const ratingScore = (parseFloat(avgRating) / 5) * 100
+      const salesScore = Math.min(100, (sales / 50) * 100)
+      // Prefer clicks for engagement when available on product; fallback to seller review count
+      const clicks = product.clicks || product.click_count || product.view_count || 0
+      const engagementCount = clicks || reviewsCount || 0
+      const engagementScore = Math.min(100, (engagementCount / 200) * 100)
+      const recentScore = Math.max(0, 100 - daysSince)
+
+      sellerRank = (0.4 * ratingScore) + (0.3 * salesScore) + (0.2 * engagementScore) + (0.1 * recentScore)
+      sellerRank = Number(sellerRank.toFixed(2))
+    } catch (err) {
+      console.error('Error computing sellerRank for product detail:', err)
+      sellerRank = 0
+    }
 
     // Normalize categories and sections for backward compatibility
     const categories = Array.isArray(product.categories) ? product.categories : 
@@ -141,7 +180,8 @@ export async function GET(request, { params }) {
       createdAt: product.created_at,
       created_at: product.created_at,
       averageRating: parseFloat(avgRating),
-      ratingCount: ratings.length,
+      ratingCount: sellerRatings.length,
+      productRank: sellerRank,
       // Seller information
       seller_id: product.seller_id,
       sellerId: product.seller_id, // For compatibility
@@ -158,16 +198,10 @@ export async function GET(request, { params }) {
         businessAddress: seller.business_address,
         city: seller.city,
         allowCod: seller.allow_cod !== false
+        ,
+        sellerRank: sellerRank
       },
-      // Ratings with user info
-      ratings: ratings.map(r => ({
-        id: r.id,
-        user_id: r.user_id,
-        rating: r.rating,
-        review: r.review,
-        date: r.date,
-        user: r.users || {}
-      }))
+      // Seller ratings are shown in the reviews tab via /api/reviews
     })
   } catch (error) {
     console.error('Error fetching product:', error)

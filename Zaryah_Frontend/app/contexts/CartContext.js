@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useAuth } from './AuthContext'
@@ -21,6 +21,10 @@ export const CartProvider = ({ children }) => {
   const [cartLoaded, setCartLoaded] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
+  const shouldLoadCart = useMemo(() => {
+    const path = pathname || ''
+    return isCartOpen || /^(\/cart|\/checkout)(\/|$)/.test(path)
+  }, [isCartOpen, pathname]);
 
   // Close cart when navigating to a different page
   useEffect(() => {
@@ -197,18 +201,21 @@ export const CartProvider = ({ children }) => {
 
   // Fetch cart from backend for logged-in users, localStorage for guests
   useEffect(() => {
-    // Wait for auth to finish loading
     if (authLoading) {
       return;
     }
 
-    // Add a small delay to ensure user is fully loaded
+    if (!shouldLoadCart) {
+      setCartLoaded(true);
+      return;
+    }
+
     const timer = setTimeout(() => {
       fetchCart();
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [user, authLoading]);
+  }, [user, authLoading, shouldLoadCart]);
 
   const fetchCart = async () => {
     if (user) {

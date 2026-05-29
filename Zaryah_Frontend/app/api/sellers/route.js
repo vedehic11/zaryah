@@ -122,7 +122,66 @@ export async function GET(request) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      return NextResponse.json(sellers || [])
+      // Compute ranking metrics for each seller (best-effort; may be heavy for large lists)
+      const enhanced = await Promise.all((sellers || []).map(async (seller) => {
+        try {
+          // Rating: average of seller_reviews
+          const { data: ratings } = await supabase
+            .from('seller_reviews')
+            .select('rating')
+            .eq('seller_id', seller.id)
+
+          const avgRating = (ratings && ratings.length > 0)
+            ? (ratings.reduce((s, r) => s + (r.rating || 0), 0) / ratings.length)
+            : 0
+
+          // Sales: count of orders for seller
+          const { count: salesCount, error: salesErr } = await supabase
+            .from('orders')
+            .select('id', { count: 'exact', head: true })
+            .eq('seller_id', seller.id)
+
+          const sales = salesErr ? 0 : (salesCount || 0)
+
+          // Engagement: use number of reviews as engagement proxy
+          const reviewsCount = ratings ? ratings.length : 0
+          // Prefer clicks if available on seller record, otherwise fallback to reviews count
+          const clicks = seller.clicks || seller.click_count || seller.view_count || 0
+          const engagementCount = clicks || reviewsCount || 0
+
+          // Recent activity: days since last update or last product created
+          const { data: lastOrder } = await supabase
+            .from('orders')
+            .select('created_at')
+            .eq('seller_id', seller.id)
+            .order('created_at', { ascending: false })
+
+          const { data: lastProduct } = await supabase
+            .from('products')
+            .select('created_at')
+            .eq('seller_id', seller.id)
+            .order('created_at', { ascending: false })
+
+          const lastDates = [seller.updated_at, lastOrder?.[0]?.created_at, lastProduct?.[0]?.created_at].filter(Boolean)
+          const lastActivity = lastDates.length > 0 ? new Date(Math.max(...lastDates.map(d => new Date(d).getTime()))) : null
+          const daysSince = lastActivity ? Math.floor((Date.now() - lastActivity.getTime()) / (1000*60*60*24)) : 365
+
+          // Normalize scores to 0-100
+          const ratingScore = (avgRating / 5) * 100
+          const salesScore = Math.min(100, (sales / 50) * 100) // cap 50 sales => 100
+          const engagementScore = Math.min(100, (engagementCount / 200) * 100) // cap ~200 clicks => 100
+          const recentScore = Math.max(0, 100 - daysSince) // within 0-100 days
+
+          const sellerRank = (0.4 * ratingScore) + (0.3 * salesScore) + (0.2 * engagementScore) + (0.1 * recentScore)
+
+          return { ...seller, averageRating: parseFloat(avgRating || 0), ratingCount: reviewsCount, sellerRank: Number(sellerRank.toFixed(2)) }
+        } catch (err) {
+          console.error('Error computing rank for seller', seller.id, err)
+          return { ...seller, sellerRank: 0 }
+        }
+      }))
+
+      return NextResponse.json(enhanced || [])
     }
   } catch (error) {
     if (error.message === 'Unauthorized') {

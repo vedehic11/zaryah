@@ -568,6 +568,7 @@ export const ProductDetailPage = ({ productId }) => {
                           src={displayImages[activeImageIndex] || displayImages[0]}
                           alt={product.name}
                           fill
+                          unoptimized
                           className="object-cover"
                           priority
                         />
@@ -626,6 +627,7 @@ export const ProductDetailPage = ({ productId }) => {
                                 src={image}
                                 alt={`${product.name} ${index + 1}`}
                                 fill
+                                unoptimized
                                 className="object-cover"
                               />
                             </button>
@@ -661,14 +663,14 @@ export const ProductDetailPage = ({ productId }) => {
                       <h1 className="text-3xl font-bold text-charcoal-900 mb-2">{product.name}</h1>
                       <div className="flex items-center space-x-4 mb-3 flex-wrap gap-2">
                         <div className="flex items-center space-x-1">
-                          <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                          <span className="font-semibold text-charcoal-900">
-                            {product.averageRating ? parseFloat(product.averageRating).toFixed(1) : 'New'}
-                          </span>
-                          {product.ratingCount > 0 && (
-                            <span className="text-charcoal-600">({product.ratingCount} {product.ratingCount === 1 ? 'review' : 'reviews'})</span>
-                          )}
-                        </div>
+                            <Star className="w-5 h-5 text-yellow-400 fill-current" />
+                            <span className="font-semibold text-charcoal-900">
+                              {product.averageRating ? parseFloat(product.averageRating).toFixed(1) : 'New'}
+                            </span>
+                            {product.ratingCount > 0 && (
+                              <span className="text-charcoal-600">({product.ratingCount} seller {product.ratingCount === 1 ? 'review' : 'reviews'})</span>
+                            )}
+                          </div>
                         {/* Instant delivery option removed */}
                         {product.customisable && (
                           <div className="bg-secondary-600 text-white px-3 py-1 rounded-full shadow-sm flex items-center space-x-1.5\">
@@ -1066,7 +1068,7 @@ export const ProductDetailPage = ({ productId }) => {
                   ...(hasCharts ? [{ key: 'charts', label: 'Reference Charts' }] : []),
                   { 
                     key: 'reviews', 
-                    label: 'Reviews',
+                    label: 'Seller Reviews',
                     badge: product?.ratingCount || 0
                   },
                   { key: 'seller', label: 'Seller Info' }
@@ -1259,6 +1261,7 @@ export const ProductDetailPage = ({ productId }) => {
                                           src={imageUrl}
                                           alt={`${chart.label} - Image ${imgIndex + 1}`}
                                           fill
+                                          unoptimized
                                           className="object-contain"
                                         />
                                       </div>
@@ -1270,6 +1273,7 @@ export const ProductDetailPage = ({ productId }) => {
                                       src={chart.url}
                                       alt={chart.label}
                                       fill
+                                      unoptimized
                                       className="object-contain"
                                     />
                                   </div>
@@ -1285,6 +1289,7 @@ export const ProductDetailPage = ({ productId }) => {
                                 src={product.sizeChartUrl || product.size_chart_url}
                                 alt="Size Chart"
                                 fill
+                                unoptimized
                                 className="object-contain"
                               />
                             </div>
@@ -1396,7 +1401,7 @@ export const ProductDetailPage = ({ productId }) => {
 
                 {activeTab === 'reviews' && (
                   <Reviews 
-                    productId={productId} 
+                    sellerId={product?.seller_id || product?.seller?.id}
                     showWriteReview={true}
                     onWriteReview={handleWriteReview}
                   />
@@ -1450,7 +1455,11 @@ export const ProductDetailPage = ({ productId }) => {
       <ReviewModal
         isOpen={showReviewModal}
         onClose={() => setShowReviewModal(false)}
-        product={product}
+        seller={{
+          id: product?.seller_id || product?.seller?.id,
+          name: product?.seller?.businessName || product?.seller?.business_name || product?.seller?.sellerName,
+          profile_photo: product?.seller?.profile_photo || product?.seller?.profilePhoto || null
+        }}
       />
     </div>
   )

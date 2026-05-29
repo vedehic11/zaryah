@@ -21,7 +21,7 @@ async function loadRoute({ requireAuthImpl, getUserBySupabaseAuthIdImpl, fromImp
 }
 
 describe('/api/reviews route handlers', () => {
-  it('GET returns 400 when productId missing', async () => {
+  it('GET returns 400 when sellerId missing', async () => {
     const { GET } = await loadRoute({
       requireAuthImpl: async () => ({ user: { id: 'a' } }),
       getUserBySupabaseAuthIdImpl: async () => ({ id: 'u1' }),
@@ -32,23 +32,40 @@ describe('/api/reviews route handlers', () => {
 
     const response = await GET(new Request('http://localhost/api/reviews'))
     expect(response.status).toBe(400)
-    await expect(response.json()).resolves.toMatchObject({ error: 'Product ID is required' })
+    await expect(response.json()).resolves.toMatchObject({ error: 'Seller ID is required' })
   })
 
-  it('GET returns reviews for productId', async () => {
+  it('GET returns reviews for sellerId', async () => {
     const { GET } = await loadRoute({
       requireAuthImpl: async () => ({ user: { id: 'a' } }),
       getUserBySupabaseAuthIdImpl: async () => ({ id: 'u1' }),
-      fromImpl: () => ({
-        select: () => ({ eq: () => ({ order: async () => ({ data: [{ id: 'r1' }], error: null }) }) }),
-      }),
+      fromImpl: (table) => {
+        if (table === 'seller_reviews') {
+          return {
+            select: () => ({
+              eq: () => ({
+                order: async () => ({ data: [{ id: 'r1', user_id: 'u1' }], error: null }),
+              }),
+            }),
+          }
+        }
+
+        if (table === 'users') {
+          return {
+            select: () => ({ in: async () => ({ data: [{ id: 'u1', name: 'Alex' }], error: null }) }),
+          }
+        }
+
+        throw new Error(`unexpected table ${table}`)
+      },
     })
 
-    const response = await GET(new Request('http://localhost/api/reviews?productId=p1'))
+    const response = await GET(new Request('http://localhost/api/reviews?sellerId=s1'))
     const payload = await response.json()
 
     expect(response.status).toBe(200)
     expect(payload[0].id).toBe('r1')
+    expect(payload[0].user).toMatchObject({ id: 'u1', name: 'Alex' })
   })
 
   it('POST returns 500 when auth throws (current behavior)', async () => {
@@ -66,7 +83,7 @@ describe('/api/reviews route handlers', () => {
       new Request('http://localhost/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: 'p1', rating: 5 }),
+        body: JSON.stringify({ seller_id: 's1', rating: 5 }),
       })
     )
 
@@ -87,7 +104,7 @@ describe('/api/reviews route handlers', () => {
       new Request('http://localhost/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: 'p1', rating: 6 }),
+        body: JSON.stringify({ seller_id: 's1', rating: 6 }),
       })
     )
 
@@ -105,14 +122,18 @@ describe('/api/reviews route handlers', () => {
             select: () => ({
               eq: () => ({
                 eq: () => ({
-                  eq: async () => ({ data: [], error: null }),
+                  eq: () => ({
+                    order: () => ({
+                      limit: async () => ({ data: [], error: null }),
+                    }),
+                  }),
                 }),
               }),
             }),
           }
         }
 
-        if (table === 'product_ratings') {
+        if (table === 'seller_reviews') {
           return {
             select: () => ({ eq: () => ({ eq: () => ({ single: async () => ({ data: null, error: null }) }) }) }),
           }
@@ -126,12 +147,12 @@ describe('/api/reviews route handlers', () => {
       new Request('http://localhost/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: 'p1', rating: 4, review: 'Nice' }),
+        body: JSON.stringify({ seller_id: 's1', rating: 4, review: 'Nice' }),
       })
     )
 
     expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toMatchObject({ error: 'You can only review products you have purchased and received' })
+    await expect(response.json()).resolves.toMatchObject({ error: 'You can only review sellers you have purchased from and received an order' })
   })
 
   it('POST returns 400 when review already exists', async () => {
@@ -144,14 +165,18 @@ describe('/api/reviews route handlers', () => {
             select: () => ({
               eq: () => ({
                 eq: () => ({
-                  eq: async () => ({ data: [{ id: 'o1' }], error: null }),
+                  eq: () => ({
+                    order: () => ({
+                      limit: async () => ({ data: [{ id: 'o1' }], error: null }),
+                    }),
+                  }),
                 }),
               }),
             }),
           }
         }
 
-        if (table === 'product_ratings') {
+        if (table === 'seller_reviews') {
           return {
             select: () => ({
               eq: () => ({
@@ -172,11 +197,11 @@ describe('/api/reviews route handlers', () => {
       new Request('http://localhost/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: 'p1', rating: 5, review: 'Great' }),
+        body: JSON.stringify({ seller_id: 's1', rating: 5, review: 'Great' }),
       })
     )
 
     expect(response.status).toBe(400)
-    await expect(response.json()).resolves.toMatchObject({ error: 'You have already reviewed this product' })
+    await expect(response.json()).resolves.toMatchObject({ error: 'You have already reviewed this seller' })
   })
 })

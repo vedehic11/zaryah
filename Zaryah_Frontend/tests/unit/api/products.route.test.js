@@ -82,9 +82,27 @@ describe('/api/products GET', () => {
         throw new Error('Unauthorized')
       },
       checkUserRoleImpl: async () => false,
-      fromImpl: () => ({
-        select: () => query,
-      }),
+      fromImpl: (table) => {
+        if (table === 'products') {
+          return { select: () => query }
+        }
+
+        if (table === 'seller_reviews') {
+          return {
+            select: () => ({
+              in: async () => ({
+                data: [
+                  { seller_id: 's1', rating: 4 },
+                  { seller_id: 's1', rating: 5 },
+                ],
+                error: null,
+              }),
+            }),
+          }
+        }
+
+        return { select: () => query }
+      },
     })
 
     const response = await GET(new Request('http://localhost/api/products'))
@@ -104,9 +122,27 @@ describe('/api/products GET', () => {
     const { GET } = await loadRoute({
       requireAuthImpl: async () => ({ user: { id: 'auth-1' } }),
       checkUserRoleImpl: async () => true,
-      fromImpl: () => ({
-        select: () => query,
-      }),
+      fromImpl: (table) => {
+        if (table === 'products') {
+          return { select: () => query }
+        }
+
+        if (table === 'seller_reviews') {
+          return {
+            select: () => ({
+              in: async () => ({
+                data: [
+                  { seller_id: 's1', rating: 4 },
+                  { seller_id: 's1', rating: 5 },
+                ],
+                error: null,
+              }),
+            }),
+          }
+        }
+
+        return { select: () => query }
+      },
     })
 
     const response = await GET(new Request('http://localhost/api/products?admin=true'))
@@ -198,9 +234,27 @@ describe('/api/products GET', () => {
         throw new Error('Unauthorized')
       },
       checkUserRoleImpl: async () => false,
-      fromImpl: () => ({
-        select: () => query,
-      }),
+      fromImpl: (table) => {
+        if (table === 'products') {
+          return { select: () => query }
+        }
+
+        if (table === 'seller_reviews') {
+          return {
+            select: () => ({
+              in: async () => ({
+                data: [
+                  { seller_id: 's1', rating: 4 },
+                  { seller_id: 's1', rating: 5 },
+                ],
+                error: null,
+              }),
+            }),
+          }
+        }
+
+        return { select: () => query }
+      },
     })
 
     const response = await GET(new Request('http://localhost/api/products'))

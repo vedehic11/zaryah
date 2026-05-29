@@ -4,10 +4,12 @@ import { use, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { 
-  Store, MapPin, Instagram, Star, Package, ShoppingBag, Heart, CheckCircle, ListFilter, X, Search, Menu, History, MessageSquare, Home, User
+  Store, MapPin, Instagram, Star, Package, ShoppingBag, Heart, CheckCircle, ListFilter, X, Search, Menu, History, MessageSquare, Home, User, ArrowUpRight
 } from 'lucide-react'
 import { ProductCard } from '@/app/components/ProductCard'
 import { Layout } from '@/app/components/Layout'
+import { Reviews } from '@/app/components/Reviews'
+import { ReviewModal } from '@/app/components/ReviewModal'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useCart } from '@/app/contexts/CartContext'
@@ -28,6 +30,8 @@ export default function SellerProfilePage({ params }) {
   const [isSectionDrawerOpen, setIsSectionDrawerOpen] = useState(false)
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false)
   const [isInstagramWebView, setIsInstagramWebView] = useState(false)
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [showMobileReviews, setShowMobileReviews] = useState(false)
   const overlaySearchInputRef = useRef(null)
   const { totalItems, setIsCartOpen } = useCart()
   const { wishlistCount } = useWishlist()
@@ -166,6 +170,9 @@ export default function SellerProfilePage({ params }) {
     }
 
     if (selectedSection === 'All') {
+      // Default ordering for seller product listing: use server-provided rank (productRank / sellerRank)
+      // Do not show the rank in UI; only order by it.
+      normalizedProducts.sort((a, b) => (b.productRank || b.sellerRank || 0) - (a.productRank || a.sellerRank || 0))
       return normalizedProducts
     }
 
@@ -261,6 +268,7 @@ export default function SellerProfilePage({ params }) {
   const ratingValue = showRating
     ? Number(stats.averageRating).toFixed(1)
     : '4.0'
+  const hasReviews = (stats.ratingCount || 0) > 0
 
   const getSelectedSectionImage = () => {
     if (selectedSection === 'All' || selectedSection === 'New Arrivals') {
@@ -271,6 +279,21 @@ export default function SellerProfilePage({ params }) {
   }
 
   const selectedSectionImage = getSelectedSectionImage()
+  const sellerReviewTarget = {
+    id: seller.id,
+    name: seller.business_name,
+    profile_photo: sellerUser.profile_photo || null
+  }
+
+  const handleOpenReviews = () => {
+    setShowMobileReviews(true)
+    const el = document.getElementById('seller-reviews')
+    if (el) {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    }
+  }
 
   return (
     <Layout>
@@ -533,18 +556,42 @@ export default function SellerProfilePage({ params }) {
                             Verified Seller
                           </span>
                         )}
+                        {hasReviews && (
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/35 bg-white/10 px-2.5 py-0.5 text-xs font-semibold text-white/90 shrink-0">
+                            <Star className="w-3.5 h-3.5 fill-yellow-300 text-yellow-300" />
+                            <span>{ratingValue}</span>
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 w-full lg:w-auto">
-                    <div className="rounded-2xl border border-white/25 bg-white/15 px-2.5 py-1.5">
-                      <p className="text-[11px] uppercase tracking-wider text-white/80">Rating</p>
-                      <p className="mt-0.5 text-white font-bold text-base inline-flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-yellow-300 text-yellow-300" />
-                        {ratingValue}
-                      </p>
-                    </div>
+                    {hasReviews ? (
+                      <button
+                        type="button"
+                        onClick={handleOpenReviews}
+                        className="relative rounded-2xl border border-white/25 bg-white/15 px-2.5 py-1.5 text-left transition-colors hover:bg-white/25"
+                        aria-label="Open seller reviews"
+                      >
+                        <span className="absolute right-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white/80">
+                          <ArrowUpRight className="h-3 w-3" />
+                        </span>
+                        <p className="text-[11px] uppercase tracking-wider text-white/80">Reviews</p>
+                        <p className="mt-0.5 text-white font-bold text-base inline-flex items-center gap-1">
+                          <MessageSquare className="w-4 h-4 text-white/90" />
+                          {stats.ratingCount || 0}
+                        </p>
+                      </button>
+                    ) : (
+                      <div className="rounded-2xl border border-white/25 bg-white/15 px-2.5 py-1.5">
+                        <p className="text-[11px] uppercase tracking-wider text-white/80">Rating</p>
+                        <p className="mt-0.5 text-white font-bold text-base inline-flex items-center gap-1">
+                          <Star className="w-4 h-4 fill-yellow-300 text-yellow-300" />
+                          {ratingValue}
+                        </p>
+                      </div>
+                    )}
                     <div className="rounded-2xl border border-white/25 bg-white/15 px-2.5 py-1.5">
                       <p className="text-[11px] uppercase tracking-wider text-white/80">Products</p>
                       <p className="mt-0.5 text-white font-bold text-base inline-flex items-center gap-1">
@@ -762,6 +809,30 @@ export default function SellerProfilePage({ params }) {
               transition={{ delay: 0.35 }}
               className="space-y-4 md:space-y-5 lg:sticky lg:top-24 h-fit"
             >
+              <div className="hidden md:block rounded-3xl border border-cream-200 bg-white p-5 shadow-soft">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-serif font-bold text-charcoal-900">Studio Reviews</h3>
+                  <button
+                    type="button"
+                    onClick={handleOpenReviews}
+                    className="text-xs font-semibold text-primary-700 hover:text-primary-800"
+                  >
+                    View
+                  </button>
+                </div>
+                <div className="mt-3 flex items-center gap-2 text-sm text-charcoal-700">
+                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <span className="font-semibold text-charcoal-900">{ratingValue}</span>
+                  <span className="text-charcoal-500">({stats.ratingCount || 0} reviews)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleOpenReviews}
+                  className="mt-4 w-full rounded-xl border border-primary-200 px-4 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-50"
+                >
+                  See all reviews
+                </button>
+              </div>
               <div className="rounded-3xl border border-cream-200 bg-gradient-to-br from-white to-cream-50 p-5 shadow-soft">
                 <h3 className="text-lg font-serif font-bold text-charcoal-900 mb-2">About This Studio</h3>
                 {aboutDescription ? (
@@ -802,8 +873,36 @@ export default function SellerProfilePage({ params }) {
               )}
             </motion.aside>
           </div>
+
+          <section id="seller-reviews" className={`mt-8 ${showMobileReviews ? '' : 'hidden md:block'}`}>
+            <div className="rounded-3xl bg-white border border-cream-200 shadow-soft p-5 md:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-serif font-bold text-charcoal-900">Seller Reviews</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowReviewModal(true)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Write Review
+                </button>
+              </div>
+              <Reviews
+                sellerId={sellerReviewTarget.id}
+                showWriteReview={true}
+                onWriteReview={() => setShowReviewModal(true)}
+                lazyLoad={true}
+              />
+            </div>
+          </section>
         </div>
       </div>
+
+      <ReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        seller={sellerReviewTarget}
+      />
     </Layout>
   )
 }

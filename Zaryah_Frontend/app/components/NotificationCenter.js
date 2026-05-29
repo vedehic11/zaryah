@@ -6,24 +6,26 @@ import { apiService } from '../services/api'
 import { Bell, Check, Trash2, X, Clock, Package, CreditCard, Gift, Settings } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-export const NotificationCenter = () => {
+export const NotificationCenter = ({ isOpen = false, onUnreadCountChange }) => {
   const { user, isLoading: authLoading } = useAuth()
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
   // Load notifications
   useEffect(() => {
+    if (!isOpen) return
     if (user && !authLoading) {
       loadNotifications()
     } else if (!user && !authLoading) {
       setNotifications([])
       setUnreadCount(0)
+      if (onUnreadCountChange) onUnreadCountChange(0)
       setError(null)
       setLoading(false)
     }
-  }, [user, authLoading])
+  }, [user, authLoading, isOpen])
 
   const loadNotifications = async () => {
     try {
@@ -31,7 +33,9 @@ export const NotificationCenter = () => {
       setError(null)
       const response = await apiService.getNotifications()
       setNotifications(response.notifications || [])
-      setUnreadCount(response.unreadCount || 0)
+      const nextCount = response.unreadCount || 0
+      setUnreadCount(nextCount)
+      if (onUnreadCountChange) onUnreadCountChange(nextCount)
     } catch (error) {
       console.error('Error loading notifications:', error)
     } finally {
@@ -47,7 +51,11 @@ export const NotificationCenter = () => {
           n.id === notificationId ? { ...n, isRead: true } : n
         )
       )
-      setUnreadCount(prev => Math.max(0, prev - 1))
+      setUnreadCount(prev => {
+        const nextCount = Math.max(0, prev - 1)
+        if (onUnreadCountChange) onUnreadCountChange(nextCount)
+        return nextCount
+      })
     } catch (error) {
       console.error('Error marking notification as read:', error)
       toast.error('Failed to mark notification as read')
@@ -59,6 +67,7 @@ export const NotificationCenter = () => {
       await apiService.markAllNotificationsAsRead()
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
       setUnreadCount(0)
+      if (onUnreadCountChange) onUnreadCountChange(0)
       toast.success('All notifications marked as read')
     } catch (error) {
       console.error('Error marking all notifications as read:', error)
@@ -71,7 +80,11 @@ export const NotificationCenter = () => {
       await apiService.deleteNotification(notificationId)
       setNotifications(prev => prev.filter(n => n.id !== notificationId))
       if (!notifications.find(n => n.id === notificationId)?.isRead) {
-        setUnreadCount(prev => Math.max(0, prev - 1))
+        setUnreadCount(prev => {
+          const nextCount = Math.max(0, prev - 1)
+          if (onUnreadCountChange) onUnreadCountChange(nextCount)
+          return nextCount
+        })
       }
       toast.success('Notification deleted')
     } catch (error) {
@@ -85,6 +98,7 @@ export const NotificationCenter = () => {
       await apiService.deleteAllNotifications()
       setNotifications([])
       setUnreadCount(0)
+      if (onUnreadCountChange) onUnreadCountChange(0)
       toast.success('All notifications deleted')
     } catch (error) {
       console.error('Error deleting all notifications:', error)

@@ -3,10 +3,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { Star, X, Upload, Image as ImageIcon, Trash2 } from 'lucide-react'
 import Image from 'next/image'
-import { apiService } from '../services/api'
 import toast from 'react-hot-toast'
 
-export const ReviewModal = ({ isOpen, onClose, product }) => {
+export const ReviewModal = ({ isOpen, onClose, seller }) => {
   const [formData, setFormData] = useState({
     rating: 5,
     comment: '',
@@ -19,21 +18,21 @@ export const ReviewModal = ({ isOpen, onClose, product }) => {
   const fileInputRef = useRef(null)
 
   useEffect(() => {
-    if (isOpen && product) {
+    if (isOpen && seller?.id) {
       checkEligibility()
     }
-  }, [isOpen, product])
+  }, [isOpen, seller])
 
   const checkEligibility = async () => {
     try {
-      const response = await fetch(`/api/reviews/can-review?productId=${product.id || product._id}`)
+      const response = await fetch(`/api/reviews/can-review?sellerId=${seller.id}`)
       const data = await response.json()
       
       if (data.canReview) {
         setOrderId(data.orderId)
         setCanSubmit(true)
       } else {
-        toast.error(data.reason || 'You cannot review this product')
+        toast.error(data.reason || 'You cannot review this seller')
         setCanSubmit(false)
         setTimeout(() => onClose(), 2000)
       }
@@ -42,6 +41,31 @@ export const ReviewModal = ({ isOpen, onClose, product }) => {
       toast.error('Failed to verify review eligibility')
       setCanSubmit(false)
     }
+  }
+
+  const uploadReviewImages = async () => {
+    if (!files.length) return []
+
+    const uploads = files.map(async (file) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'seller-reviews')
+      formData.append('useSupabase', 'false')
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+      if (!response.ok || !data?.url) {
+        throw new Error(data?.error || 'Failed to upload review image')
+      }
+
+      return data.url
+    })
+
+    return Promise.all(uploads)
   }
 
   const handleFileChange = (e) => {
@@ -71,18 +95,20 @@ export const ReviewModal = ({ isOpen, onClose, product }) => {
     e.preventDefault()
     
     if (!canSubmit) {
-      toast.error('You cannot review this product')
+      toast.error('You cannot review this seller')
       return
     }
     
     setLoading(true)
     
     try {
+      const imageUrls = await uploadReviewImages()
       const reviewData = {
-        product_id: product.id || product._id,
+        seller_id: seller.id,
         rating: formData.rating,
         review: formData.comment,
-        title: formData.title
+        title: formData.title,
+        images: imageUrls
       }
 
       console.log('Submitting review:', reviewData)
@@ -143,7 +169,7 @@ export const ReviewModal = ({ isOpen, onClose, product }) => {
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-charcoal-900 flex items-center">
             <Star className="w-5 h-5 mr-2" />
-            Write a Review
+            Write a Seller Review
           </h3>
           <button onClick={onClose} className="text-charcoal-500 hover:text-charcoal-700">
             <X className="w-5 h-5" />
@@ -157,19 +183,20 @@ export const ReviewModal = ({ isOpen, onClose, product }) => {
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center relative">
-                  {product.image ? (
+                  {seller?.profile_photo ? (
                     <Image 
-                      src={product.image} 
-                      alt={product.name}
+                      src={seller.profile_photo} 
+                      alt={seller.name || 'Seller'}
                       fill
                       className="object-cover"
+                      unoptimized
                     />
                   ) : (
                     <ImageIcon className="w-6 h-6 text-gray-400" />
                   )}
                 </div>
                 <div>
-                  <h4 className="font-medium text-charcoal-900">{product.name}</h4>
+                  <h4 className="font-medium text-charcoal-900">{seller?.name || 'Seller'}</h4>
                   <p className="text-sm text-charcoal-600">Order #{orderId?.slice(-8) || 'N/A'}</p>
                 </div>
               </div>
@@ -232,7 +259,7 @@ export const ReviewModal = ({ isOpen, onClose, product }) => {
                 required
                 rows={4}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="Share your experience with this product..."
+                placeholder="Share your experience with this seller..."
               />
             </div>
 

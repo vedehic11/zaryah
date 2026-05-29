@@ -642,6 +642,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
             src={displayImages[currentImageIndex] || '/placeholder-product.png'}
             alt={product.name}
             fill
+            unoptimized
             className="object-cover"
             priority
           />
@@ -1106,6 +1107,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                                   src={imageUrl}
                                   alt={`${chart.label} - Image ${imgIndex + 1}`}
                                   fill
+                                  unoptimized
                                   className="object-contain"
                                 />
                               </div>
@@ -1117,6 +1119,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                               src={chart.url}
                               alt={chart.label}
                               fill
+                              unoptimized
                               className="object-contain"
                             />
                           </div>
@@ -1272,7 +1275,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
           {activeTab === 'reviews' && (
             <div className="-mx-4 -my-4">
               <Reviews 
-                productId={product.id} 
+                sellerId={product?.seller_id || product?.seller?.id} 
                 showWriteReview={true}
               />
             </div>

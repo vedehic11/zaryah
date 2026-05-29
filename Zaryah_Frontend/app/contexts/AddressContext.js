@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
 import { useAuth } from './AuthContext'
 import { apiService } from '../services/api'
 import toast from 'react-hot-toast'
@@ -17,6 +18,7 @@ export const useAddress = () => {
 
 export const AddressProvider = ({ children }) => {
   const { user, isLoading: authLoading } = useAuth()
+  const pathname = usePathname()
   const [addresses, setAddresses] = useState([])
   const [selectedAddress, setSelectedAddress] = useState(null)
   const [defaultAddress, setDefaultAddress] = useState(null)
@@ -50,7 +52,13 @@ export const AddressProvider = ({ children }) => {
 
   // Load addresses from backend when user changes
   useEffect(() => {
-    if (user?.id && !authLoading) {
+    const shouldLoadAddresses = Boolean(
+      user?.id &&
+      !authLoading &&
+      /^(\/checkout|\/addresses)(\/|$)/.test(pathname || '')
+    )
+
+    if (shouldLoadAddresses) {
       loadUserAddresses()
     } else if (!user?.id && !authLoading) {
       // Clear addresses when user logs out
@@ -59,7 +67,7 @@ export const AddressProvider = ({ children }) => {
       setDefaultAddress(null)
       setUserCity(null)
     }
-  }, [user?.id, authLoading, loadUserAddresses])
+  }, [user?.id, authLoading, pathname, loadUserAddresses])
 
   // Add new address
   const addAddress = useCallback(async (addressData) => {

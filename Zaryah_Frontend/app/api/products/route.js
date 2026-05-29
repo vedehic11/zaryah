@@ -51,9 +51,6 @@ export async function GET(request) {
             business_address,
             business_description,
             allow_cod
-          ),
-          product_ratings (
-            rating
           )
         `)
 
@@ -106,11 +103,109 @@ export async function GET(request) {
 
     console.log('Products fetched:', products?.length || 0)
 
-    // Calculate average ratings and format product data consistently
+    const sellerIds = [...new Set((products || []).map(product => product.seller_id).filter(Boolean))]
+    const sellerReviewMap = {}
+
+    if (sellerIds.length > 0) {
+      const { data: sellerReviews, error: sellerReviewError } = await supabase
+        .from('seller_reviews')
+        .select('seller_id, rating')
+        .in('seller_id', sellerIds)
+
+      if (sellerReviewError) {
+        console.error('Error fetching seller reviews:', sellerReviewError)
+      } else {
+        ;(sellerReviews || []).forEach((review) => {
+          if (!sellerReviewMap[review.seller_id]) {
+            sellerReviewMap[review.seller_id] = { total: 0, count: 0 }
+          }
+          sellerReviewMap[review.seller_id].total += review.rating
+          sellerReviewMap[review.seller_id].count += 1
+        })
+      }
+    }
+
+    const sellerOrderStats = {}
+    if (sellerIds.length > 0) {
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select('seller_id, created_at')
+        .in('seller_id', sellerIds)
+
+      if (ordersError) {
+        console.error('Error fetching seller orders:', ordersError)
+      } else {
+        ;(orders || []).forEach((order) => {
+          if (!order?.seller_id) return
+          if (!sellerOrderStats[order.seller_id]) {
+            sellerOrderStats[order.seller_id] = { count: 0, lastOrderAt: null }
+          }
+
+          const stats = sellerOrderStats[order.seller_id]
+          stats.count += 1
+          if (order.created_at) {
+            const current = new Date(order.created_at).getTime()
+            const previous = stats.lastOrderAt ? new Date(stats.lastOrderAt).getTime() : 0
+            if (current > previous) {
+              stats.lastOrderAt = order.created_at
+            }
+          }
+        })
+      }
+    }
+
+    const sellerLastProductAt = {}
+    ;(products || []).forEach((product) => {
+      if (!product?.seller_id || !product?.created_at) return
+      const current = new Date(product.created_at).getTime()
+      const previous = sellerLastProductAt[product.seller_id]
+        ? new Date(sellerLastProductAt[product.seller_id]).getTime()
+        : 0
+      if (current > previous) {
+        sellerLastProductAt[product.seller_id] = product.created_at
+      }
+    })
+
+    // Compute sellerRank for each sellerId (used as productRank and exposed on seller)
+    const sellerRankMap = {}
+    sellerIds.forEach((sid) => {
+      try {
+        const sellerStats = sellerReviewMap[sid] || { total: 0, count: 0 }
+        const avgRating = sellerStats.count > 0 ? (sellerStats.total / sellerStats.count) : 0
+
+        const orderStats = sellerOrderStats[sid] || { count: 0, lastOrderAt: null }
+        const sales = orderStats.count || 0
+        const reviewsCount = sellerStats.count
+
+        const lastDates = [orderStats.lastOrderAt, sellerLastProductAt[sid]].filter(Boolean)
+        const lastActivity = lastDates.length > 0
+          ? new Date(Math.max(...lastDates.map(d => new Date(d).getTime())))
+          : null
+        const daysSince = lastActivity ? Math.floor((Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)) : 365
+
+        const ratingScore = (avgRating / 5) * 100
+        const salesScore = Math.min(100, (sales / 50) * 100)
+        // Engagement: prefer clicks if available (clicks -> engagement), fallback to reviews count
+        // Look for common click fields returned from DB; default to 0
+        const clicks = sellerStats.clicks || sellerStats.click_count || sellerStats.view_count || 0
+        const engagementCount = clicks || reviewsCount || 0
+        // Scale clicks so that ~200 clicks -> 100 points
+        const engagementScore = Math.min(100, (engagementCount / 200) * 100)
+        const recentScore = Math.max(0, 100 - daysSince)
+
+        const sellerRank = (0.4 * ratingScore) + (0.3 * salesScore) + (0.2 * engagementScore) + (0.1 * recentScore)
+        sellerRankMap[sid] = Number(sellerRank.toFixed(2))
+      } catch (err) {
+        console.error('Error computing seller rank for', sid, err)
+        sellerRankMap[sid] = 0
+      }
+    })
+
+    // Calculate seller ratings and format product data consistently
     const productsWithRatings = (products || []).map(product => {
-      const ratings = product.product_ratings || []
-      const avgRating = ratings.length > 0
-        ? (ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1)
+      const sellerStats = sellerReviewMap[product.seller_id] || { total: 0, count: 0 }
+      const avgRating = sellerStats.count > 0
+        ? (sellerStats.total / sellerStats.count).toFixed(1)
         : 0
 
       // Format seller data for compatibility
@@ -170,7 +265,8 @@ export async function GET(request) {
         createdAt: product.created_at,
         created_at: product.created_at,
         averageRating: parseFloat(avgRating),
-        ratingCount: ratings.length,
+        ratingCount: sellerStats.count,
+        productRank: sellerRankMap[product.seller_id] || 0,
         seller_id: product.seller_id,
         sellerId: product.seller_id,
         seller: {
@@ -183,7 +279,8 @@ export async function GET(request) {
           city: seller.city,
           businessAddress: seller.business_address,
           businessDescription: seller.business_description,
-          allowCod: seller.allow_cod !== false
+          allowCod: seller.allow_cod !== false,
+          sellerRank: sellerRankMap[product.seller_id] || 0
         }
       }
     })

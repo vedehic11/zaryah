@@ -1,30 +1,49 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Star, User, Calendar, ThumbsUp, MessageSquare } from 'lucide-react'
 import { apiService } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import Image from 'next/image'
 
-export const Reviews = ({ productId, showWriteReview = false, onWriteReview }) => {
+export const Reviews = ({ sellerId, showWriteReview = false, onWriteReview, lazyLoad = false }) => {
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [canReview, setCanReview] = useState(false)
   const [reviewEligibility, setReviewEligibility] = useState(null)
+  const [hasLoaded, setHasLoaded] = useState(!lazyLoad)
+  const containerRef = useRef(null)
   const { user } = useAuth()
 
   useEffect(() => {
-    if (!productId) return
+    if (!sellerId || !hasLoaded) return
     fetchReviews()
     if (user && showWriteReview) {
       checkReviewEligibility()
     }
-  }, [productId, user, showWriteReview])
+  }, [sellerId, user, showWriteReview, hasLoaded])
+
+  useEffect(() => {
+    if (!lazyLoad || hasLoaded) return
+    if (!containerRef.current) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setHasLoaded(true)
+        }
+      },
+      { rootMargin: '200px 0px' }
+    )
+
+    observer.observe(containerRef.current)
+    return () => observer.disconnect()
+  }, [lazyLoad, hasLoaded])
 
   const checkReviewEligibility = async () => {
     try {
-      const response = await fetch(`/api/reviews/can-review?productId=${productId}`)
+      const response = await fetch(`/api/reviews/can-review?sellerId=${sellerId}`)
       const data = await response.json()
       setCanReview(data.canReview)
       setReviewEligibility(data)
@@ -38,7 +57,7 @@ export const Reviews = ({ productId, showWriteReview = false, onWriteReview }) =
     setLoading(true)
     setError(null)
     try {
-      const data = await apiService.getProductReviews(productId)
+      const data = await apiService.getSellerReviews(sellerId)
       setReviews(data)
     } catch (err) {
       setError('Failed to load reviews')
@@ -85,6 +104,17 @@ export const Reviews = ({ productId, showWriteReview = false, onWriteReview }) =
     return distribution
   }
 
+  if (!hasLoaded) {
+    return (
+      <div ref={containerRef} className="bg-white rounded-xl shadow-soft border border-primary-100 p-6">
+        <div className="text-center text-charcoal-700">
+          <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+          <p className="text-sm">Reviews load on demand to keep the page fast.</p>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-soft border border-primary-100 p-6">
@@ -125,7 +155,7 @@ export const Reviews = ({ productId, showWriteReview = false, onWriteReview }) =
             </div>
             <div>
               <h3 className="text-lg font-semibold text-charcoal-900">
-                Customer Reviews
+                Seller Reviews
               </h3>
               <p className="text-sm text-charcoal-600">
                 {reviews.length} review{reviews.length !== 1 ? 's' : ''}
@@ -145,9 +175,9 @@ export const Reviews = ({ productId, showWriteReview = false, onWriteReview }) =
           
           {showWriteReview && user && !canReview && reviewEligibility && (
             <div className="text-sm text-charcoal-600 bg-cream-100 px-4 py-2 rounded-lg">
-              {reviewEligibility.reason === 'Already reviewed' 
-                ? 'You have already reviewed this product'
-                : reviewEligibility.reason === 'Must purchase and receive product first'
+                {reviewEligibility.reason === 'Already reviewed' 
+                ? 'You have already reviewed this seller'
+                : reviewEligibility.reason === 'Must purchase and receive from seller first'
                 ? 'Purchase and receive to review'
                 : 'Unable to review'}
             </div>
@@ -186,13 +216,13 @@ export const Reviews = ({ productId, showWriteReview = false, onWriteReview }) =
               No reviews yet
             </h4>
             <p className="text-charcoal-600">
-              Be the first to review this product!
+              Be the first to review this seller!
             </p>
           </div>
         ) : (
           <div className="space-y-6">
             {reviews.map((review) => (
-              <div key={review._id} className="border-b border-gray-100 pb-6 last:border-b-0">
+              <div key={review.id || review._id} className="border-b border-gray-100 pb-6 last:border-b-0">
                 {/* Review Header */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-3">
@@ -201,12 +231,12 @@ export const Reviews = ({ productId, showWriteReview = false, onWriteReview }) =
                     </div>
                     <div>
                       <h4 className="font-medium text-charcoal-900">
-                        {review.buyer?.name || 'Anonymous'}
+                        {review.user?.name || review.users?.name || 'Anonymous'}
                       </h4>
                       <div className="flex items-center space-x-2 text-sm text-charcoal-600">
                         {renderStars(review.rating)}
                         <span>•</span>
-                        <span>{formatDate(review.createdAt)}</span>
+                        <span>{formatDate(review.createdAt || review.created_at)}</span>
                       </div>
                     </div>
                   </div>
@@ -221,7 +251,7 @@ export const Reviews = ({ productId, showWriteReview = false, onWriteReview }) =
 
                 {/* Review Comment */}
                 <p className="text-charcoal-700 leading-relaxed mb-3">
-                  {review.comment}
+                  {review.comment || review.review}
                 </p>
 
                 {/* Review Images */}
@@ -233,6 +263,7 @@ export const Reviews = ({ productId, showWriteReview = false, onWriteReview }) =
                           src={image}
                           alt={`Review image ${index + 1}`}
                           fill
+                          unoptimized
                           className="object-cover"
                         />
                       </div>
