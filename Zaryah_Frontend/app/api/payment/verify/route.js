@@ -4,8 +4,8 @@ import { requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import crypto from 'crypto'
 
-// Commission: 3% from seller + Platform fee (₹10 or ₹20) from buyer
-const SELLER_COMMISSION_RATE = 3
+// Commission: 2.5% from seller + Platform fee (₹10 or ₹20) from buyer
+const SELLER_COMMISSION_RATE = 2.5
 
 export async function POST(request) {
   try {
@@ -92,7 +92,7 @@ export async function POST(request) {
             })
           }
 
-        // Use seller_amount from order (includes 97% of products + 100% gift packaging fees)
+        // Use seller_amount from order (includes 97.5% of products + 100% gift packaging fees)
         const sellerAmount = parseFloat(order.seller_amount || 0)
         const productSubtotal = (order.order_items || []).reduce((sum, item) => 
           sum + (parseFloat(item.price) * item.quantity), 0
@@ -106,8 +106,8 @@ export async function POST(request) {
         console.log('💰 SELLER EARNINGS CALCULATED (from payment verification):')
         console.log('  Product subtotal:', `₹${productSubtotal}`)
         console.log('  Gift packaging fees:', `₹${giftPackagingFee}`)
-        console.log('  Seller amount (97% + gift fees):', `₹${sellerAmount}`)
-        console.log('  Seller commission (3% from seller):', `₹${sellerCommission}`)
+        console.log('  Seller amount (97.5% + gift fees):', `₹${sellerAmount}`)
+        console.log('  Seller commission (2.5% from seller):', `₹${sellerCommission}`)
         console.log('  Buyer platform fee (₹10 or ₹20):', `₹${buyerPlatformFee}`)
         console.log('  Delivery markup (₹10 to admin):', `₹${deliveryMarkup}`)
         console.log('  Total admin earnings:', `₹${totalAdminEarnings}`)
@@ -161,8 +161,8 @@ export async function POST(request) {
             order_id: order_id,
             seller_id: order.seller_id,
             order_amount: productSubtotal,
-            commission_rate: SELLER_COMMISSION_RATE, // 3% from seller only
-            commission_amount: sellerCommission, // Only seller commission (3%)
+            commission_rate: SELLER_COMMISSION_RATE, // 2.5% from seller only
+            commission_amount: sellerCommission, // Only seller commission (2.5%)
             delivery_fee: deliveryMarkup, // Only the ₹10 markup, not full delivery fee
             status: 'earned',
             earned_at: new Date().toISOString()

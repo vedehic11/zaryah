@@ -121,7 +121,7 @@ describe('/api/payment/create-order POST', () => {
         select: () => ({
           eq: () => ({
             single: async () => ({
-              data: { total_amount: 500, commission_amount: 15, seller_amount: 485 },
+              data: { total_amount: 500, commission_amount: 12.5, seller_amount: 487.5 },
               error: null,
             }),
           }),
@@ -145,7 +145,7 @@ describe('/api/payment/create-order POST', () => {
   it('creates razorpay order and updates order payment fields', async () => {
     const updateEqMock = vi.fn(async () => ({ data: null, error: null }))
     const ordersSingleMock = vi.fn(async () => ({
-      data: { total_amount: 1000, commission_amount: 30, seller_amount: 970 },
+      data: { total_amount: 1000, commission_amount: 25, seller_amount: 975 },
       error: null,
     }))
 
@@ -183,8 +183,8 @@ describe('/api/payment/create-order POST', () => {
     expect(response.status).toBe(200)
     expect(payload.success).toBe(true)
     expect(payload.order_id).toBe('rzp_order_123')
-    expect(payload.commission_amount).toBe(30)
-    expect(payload.seller_amount).toBe(970)
+    expect(payload.commission_amount).toBe(25)
+    expect(payload.seller_amount).toBe(975)
 
     expect(razorpayOrdersCreateMock).toHaveBeenCalledTimes(1)
     expect(updateEqMock).toHaveBeenCalledWith('id', 'order-1')

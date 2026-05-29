@@ -10,7 +10,7 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 })
 
-const SELLER_COMMISSION_RATE = 3
+const SELLER_COMMISSION_RATE = 2.5
 
 // POST /api/payment/create-order - Create Razorpay order for checkout
 export async function POST(request) {
@@ -87,7 +87,7 @@ export async function POST(request) {
     const orderAmountInRupees = parseFloat(amount) / 100
     const commissionAmount = orderFinancials
       ? orderFinancials.commissionAmount
-      : parseFloat((orderAmountInRupees * 0.03).toFixed(2))
+      : parseFloat((orderAmountInRupees * 0.025).toFixed(2))
     const sellerAmount = orderFinancials
       ? orderFinancials.sellerAmount
       : parseFloat((orderAmountInRupees - commissionAmount).toFixed(2))
@@ -220,7 +220,7 @@ export async function PATCH(request) {
         .single()
 
       if (order && order.seller_id) {
-        const fallbackCommissionAmount = parseFloat((order.total_amount * (3 / 100)).toFixed(2))
+        const fallbackCommissionAmount = parseFloat((order.total_amount * (2.5 / 100)).toFixed(2))
         const fallbackSellerAmount = parseFloat((order.total_amount - fallbackCommissionAmount).toFixed(2))
 
         // Credit seller wallet (PENDING balance until delivery)

@@ -392,7 +392,7 @@ export const AdminDashboardPage = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-xl font-bold">Platform Revenue</h2>
-                  <p className="text-sm text-gray-600">3% Seller Commission + Platform Fees (₹10/₹20) + Delivery Fees (includes ₹10 markup on Shiprocket rate)</p>
+                  <p className="text-sm text-gray-600">2.5% Seller Commission + Platform Fees (₹10/₹20) + Delivery Fees (includes ₹10 markup on Shiprocket rate)</p>
                 </div>
                 <select
                   onChange={(e) => fetchEarnings(e.target.value)}
@@ -423,7 +423,7 @@ export const AdminDashboardPage = () => {
                       <div className="flex items-center justify-between mb-2">
                         <DollarSign className="w-8 h-8" />
                       </div>
-                      <p className="text-green-100 text-sm mb-1">Seller Commission (3%)</p>
+                      <p className="text-green-100 text-sm mb-1">Seller Commission (2.5%)</p>
                       <p className="text-3xl font-bold">₹{earnings.totalCommission?.toLocaleString() || '0.00'}</p>
                     </div>
                     
@@ -456,7 +456,7 @@ export const AdminDashboardPage = () => {
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Order</th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Seller</th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
-                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Commission (3%)</th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Commission (2.5%)</th>
                               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Platform Fee</th>
                               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Delivery Fee</th>
                               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Total</th>
