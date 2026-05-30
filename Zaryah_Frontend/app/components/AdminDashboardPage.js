@@ -85,7 +85,8 @@ export const AdminDashboardPage = () => {
 
   const fetchWithdrawals = async (status = null) => {
     try {
-      const data = await apiService.getAdminWithdrawals(status)
+      const normalizedStatus = status === 'approved' ? 'completed' : status
+      const data = await apiService.getAdminWithdrawals(normalizedStatus)
       setWithdrawals(data.withdrawals || [])
     } catch (error) {
       console.error('Error fetching withdrawals:', error)

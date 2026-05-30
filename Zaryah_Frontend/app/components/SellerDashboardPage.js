@@ -452,6 +452,73 @@ export default function SellerDashboardPage() {
         return order
       })
       const pagination = paginatedOrdersPayload?.pagination
+
+      // Live reconciliation: refresh active shipment statuses before rendering seller orders.
+      const ordersNeedingLiveSync = orders
+        .filter(order =>
+          order?.id &&
+          order?.awb_code &&
+          !['delivered', 'cancelled'].includes(order.status)
+        )
+        .slice(0, 6)
+
+      if (ordersNeedingLiveSync.length > 0) {
+        const trackingResults = await Promise.allSettled(
+          ordersNeedingLiveSync.map(order =>
+            apiService.request(`/orders/${order.id}/tracking`, { method: 'GET', silentErrors: true })
+          )
+        )
+
+        const liveStatusByOrderId = new Map()
+
+        trackingResults.forEach((result, index) => {
+          if (result.status !== 'fulfilled') return
+
+          const order = ordersNeedingLiveSync[index]
+          const payload = result.value || {}
+          const mappedStatus = payload?.shipment?.mapped_status
+          const currentShipmentStatus = payload?.shipment?.current_status
+
+          if (mappedStatus || currentShipmentStatus) {
+            liveStatusByOrderId.set(order.id, {
+              status: mappedStatus || order.status,
+              shipment_status: currentShipmentStatus || order.shipment_status
+            })
+          }
+        })
+
+        if (liveStatusByOrderId.size > 0) {
+          orders.forEach((order, index) => {
+            const live = liveStatusByOrderId.get(order.id)
+            if (!live) return
+
+            const twoWayIntermediateStatuses = ['pickup_dispatched', 'received_by_seller', 'ready']
+            const isTwoWay = Boolean(order.two_way_delivery || order.twoWayDelivery)
+
+            if (isTwoWay && twoWayIntermediateStatuses.includes(order.status)) {
+              orders[index] = {
+                ...order,
+                shipment_status: live.shipment_status || order.shipment_status
+              }
+              return
+            }
+
+            if (!isTwoWay && order.status === 'ready' && live.status === 'confirmed') {
+              orders[index] = {
+                ...order,
+                shipment_status: live.shipment_status || order.shipment_status
+              }
+              return
+            }
+
+            orders[index] = {
+              ...order,
+              status: live.status,
+              shipment_status: live.shipment_status
+            }
+          })
+        }
+      }
       
       // Debug: Log raw orders data from API
       console.log('🔍 RAW ORDERS DATA FROM API (first 2 orders):')
