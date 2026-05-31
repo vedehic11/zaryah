@@ -57,6 +57,7 @@ export const ProductDetailPage = ({ productId }) => {
   const [customUploadStatus, setCustomUploadStatus] = useState({})
   const [fetchedProduct, setFetchedProduct] = useState(null);
   const [sellerUsername, setSellerUsername] = useState(null);
+  const [galleryReady, setGalleryReady] = useState(false)
   const pointerStartX = useRef(null)
   const isPointerDown = useRef(false)
   const thumbsRef = useRef(null)
@@ -249,6 +250,7 @@ export const ProductDetailPage = ({ productId }) => {
     }
 
     setActiveImageIndex(0)
+    setGalleryReady(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id])
 
@@ -278,6 +280,7 @@ export const ProductDetailPage = ({ productId }) => {
 
   useEffect(() => {
     setActiveImageIndex(0)
+    setGalleryReady(false)
   }, [selectedColor])
 
   useEffect(() => {
@@ -571,6 +574,7 @@ export const ProductDetailPage = ({ productId }) => {
                           unoptimized
                           className="object-cover"
                           priority
+                          onLoad={() => setGalleryReady(true)}
                         />
 
                         {/* Prev / Next Controls */}
@@ -601,7 +605,7 @@ export const ProductDetailPage = ({ productId }) => {
                   </div>
                   
                   {/* Additional Images */}
-                  {displayImages.length > 1 && (
+                  {galleryReady && displayImages.length > 1 && (
                     <div className="relative">
                       <div className="flex items-center">
                         <button
@@ -629,6 +633,7 @@ export const ProductDetailPage = ({ productId }) => {
                                 fill
                                 unoptimized
                                 className="object-cover"
+                                loading="lazy"
                               />
                             </button>
                           ))}

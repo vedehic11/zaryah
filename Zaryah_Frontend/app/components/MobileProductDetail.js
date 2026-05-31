@@ -30,6 +30,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
   const [customUploadStatus, setCustomUploadStatus] = useState({})
   const [activeTab, setActiveTab] = useState('details')
   const [sellerUsername, setSellerUsername] = useState(null)
+  const [galleryReady, setGalleryReady] = useState(false)
   const thumbsRefMobile = useRef(null)
 
   // Derive seller username with fallback logic and fetch from API if needed
@@ -188,6 +189,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     }
 
     setCurrentImageIndex(0)
+    setGalleryReady(false)
 
     if (product?.customisable && (product?.customQuestions || product?.custom_questions)) {
       console.log('Customization enabled:', product.customisable)
@@ -198,6 +200,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
 
   useEffect(() => {
     setCurrentImageIndex(0)
+    setGalleryReady(false)
   }, [selectedColor])
 
   if (!product) {
@@ -645,6 +648,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
             unoptimized
             className="object-cover"
             priority
+            onLoad={() => setGalleryReady(true)}
           />
         </div>
         {/* Prev / Next Controls */}
@@ -697,7 +701,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
           </div>
         )}
         {/* Thumbnail slider below images */}
-        {displayImages.length > 1 && (
+        {galleryReady && displayImages.length > 1 && (
           <div className="mt-3 px-4">
             <div className="flex items-center">
               <div ref={thumbsRefMobile} className="flex gap-2 overflow-x-auto snap-x snap-mandatory py-2 scrollbar-hide">
@@ -709,7 +713,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                       i === currentImageIndex ? 'ring-2 ring-primary-600' : 'ring-0'
                     }`}
                   >
-                    <img src={img} alt={`${product.name} thumb ${i + 1}`} className="w-full h-full object-cover" />
+                    <img src={img} alt={`${product.name} thumb ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
                   </button>
                 ))}
               </div>

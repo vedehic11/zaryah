@@ -299,8 +299,8 @@ export const GiftSuggesterPage = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {suggestions.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                {suggestions.map((product, index) => (
+                  <ProductCard key={product.id} product={product} imagePriority={index < 4} />
                 ))}
               </div>
 

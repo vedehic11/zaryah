@@ -13,7 +13,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
-export const ProductCard = ({ product, backHref }) => {
+export const ProductCard = ({ product, backHref, imagePriority = false }) => {
   const { user } = useAuth();
   const router = useRouter();
   const [showQuickAdd, setShowQuickAdd] = useState(false)
@@ -116,7 +116,9 @@ export const ProductCard = ({ product, backHref }) => {
               src={product.images && product.images.length > 0 ? product.images[0] : '/placeholder.jpg'}
               alt={product.name || 'Product Image'}
               fill
-              unoptimized
+              priority={imagePriority}
+              loading={imagePriority ? 'eager' : 'lazy'}
+              fetchPriority={imagePriority ? 'high' : 'auto'}
               className="object-cover group-hover:scale-105 transition-transform duration-700 rounded-lg"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />

@@ -143,7 +143,7 @@ export const HomePage = () => {
     <div className="relative min-h-screen bg-gradient-elegant pt-0 md:pt-0">
       <div ref={heroRef} className="relative w-full overflow-visible mt-0">
         <motion.div
-          className="sticky top-0 z-30 w-full relative"
+          className="sticky top-0 z-30 w-full"
           style={{ opacity: fadeOut, scale: scaleOut }}
         >
           <VideoCarousel />
@@ -209,7 +209,7 @@ export const HomePage = () => {
               transition={{ delay: index * 0.1 }}
               whileHover={{ y: -8 }}
             >
-              <ProductCard product={product} />
+              <ProductCard product={product} imagePriority={index < 4} />
             </motion.div>
           ))}
         </div>
@@ -218,7 +218,7 @@ export const HomePage = () => {
         <div className="sm:hidden flex space-x-4 overflow-x-auto px-4 pb-4 mb-8 scrollbar-hide">
           {featuredProducts.map((product, index) => (
             <div key={product.id || product._id} className="min-w-[280px] max-w-[300px] flex-shrink-0">
-              <ProductCard product={product} />
+              <ProductCard product={product} imagePriority={index < 4} />
             </div>
           ))}
         </div>

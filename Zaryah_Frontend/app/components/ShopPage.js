@@ -486,8 +486,12 @@ export const ShopPage = () => {
                 ? 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
                 : 'grid-cols-1'
             }`}>
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id || product._id} product={product} />
+              {filteredProducts.map((product, index) => (
+                <ProductCard
+                  key={product.id || product._id}
+                  product={product}
+                  imagePriority={index < 4}
+                />
               ))}
             </div>
           )

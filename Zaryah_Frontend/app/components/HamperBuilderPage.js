@@ -170,9 +170,9 @@ export const HamperBuilderPage = () => {
           <div className="lg:col-span-2">
             <h2 className="text-2xl font-bold text-charcoal-900 mb-6">Choose Products</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {availableProducts.map((product) => (
+              {availableProducts.map((product, index) => (
                 <div key={product.id} className="relative">
-                  <ProductCard product={product} />
+                  <ProductCard product={product} imagePriority={index < 4} />
                   <button
                     onClick={() => addToHamper(product)}
                     className="absolute top-4 right-4 bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-full shadow-soft transition-colors"

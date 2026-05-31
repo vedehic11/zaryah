@@ -770,7 +770,7 @@ export default function SellerProfilePage({ params }) {
                   }}
                   className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
                 >
-                  {filteredProducts.map((product) => (
+                  {filteredProducts.map((product, index) => (
                     <motion.div
                       key={product.id}
                       variants={{
@@ -778,7 +778,7 @@ export default function SellerProfilePage({ params }) {
                         visible: { opacity: 1, y: 0 }
                       }}
                     >
-                      <ProductCard product={product} backHref={sellerHomeUrl} />
+                      <ProductCard product={product} backHref={sellerHomeUrl} imagePriority={index < 4} />
                     </motion.div>
                   ))}
                 </motion.div>
