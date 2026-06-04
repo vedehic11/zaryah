@@ -30,7 +30,7 @@ describe('/api/shipping/calculate-rate POST', () => {
     const { POST } = await loadRoute({
       calculateShippingRatesImpl: async () => [],
       getCheapestShippingRateImpl: async () => 50,
-      normalizeWeightToKgImpl: () => 0.5,
+      normalizeWeightToKgImpl: () => 0.7,
       fromImpl: () => ({ select: () => ({ eq: () => ({ single: async () => ({ data: null, error: null }) }) }) }),
     })
 
@@ -71,7 +71,7 @@ describe('/api/shipping/calculate-rate POST', () => {
     expect(payload).toMatchObject({
       success: true,
       deliveryCharge: 79,
-      weight: 0.5,
+      weight: 0.7,
       pickupPincode: '400001',
       deliveryPincode: '560001',
     })

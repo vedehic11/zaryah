@@ -1,13 +1,20 @@
 import { createClient } from '@supabase/supabase-js'
-import { calculateShippingRates } from '../lib/shiprocket.js'
+const SHIPROCKET_API_BASE = 'https://apiv2.shiprocket.in/v1/external'
 
 const ORDER_ID = process.env.ORDER_ID || '84b89675-4ecc-49e5-bd48-24015b57e4ad'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const SHIPROCKET_EMAIL = process.env.SHIPROCKET_EMAIL
+const SHIPROCKET_PASSWORD = process.env.SHIPROCKET_PASSWORD
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error('SUPABASE URL or service role key not set. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in env.')
+  process.exit(1)
+}
+
+if (!SHIPROCKET_EMAIL || !SHIPROCKET_PASSWORD) {
+  console.error('Shiprocket credentials missing. Set SHIPROCKET_EMAIL and SHIPROCKET_PASSWORD in env.')
   process.exit(1)
 }
 
@@ -59,7 +66,77 @@ function normalizePhone(value) {
 
 function toKg(grams) {
   const weight = Number(grams || 0)
-  return weight > 0 ? weight / 1000 : 0.5
+  return weight > 0 ? weight / 1000 : 0.7
+}
+
+async function authenticateShiprocket() {
+  const response = await fetch(`${SHIPROCKET_API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: SHIPROCKET_EMAIL,
+      password: SHIPROCKET_PASSWORD
+    })
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(`Shiprocket auth failed: ${error.message || response.statusText}`)
+  }
+
+  const data = await response.json()
+  if (!data.token) {
+    throw new Error('Shiprocket auth failed: token missing')
+  }
+
+  return data.token
+}
+
+async function fetchServiceabilityRates({ pickupPincode, deliveryPincode, weight, codAmount }) {
+  const token = await authenticateShiprocket()
+  const params = new URLSearchParams({
+    pickup_postcode: pickupPincode,
+    delivery_postcode: deliveryPincode,
+    weight: weight.toString(),
+    length: '10',
+    breadth: '10',
+    height: '10',
+    cod: codAmount > 0 ? '1' : '0'
+  })
+
+  if (codAmount > 0) {
+    params.append('declared_value', codAmount.toString())
+  }
+
+  const response = await fetch(`${SHIPROCKET_API_BASE}/courier/serviceability/?${params.toString()}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(`Shiprocket serviceability failed: ${error.message || response.statusText}`)
+  }
+
+  const result = await response.json()
+  const couriers = result?.data?.available_courier_companies || []
+
+  return couriers
+    .filter(courier => courier.freight_charge !== null)
+    .map(courier => ({
+      courier_name: courier.courier_name,
+      courier_company_id: courier.courier_company_id,
+      freight_charge: Number(courier.freight_charge),
+      cod_charge: Number(courier.cod_charges || 0),
+      total_charge: Number(courier.rate || courier.freight_charge),
+      estimated_delivery_days: courier.estimated_delivery_days || courier.etd || 'N/A',
+      is_surface: courier.is_surface || false,
+      min_weight: courier.min_weight || 0,
+      rating: courier.rating || 0
+    }))
+    .sort((a, b) => a.total_charge - b.total_charge)
 }
 
 async function main() {
@@ -88,7 +165,7 @@ async function main() {
     }
 
     const totalWeightKg = (order.order_items || []).reduce((sum, item) => {
-      const itemWeightKg = toKg(item.products?.weight || 500)
+      const itemWeightKg = toKg(item.products?.weight || 700)
       return sum + (itemWeightKg * (item.quantity || 1))
     }, 0)
 
@@ -100,10 +177,10 @@ async function main() {
     console.log('Total weight (kg):', totalWeightKg.toFixed(3))
     console.log('COD amount:', codAmount)
 
-    const couriers = await calculateShippingRates({
+    const couriers = await fetchServiceabilityRates({
       pickupPincode,
       deliveryPincode,
-      weight: totalWeightKg || 0.5,
+      weight: totalWeightKg || 0.7,
       codAmount
     })
 

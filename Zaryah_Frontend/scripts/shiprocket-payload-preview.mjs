@@ -78,7 +78,7 @@ function buildSellerPickupLocation(seller, orderId) {
 
 function toKg(grams) {
   const weight = Number(grams || 0)
-  return weight > 0 ? weight / 1000 : 0.5
+  return weight > 0 ? weight / 1000 : 0.7
 }
 
 async function main() {
@@ -103,7 +103,7 @@ async function main() {
       name: it.products?.name || 'Product',
       quantity: it.quantity,
       price: it.price,
-      weight: it.products?.weight || 500
+      weight: it.products?.weight || 700
     }))
 
     const totalWeight = items.reduce((sum, item) => {

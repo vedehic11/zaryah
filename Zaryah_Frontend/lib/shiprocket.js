@@ -140,7 +140,7 @@ export async function createShipment({
   // Calculate total weight and dimensions
   // Weight is stored in grams in the database, but Shiprocket expects kg
   const totalWeight = items.reduce((sum, item) => {
-    const weightInGrams = item.weight || 500; // Default 500g if not specified
+    const weightInGrams = item.weight || 700; // Default 700g if not specified
     const weightInKg = weightInGrams / 1000;
     return sum + (weightInKg * item.quantity);
   }, 0);
@@ -373,7 +373,7 @@ export function verifyWebhookSignature(payload, signature) {
 export async function calculateShippingRates({
   pickupPincode,
   deliveryPincode,
-  weight = 0.5,
+  weight = 0.7,
   codAmount = 0
 }) {
   const token = await authenticate()

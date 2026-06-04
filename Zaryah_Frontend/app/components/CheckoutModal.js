@@ -75,7 +75,7 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
             cartItems: cart.map(item => ({
               product_id: item.product?.id || item.productId,
               seller_id: item.product?.seller_id || item.sellerId,
-              weight: item.product?.weight || 500,
+              weight: item.product?.weight || 700,
               quantity: item.quantity
             })),
             twoWayDelivery: hasTwoWayDelivery,

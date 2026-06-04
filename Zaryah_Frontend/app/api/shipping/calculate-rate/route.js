@@ -7,8 +7,10 @@ import { normalizeWeightToKg } from '@/lib/weight'
 // POST /api/shipping/calculate-rate - Calculate delivery charges
 export async function POST(request) {
   try {
-    const includeDebug = process.env.NODE_ENV !== 'production'
     const body = await request.json()
+    const includeDebug = process.env.NODE_ENV !== 'production' ||
+      request.headers.get('x-shiprocket-debug') === '1' ||
+      body?.debug === true
     const { 
       deliveryPincode, 
       cartItems = [],
@@ -29,7 +31,7 @@ export async function POST(request) {
     const sellerPincodes = new Set()
 
     for (const item of cartItems) {
-      const itemWeightKg = normalizeWeightToKg(item.weight, 0.5)
+      const itemWeightKg = normalizeWeightToKg(item.weight, 0.7)
       totalWeight += itemWeightKg * (item.quantity || 1)
 
       // Get seller pincode for this product
@@ -46,9 +48,9 @@ export async function POST(request) {
       }
     }
 
-    // Default to 0.5 kg if no weight specified
+    // Default to 0.7 kg if no weight specified
     if (totalWeight === 0) {
-      totalWeight = 0.5
+      totalWeight = 0.7
     }
 
     // If multiple sellers, use first seller's pincode
@@ -103,6 +105,12 @@ export async function POST(request) {
                   markup: outboundDetails.markup,
                   buffer: outboundDetails.buffer,
                   fallback: outboundDetails.fallback
+                    courier: outboundDetails.courier || null,
+                    env: {
+                      SHIPROCKET_RATE_MARKUP: process.env.SHIPROCKET_RATE_MARKUP || null,
+                      SHIPROCKET_BUFFER_PERCENT: process.env.SHIPROCKET_BUFFER_PERCENT || null,
+                      SHIPROCKET_BUFFER_FLAT: process.env.SHIPROCKET_BUFFER_FLAT || null
+                    }
                 }
               }
             : {})
