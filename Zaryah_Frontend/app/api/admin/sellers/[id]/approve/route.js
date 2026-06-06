@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import { requireRole } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
+import { getPublicAppUrl } from '@/lib/server-url'
 
 // POST /api/admin/sellers/[id]/approve - Approve/reject seller
 export async function POST(request, { params }) {
@@ -92,7 +93,7 @@ export async function POST(request, { params }) {
     if (isApproved && updatedSeller) {
       try {
         // Call email service API
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://zaryah.com'
+        const baseUrl = getPublicAppUrl()
         const sellerUsername = updatedSeller.username || updatedSeller.business_name.toLowerCase().replace(/\s+/g, '-')
         const profileLink = `${baseUrl}/${sellerUsername}`
         const dashboardLink = `${baseUrl}/seller/dashboard`

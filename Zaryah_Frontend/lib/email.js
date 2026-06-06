@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { getSellerUrl } from '@/lib/url-utils';
+import { getPublicAppUrl } from '@/lib/server-url'
 
 /**
  * Create a nodemailer transporter for Gmail SMTP
@@ -85,6 +86,7 @@ If you didn't create an account with Zaryah, you can safely ignore this email.
  */
 export async function sendSellerApprovalEmail({ to, businessName, username, approved }) {
   const transporter = createEmailTransporter();
+  const appUrl = getPublicAppUrl()
 
   const subject = approved 
     ? 'Congratulations! Your Seller Account is Approved - Zaryah'
@@ -101,14 +103,14 @@ export async function sendSellerApprovalEmail({ to, businessName, username, appr
         <li>Access your storefront at: <a href="${getSellerUrl(username)}">${getSellerUrl(username)}</a></li>
       </ul>
       <div style="text-align: center;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL}/seller/dashboard" class="button">Go to Seller Dashboard</a>
+        <a href="${appUrl}/seller/dashboard" class="button">Go to Seller Dashboard</a>
       </div>
     `
     : `
       <p>We've reviewed your seller application for <strong>${businessName}</strong>.</p>
       <p>Unfortunately, we're unable to approve your account at this time. Please contact our support team for more information.</p>
       <div style="text-align: center;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL}/support" class="button">Contact Support</a>
+        <a href="${appUrl}/support" class="button">Contact Support</a>
       </div>
     `;
 
@@ -227,6 +229,8 @@ export async function sendSellerOrderPlacedEmail({
     return `<tr><td style="padding:6px 0;">${name}</td><td style="padding:6px 0; text-align:center;">${qty}</td><td style="padding:6px 0; text-align:right;">${price}</td></tr>`;
   }).join('');
 
+  const appUrl = getPublicAppUrl()
+
   const mailOptions = {
     from: `"Zaryah" <${process.env.GMAIL_USER}>`,
     to,
@@ -271,7 +275,7 @@ export async function sendSellerOrderPlacedEmail({
                 </table>
               </div>
               <div style="text-align:center;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL}/seller/dashboard?tab=orders&orderId=${orderId}" class="button">View order in dashboard</a>
+                <a href="${appUrl}/seller/dashboard?tab=orders&orderId=${orderId}" class="button">View order in dashboard</a>
               </div>
             </div>
           </div>

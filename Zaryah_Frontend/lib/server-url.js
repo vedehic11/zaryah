@@ -12,6 +12,35 @@ function normalizeAbsoluteBaseUrl(value) {
   }
 }
 
+function isLocalDevelopmentHost(value) {
+  try {
+    const parsed = new URL(value)
+    const host = parsed.hostname.toLowerCase()
+    return host === 'localhost' || host === '127.0.0.1'
+  } catch {
+    return false
+  }
+}
+
+export function getPublicAppUrl() {
+  const configured =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    process.env.SITE_URL ||
+    process.env.URL ||
+    process.env.VERCEL_URL ||
+    ''
+
+  if (configured) {
+    const normalizedConfigured = normalizeAbsoluteBaseUrl(configured)
+    if (normalizedConfigured && !isLocalDevelopmentHost(normalizedConfigured)) {
+      return normalizedConfigured
+    }
+  }
+
+  return 'https://zaryah.in'
+}
+
 export function getServerBaseUrl(request) {
   const configured =
     process.env.NEXT_PUBLIC_APP_URL ||
