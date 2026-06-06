@@ -379,13 +379,14 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Business</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Contact</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Featured</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredSellers.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
                       No sellers found
                     </td>
                   </tr>
@@ -419,6 +420,37 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
                       <td className="px-4 py-3">
                         {getStatusBadge(seller)}
                       </td>
+                      <td className="px-4 py-3">
+                        {seller.isApproved ? (
+                          <div className="flex flex-col space-y-1">
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => handleToggleFeaturedStory(seller.id, seller.featured_story)}
+                              className={`px-3 py-1.5 w-fit rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-colors shadow-sm ${
+                                seller.featured_story 
+                                  ? 'bg-yellow-100 text-yellow-800 border border-yellow-300 hover:bg-yellow-200' 
+                                  : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+                              }`}
+                              title={seller.featured_story ? 'Remove from homepage' : 'Feature on homepage'}
+                            >
+                              <Sparkles className={`w-4 h-4 ${seller.featured_story ? 'fill-yellow-400 text-yellow-500' : 'text-gray-400'}`} />
+                              <span>{seller.featured_story ? 'Featured' : 'Feature'}</span>
+                            </motion.button>
+                            <p className="text-[10px] text-gray-500 max-w-[200px] line-clamp-2" title={seller.story || seller.businessDescription}>
+                              {seller.story ? (
+                                <span><strong className="text-yellow-700">Story:</strong> {seller.story}</span>
+                              ) : seller.businessDescription ? (
+                                <span><strong className="text-gray-600">Desc:</strong> {seller.businessDescription}</span>
+                              ) : (
+                                <span className="text-red-500 italic">No story or description</span>
+                              )}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">Approve first</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
                           {!seller.isApproved && (
@@ -442,26 +474,9 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
                             </>
                           )}
                           {seller.isApproved && (
-                            <>
-                              <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
-                                ✓ Approved
-                              </span>
-                              {seller.story && (
-                                <motion.button
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  onClick={() => handleToggleFeaturedStory(seller.id, seller.featured_story)}
-                                  className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
-                                    seller.featured_story 
-                                      ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
-                                      : 'bg-gray-100 text-gray-500 hover:bg-yellow-50'
-                                  }`}
-                                  title={seller.featured_story ? 'Remove from homepage' : 'Feature on homepage'}
-                                >
-                                  <Sparkles className={`w-4 h-4 ${seller.featured_story ? 'fill-yellow-400' : ''}`} />
-                                </motion.button>
-                              )}
-                            </>
+                            <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
+                              ✓ Approved
+                            </span>
                           )}
                           <motion.button
                             whileHover={{ scale: 1.05 }}

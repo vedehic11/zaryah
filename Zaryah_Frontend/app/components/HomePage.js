@@ -309,7 +309,7 @@ export const HomePage = () => {
                         )}
                       </div>
                       <p className="text-neutral-600 line-clamp-3">
-                        {seller.story || seller.business_description || 'A passionate artisan creating handmade treasures with love and care.'}
+                        {seller.story?.trim() || seller.business_description || 'A passionate artisan creating handmade treasures with love and care.'}
                       </p>
                       <div className="mt-4 flex items-center text-primary-600 font-medium text-sm group-hover:text-primary-700">
                         <span>Visit Shop</span>

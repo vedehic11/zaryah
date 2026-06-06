@@ -42,7 +42,7 @@ export const ProductDetailPage = ({ productId }) => {
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const { addToCart } = useCart()
+  const { cart, addToCart, updateQuantity, setIsCartOpen } = useCart()
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   const { user } = useAuth()
   const router = useRouter()
@@ -203,6 +203,41 @@ export const ProductDetailPage = ({ productId }) => {
   const hasCharts = sizeCharts.length > 0
   const resolvedProductId = product?.id || product?._id || productId
   const isLiked = resolvedProductId ? isInWishlist(resolvedProductId) : false
+
+  // Derive customization selections in target format for matching
+  const currentCustomizations = Object.entries(customizationSelections).map(([key, value]) => {
+    const question = product?.customQuestions?.[key]?.question;
+    return {
+      question: question || "Customization",
+      answer: value.answer,
+      answerType: value.answerType || 'text'
+    };
+  });
+
+  // Find matching cart item
+  const matchingCartItem = cart?.find(item => {
+    const isProductMatch = (item.id === resolvedProductId) || (item.id === product?.id) || (item._id === resolvedProductId)
+    const isSizeMatch = item.selectedSize === selectedSize
+    const isColorMatch = item.selectedColor === selectedColor
+    const isCustomizationMatch = JSON.stringify(item.customizations) === JSON.stringify(currentCustomizations)
+    return isProductMatch && isSizeMatch && isColorMatch && isCustomizationMatch
+  });
+
+  // Sync quantity state with cart item quantity
+  useEffect(() => {
+    if (matchingCartItem) {
+      setQuantity(matchingCartItem.quantity)
+    }
+  }, [matchingCartItem?.quantity])
+
+  // Handle local and cart quantity changes
+  const handleQuantityChange = (newQty) => {
+    const sanitizedQty = Math.max(1, newQty)
+    setQuantity(sanitizedQty)
+    if (matchingCartItem) {
+      updateQuantity(matchingCartItem.cartItemId || matchingCartItem.id, sanitizedQty)
+    }
+  }
 
   const selectedSizePrice = sizePriceOptions.find(option => option?.label === selectedSize)?.price
   const displayPrice = selectedSizePrice !== undefined && selectedSizePrice !== null
@@ -965,14 +1000,14 @@ export const ProductDetailPage = ({ productId }) => {
                   <label className="text-sm font-medium text-charcoal-700">Quantity:</label>
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      onClick={() => handleQuantityChange(quantity - 1)}
                       className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
                     <span className="w-12 text-center font-medium">{quantity}</span>
                     <button
-                      onClick={() => setQuantity(quantity + 1)}
+                      onClick={() => handleQuantityChange(quantity + 1)}
                       className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
                     >
                       <Plus className="w-4 h-4" />
@@ -982,13 +1017,23 @@ export const ProductDetailPage = ({ productId }) => {
 
                 {/* Action Buttons */}
                 <div className="flex space-x-4">
-                  <button
-                    onClick={() => handleAddToCart(false)}
-                    className="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                  >
-                    <ShoppingBag className="w-5 h-5" />
-                    <span>Add to Cart</span>
-                  </button>
+                  {matchingCartItem ? (
+                    <button
+                      onClick={() => setIsCartOpen(true)}
+                      className="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors"
+                    >
+                      <ShoppingBag className="w-5 h-5" />
+                      <span>Go to Cart</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleAddToCart(false)}
+                      className="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    >
+                      <ShoppingBag className="w-5 h-5" />
+                      <span>Add to Cart</span>
+                    </button>
+                  )}
                   <button
                     onClick={handleBuyNow}
                     className="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-charcoal-900 text-white rounded-lg hover:bg-charcoal-800 transition-colors"
@@ -999,13 +1044,15 @@ export const ProductDetailPage = ({ productId }) => {
                 </div>
 
                 {/* Gift Packaging Option */}
-                <button
-                  onClick={() => handleAddToCart(true)}
-                  className="w-full flex items-center justify-center space-x-2 px-6 py-3 border-2 border-primary-300 text-primary-700 rounded-lg hover:bg-primary-50 transition-colors"
-                >
-                  <Gift className="w-5 h-5" />
-                  <span>Add to Cart with Gift Packaging (+₹10)</span>
-                </button>
+                {!matchingCartItem && (
+                  <button
+                    onClick={() => handleAddToCart(true)}
+                    className="w-full flex items-center justify-center space-x-2 px-6 py-3 border-2 border-primary-300 text-primary-700 rounded-lg hover:bg-primary-50 transition-colors"
+                  >
+                    <Gift className="w-5 h-5" />
+                    <span>Add to Cart with Gift Packaging (+₹10)</span>
+                  </button>
+                )}
 
                 {/* Features */}
                 <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-200">

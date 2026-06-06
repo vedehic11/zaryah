@@ -112,7 +112,7 @@ export async function GET(request) {
 
       // Filter by featured_story if requested
       if (featuredStory === 'true') {
-        query = query.eq('featured_story', true).not('story', 'is', null)
+        query = query.eq('featured_story', true)
       }
 
       // Apply limit if specified
