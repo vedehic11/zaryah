@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import crypto from 'crypto'
+import { sendSellerOrderNotificationIfNeeded } from '@/lib/order-notifications'
 
 // Commission: 2.5% from seller + Platform fee (₹10 or ₹20) from buyer
 const SELLER_COMMISSION_RATE = 2.5
@@ -69,6 +70,22 @@ export async function POST(request) {
 
         console.log(`✅ Webhook: Order ${order.id} marked as paid`)
         console.log('ℹ️  Note: Wallet crediting handled by payment/verify route')
+
+        const notificationResult = await sendSellerOrderNotificationIfNeeded({
+          order: {
+            ...order,
+            payment_status: 'paid',
+            razorpay_payment_id: razorpayPaymentId
+          },
+          totalAmount: parseFloat(order.total_amount || 0),
+          items: []
+        })
+
+        if (notificationResult.sent) {
+          console.log(`✅ Webhook: Seller email sent for order ${order.id}`)
+        } else {
+          console.log(`ℹ️ Webhook: Seller email not sent for order ${order.id}:`, notificationResult.reason)
+        }
       }
     }
 

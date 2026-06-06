@@ -14,6 +14,21 @@ import toast from 'react-hot-toast'
 import Script from 'next/script'
 import Image from 'next/image'
 
+async function parseJsonResponse(response) {
+  const contentType = response.headers.get('content-type') || ''
+  const text = await response.text()
+
+  if (!text.trim()) {
+    return null
+  }
+
+  if (contentType.includes('application/json')) {
+    return JSON.parse(text)
+  }
+
+  throw new Error(text.trim().startsWith('<!DOCTYPE') ? 'Server returned an HTML error page' : text.trim())
+}
+
 export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
   const { user } = useAuth()
   const { addresses, selectedAddress, setSelectedAddress, addAddress } = useAddress()
@@ -83,7 +98,7 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
           })
         })
 
-        const data = await response.json()
+        const data = await parseJsonResponse(response)
         if (data.success && data.deliveryCharge !== undefined) {
           setDynamicDeliveryCharge(data.deliveryCharge)
           if (data.fallback) {
@@ -169,7 +184,6 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
     setLoading(true)
 
     try {
-      // Create order in database
       const orderData = {
         items: cart.map(item => ({
           productId: item.product.id || item.productId,
@@ -188,10 +202,11 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
         twoWayDelivery: hasTwoWayDelivery
       }
 
-      const order = await apiService.createOrder(orderData)
-      setOrderDetails(order)
-
       if (paymentMethod === 'cod') {
+        // Create order in database for COD only
+        const order = await apiService.createOrder(orderData)
+        setOrderDetails(order)
+
         // COD - order placed successfully
         await clearCart()
         toast.success('Order placed successfully!')
@@ -199,7 +214,7 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
         onClose()
       } else {
         // Razorpay payment
-        await initiateRazorpayPayment(order)
+        await initiateRazorpayPayment(orderData)
       }
 
     } catch (error) {
@@ -210,12 +225,11 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
     }
   }
 
-  const initiateRazorpayPayment = async (order) => {
+  const initiateRazorpayPayment = async (orderData) => {
     try {
       // Create Razorpay order
       const paymentOrder = await apiService.createPaymentOrder({
-        amount: total * 100,
-        orderId: order.id
+        amount: total * 100
       })
 
       // Load Razorpay SDK
@@ -230,7 +244,7 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
         currency: paymentOrder.currency || 'INR',
         order_id: paymentOrder.order_id,
         name: 'Zaryah',
-        description: `Order #${order.order_number || order.id}`,
+        description: 'Order Payment',
         image: '/assets/image.png?v=20260501',
         prefill: {
           name: user.name,
@@ -243,16 +257,23 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
         handler: async function (response) {
           // Payment successful
           try {
+            const createdOrder = await apiService.createOrder({
+              ...orderData,
+              paymentId: response.razorpay_payment_id,
+            })
+
+            setOrderDetails(createdOrder)
+
             await apiService.verifyPayment({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
-              order_id: order.id
+              order_id: createdOrder.id
             })
 
             await clearCart()
             toast.success('Payment successful! Order confirmed.')
-            onSuccess?.(order)
+            onSuccess?.(createdOrder)
             onClose()
 
           } catch (verifyError) {
@@ -498,7 +519,7 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
                             <Building className="w-6 h-6 text-primary-600" />
                             <div>
                               <p className="font-semibold">Cash on Delivery</p>
-                              <p className="text-sm text-gray-600">Pay when you receive</p>
+                              <p className="text-sm text-gray-600">Pay when you receive (+RTO charges)</p>
                             </div>
                           </div>
                           {paymentMethod === 'cod' && <CheckCircle className="w-5 h-5 text-primary-600" />}

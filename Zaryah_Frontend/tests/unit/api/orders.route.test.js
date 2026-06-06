@@ -90,6 +90,7 @@ function createOrdersPostMock({ selectCalls }) {
             single: async () => ({ data: insertedOrder, error: null }),
           }),
         }),
+        update: () => createMutationBuilder({ data: null, error: null }),
         select: () => ({
           eq: () => ({
             single: async () => ({ data: completeOrder, error: null }),
@@ -130,7 +131,7 @@ function createOrdersPostMock({ selectCalls }) {
           selectCalls.push(selectArg)
           return {
             eq: () => ({
-              single: async () => ({
+              maybeSingle: async () => ({
                 data: {
                   business_name: 'Seller Biz',
                   username: 'sellerbiz',
@@ -152,7 +153,13 @@ function createOrdersPostMock({ selectCalls }) {
       return {
         select: () => ({
           eq: () => ({
-            single: async () => ({ data: null, error: null }),
+            maybeSingle: async () => ({
+              data: {
+                email: 'seller@example.com',
+                name: 'Seller Name',
+              },
+              error: null,
+            }),
           }),
         }),
       }
@@ -286,7 +293,7 @@ describe('/api/orders POST', () => {
     const payload = await response.json()
 
     expect(response.status).toBe(201)
-    expect(selectCalls).toContain('business_name, username, users!sellers_id_fkey(email, name, full_name)')
+    expect(selectCalls).toContain('id, business_name, username, full_name')
     expect(mocks.sendSellerOrderPlacedEmail).toHaveBeenCalledTimes(1)
     expect(mocks.sendSellerOrderPlacedEmail).toHaveBeenCalledWith(expect.objectContaining({
       to: 'seller@example.com',

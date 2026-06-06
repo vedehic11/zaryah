@@ -15,6 +15,21 @@ import {
 import Image from 'next/image'
 import toast from 'react-hot-toast'
 
+async function parseJsonResponse(response) {
+  const contentType = response.headers.get('content-type') || ''
+  const text = await response.text()
+
+  if (!text.trim()) {
+    return null
+  }
+
+  if (contentType.includes('application/json')) {
+    return JSON.parse(text)
+  }
+
+  throw new Error(text.trim().startsWith('<!DOCTYPE') ? 'Server returned an HTML error page' : text.trim())
+}
+
 export default function CheckoutClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -202,7 +217,7 @@ export default function CheckoutClient() {
           })
         })
 
-        const data = await response.json()
+        const data = await parseJsonResponse(response)
         debugLog('🚚 Delivery charge response:', data)
 
         if (data.success && data.deliveryCharge !== undefined) {
@@ -318,20 +333,6 @@ export default function CheckoutClient() {
         total
       })
 
-      const responseData = await apiService.request('/orders', {
-        method: 'POST',
-        body: JSON.stringify(orderData)
-      })
-
-      console.log('Step 3: Order created successfully:', responseData)
-
-      if (!responseData || !responseData.order) {
-        throw new Error('Invalid response from server')
-      }
-
-      const { order } = responseData
-      console.log('Order ID:', order.id)
-
       if (paymentMethod === 'online') {
         console.log('Step 4: Initiating online payment...')
 
@@ -346,7 +347,7 @@ export default function CheckoutClient() {
         // Initialize Razorpay payment (send amount in paise)
         const paymentData = await apiService.request('/payment/create-order', {
           method: 'POST',
-          body: JSON.stringify({ orderId: order.id, amount: total * 100 }) // Send in paise
+          body: JSON.stringify({ amount: total * 100 }) // Send in paise
         })
 
         console.log('Step 5: Payment order created:', paymentData)
@@ -366,6 +367,23 @@ export default function CheckoutClient() {
             toast.loading('Verifying payment...', { id: 'payment-verify', duration: 10000 })
 
             try {
+              const createdOrderResponse = await apiService.request('/orders', {
+                method: 'POST',
+                body: JSON.stringify({
+                  ...orderData,
+                  paymentId: response.razorpay_payment_id,
+                })
+              })
+
+              console.log('Step 3: Order created successfully after payment:', createdOrderResponse)
+
+              if (!createdOrderResponse || !createdOrderResponse.order) {
+                throw new Error('Invalid response from server')
+              }
+
+              const { order } = createdOrderResponse
+              console.log('Order ID:', order.id)
+
               // Verify payment with 8 second timeout
               const verificationPromise = apiService.request('/payment/verify', {
                 method: 'POST',
@@ -407,6 +425,20 @@ export default function CheckoutClient() {
                   if (statusCheck.payment?.status === 'captured' || statusCheck.payment?.status === 'authorized') {
                     // Payment succeeded, retry verification
                     toast.loading('Payment confirmed! Finalizing order...', { id: 'payment-verify' })
+
+                    const createdOrderResponse = await apiService.request('/orders', {
+                      method: 'POST',
+                      body: JSON.stringify({
+                        ...orderData,
+                        paymentId: statusCheck.payment.id,
+                      })
+                    })
+
+                    if (!createdOrderResponse || !createdOrderResponse.order) {
+                      throw new Error('Invalid response from server')
+                    }
+
+                    const { order } = createdOrderResponse
 
                     await apiService.request('/payment/verify', {
                       method: 'POST',
@@ -451,7 +483,7 @@ export default function CheckoutClient() {
                 }
               } else {
                 // Actual verification error
-                toast.error(`Verification failed. Check your orders or contact support. Order: ${order.id}`,
+                toast.error('Verification failed. Check your orders or contact support.',
                   {
                     id: 'payment-verify',
                     duration: 6000
@@ -508,6 +540,20 @@ export default function CheckoutClient() {
         // Don't set isProcessing to false here as payment modal is open
         return
       } else {
+        const responseData = await apiService.request('/orders', {
+          method: 'POST',
+          body: JSON.stringify(orderData)
+        })
+
+        console.log('Step 3: COD order created successfully:', responseData)
+
+        if (!responseData || !responseData.order) {
+          throw new Error('Invalid response from server')
+        }
+
+        const { order } = responseData
+        console.log('Order ID:', order.id)
+
         console.log('Step 4: COD order complete')
 
         // Show success message first
@@ -907,7 +953,7 @@ export default function CheckoutClient() {
                         <Package className="w-5 h-5 text-secondary-600" />
                         <div>
                           <p className="font-semibold text-charcoal-900">Cash on Delivery</p>
-                          <p className="text-sm text-charcoal-600">Pay when you receive (₹10 extra)</p>
+                          <p className="text-sm text-charcoal-600">Pay when you receive (+RTO charges)</p>
                         </div>
                       </div>
                       {paymentMethod === 'cod' && (

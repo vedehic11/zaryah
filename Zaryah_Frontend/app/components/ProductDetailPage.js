@@ -930,7 +930,7 @@ export const ProductDetailPage = ({ productId }) => {
                           <Package className="w-5 h-5 text-secondary-600" />
                           <h3 className="text-sm font-bold text-charcoal-900">Cash on Delivery</h3>
                         </div>
-                        <p className="text-sm text-charcoal-700">Pay on Delivery available (₹10 extra)</p>
+                        <p className="text-sm text-charcoal-700">Pay on Delivery available (+RTO charges)</p>
                       </div>
                     )}
                     
@@ -1225,7 +1225,7 @@ export const ProductDetailPage = ({ productId }) => {
                         {canShowCod && (
                           <div>
                             <p className="text-sm text-charcoal-600 mb-1">Cash on Delivery</p>
-                            <p className="font-semibold text-charcoal-900">Available (₹10 extra)</p>
+                            <p className="font-semibold text-charcoal-900">Available (+RTO charges)</p>
                           </div>
                         )}
                       </div>

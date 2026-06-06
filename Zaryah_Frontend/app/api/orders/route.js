@@ -2,8 +2,8 @@
 import { NextResponse } from 'next/server'
 import { requireRole, getBuyerId, getSellerId, requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { sendSellerOrderPlacedEmail } from '@/lib/email'
 import { getShipmentTracking, getShipmentDetails, mapShiprocketStatus } from '@/lib/shiprocket'
+import { sendSellerOrderNotificationIfNeeded } from '@/lib/order-notifications'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -594,37 +594,14 @@ export async function POST(request) {
       }, new Map())
 
       for (const [sellerIdForEmail, sellerItems] of itemsBySeller.entries()) {
-        console.log('📧 Fetching seller profile for ID:', sellerIdForEmail)
-        
-        // Query seller profile to get business_name
-        const { data: sellerProfile, error: sellerError } = await supabase
-          .from('sellers')
-          .select('id, business_name, username, full_name')
-          .eq('id', sellerIdForEmail)
-          .single()
-
-        console.log('📧 Seller profile result:', { sellerProfile, sellerError })
-        
-        // Separately query users table to get email (relation may not work properly)
-        const { data: sellerUser, error: userError } = await supabase
-          .from('users')
-          .select('id, email, name')
-          .eq('id', sellerIdForEmail)
-          .single()
-
-        console.log('📧 Seller user result:', { sellerUser, userError })
-        
-        let sellerEmail = sellerUser?.email
-        let sellerName = sellerProfile?.business_name || sellerProfile?.full_name || sellerUser?.name
-
-        console.log('📧 Final lookup - Email:', sellerEmail, 'Name:', sellerName)
-
-        if (sellerEmail) {
-          console.log('Preparing seller order email for:', sellerEmail)
-          await sendSellerOrderPlacedEmail({
-            to: sellerEmail,
-            sellerName,
-            orderId: order.id,
+        if (paymentMethod === 'cod') {
+          const notificationResult = await sendSellerOrderNotificationIfNeeded({
+            order: {
+              ...completeOrder,
+              id: order.id,
+              seller_id: sellerIdForEmail,
+              notes: order.notes
+            },
             buyerName,
             totalAmount,
             items: sellerItems.map((orderItem) => ({
@@ -633,11 +610,17 @@ export async function POST(request) {
               price: orderItem.price
             }))
           })
-          console.log('Seller order email sent for order:', order.id, 'seller:', sellerIdForEmail)
-          emailStatus.push({ sellerId: sellerIdForEmail, to: sellerEmail, status: 'sent' })
+
+          if (notificationResult.sent) {
+            console.log('Seller order email sent for COD order:', order.id, 'seller:', sellerIdForEmail)
+            emailStatus.push({ sellerId: sellerIdForEmail, to: notificationResult.to, status: 'sent' })
+          } else {
+            console.warn('Seller order email skipped for COD order:', order.id, notificationResult.reason)
+            emailStatus.push({ sellerId: sellerIdForEmail, status: notificationResult.reason || 'skipped' })
+          }
         } else {
-          console.warn('Seller email missing for seller:', sellerIdForEmail)
-          emailStatus.push({ sellerId: sellerIdForEmail, status: 'missing-email' })
+          console.log('Skipping seller email until online payment is verified for order:', order.id)
+          emailStatus.push({ sellerId: sellerIdForEmail, status: 'pending-payment' })
         }
       }
     } catch (emailError) {

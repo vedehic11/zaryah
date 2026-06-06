@@ -104,8 +104,8 @@ export async function POST(request) {
                   baseRate: outboundDetails.baseRate,
                   markup: outboundDetails.markup,
                   buffer: outboundDetails.buffer,
-                  fallback: outboundDetails.fallback
-                    courier: outboundDetails.courier || null,
+                  fallback: outboundDetails.fallback,
+                  courier: outboundDetails.courier || null,
                     env: {
                       SHIPROCKET_RATE_MARKUP: process.env.SHIPROCKET_RATE_MARKUP || null,
                       SHIPROCKET_BUFFER_PERCENT: process.env.SHIPROCKET_BUFFER_PERCENT || null,

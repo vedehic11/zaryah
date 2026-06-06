@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import crypto from 'crypto'
+import { sendSellerOrderNotificationIfNeeded } from '@/lib/order-notifications'
 
 // Commission: 2.5% from seller + Platform fee (₹10 or ₹20) from buyer
 const SELLER_COMMISSION_RATE = 2.5
@@ -172,6 +173,22 @@ export async function POST(request) {
           console.error('Commission record error:', commissionError)
         } else {
           console.log(`💰 Admin earnings recorded: ₹${totalAdminEarnings} (₹${sellerCommission} seller commission + ₹${buyerPlatformFee} platform fee + ₹${deliveryMarkup} delivery markup)`)
+        }
+
+        const notificationResult = await sendSellerOrderNotificationIfNeeded({
+          order,
+          totalAmount: parseFloat(order.total_amount || 0),
+          items: (order.order_items || []).map((item) => ({
+            name: item.product_name || 'Product',
+            quantity: item.quantity,
+            price: item.price
+          }))
+        })
+
+        if (notificationResult.sent) {
+          console.log('✅ Seller email sent after payment verification for order:', order_id)
+        } else {
+          console.log('ℹ️ Seller email not sent after payment verification:', notificationResult.reason)
         }
       }
     }
