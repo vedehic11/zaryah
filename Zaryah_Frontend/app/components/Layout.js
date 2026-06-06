@@ -456,18 +456,18 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
         </div>
         
         {/* Tablet and Mobile header (combined) */}
-        <div className="flex lg:hidden w-full items-center justify-between py-2 px-3 xl:px-6">
+        <div className="flex lg:hidden w-full min-w-0 items-center justify-between py-2 px-3 sm:px-4">
           <Link href={getNavHref('/')} className="flex items-center">
             <Image
               src={LOGO_SRC}
               alt="Zaryah"
-              width={220}
-              height={66}
-              className="h-10 w-auto"
+              width={180}
+              height={54}
+              className="h-8 sm:h-10 w-auto"
               priority
             />
           </Link>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
             {returnToSeller && isUsernameBrandPage && (
               <button
                 type="button"
@@ -504,7 +504,7 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
                     className="p-2 rounded-full hover:bg-primary-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-300"
                     aria-label="Search seller products"
                   >
-                    <Search className="w-5 h-5 text-primary-600" />
+                    <Search className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
                   </button>
                 )}
                 <WishlistIcon />

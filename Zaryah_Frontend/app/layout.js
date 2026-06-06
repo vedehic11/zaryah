@@ -35,6 +35,13 @@ export const metadata = {
   keywords: 'handmade gifts, artisan crafts, unique gifts, personalized gifts, gift marketplace',
 }
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
+}
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} ${poppins.variable} ${playfair.variable}`} suppressHydrationWarning>

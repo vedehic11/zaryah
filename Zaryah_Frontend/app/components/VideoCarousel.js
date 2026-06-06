@@ -147,7 +147,7 @@ export const VideoCarousel = () => {
             style={{ y: contentY, opacity: contentOpacity }}
           >
             <div className="text-center text-white max-w-3xl mx-auto px-4">
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight drop-shadow-lg whitespace-nowrap">
+              <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight drop-shadow-lg break-words">
                 Every Creation Has a <span className="text-primary-400">Story</span>
               </h1>
               <h2 className="text-base md:text-2xl lg:text-3xl mb-4 font-light">

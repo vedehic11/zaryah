@@ -217,7 +217,7 @@ export const HomePage = () => {
         {/* Mobile horizontal scroll */}
         <div className="sm:hidden flex space-x-4 overflow-x-auto px-4 pb-4 mb-8 scrollbar-hide">
           {featuredProducts.map((product, index) => (
-            <div key={product.id || product._id} className="min-w-[280px] max-w-[300px] flex-shrink-0">
+            <div key={product.id || product._id} className="min-w-[240px] max-w-[82vw] flex-shrink-0">
               <ProductCard product={product} imagePriority={index < 4} />
             </div>
           ))}
