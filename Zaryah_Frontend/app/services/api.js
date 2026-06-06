@@ -600,6 +600,7 @@ class ApiService {
           business_description,
           story,
           featured_story,
+          hide_from_artisans,
           city,
           primary_mobile,
           instagram,
@@ -619,7 +620,8 @@ class ApiService {
       if (error) throw error
 
       const approved = (data || []).filter(item => item?.users?.is_approved)
-      return approved
+      const visible = approved.filter(item => !item?.hide_from_artisans)
+      return visible
     } catch (error) {
       console.error('Public seller fallback failed:', error)
       return []

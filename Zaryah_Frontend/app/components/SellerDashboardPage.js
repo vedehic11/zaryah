@@ -298,6 +298,7 @@ export default function SellerDashboardPage() {
     facebook: '',
     x: '',
     linkedin: '',
+    hide_from_artisans: false,
     allow_cod: false,
     account_holder_name: '',
     upi_id: '',
@@ -862,6 +863,7 @@ export default function SellerDashboardPage() {
           facebook: response.facebook || '',
           x: response.x || '',
           linkedin: response.linkedin || '',
+          hide_from_artisans: response.hide_from_artisans !== undefined ? Boolean(response.hide_from_artisans) : false,
           allow_cod: response.allow_cod !== undefined ? Boolean(response.allow_cod) : false,
           account_holder_name: response.account_holder_name || '',
           upi_id: response.upi_id || '',
@@ -997,6 +999,7 @@ export default function SellerDashboardPage() {
           facebook: profileData.facebook,
           x: profileData.x,
           linkedin: profileData.linkedin,
+          hide_from_artisans: profileData.hide_from_artisans,
           allow_cod: profileData.allow_cod,
           account_holder_name: profileData.account_holder_name,
           upi_id: profileData.upi_id,
@@ -3450,6 +3453,34 @@ export default function SellerDashboardPage() {
                           <p className="text-sm text-gray-500 mt-1">
                             Tell your story: What inspired you to become an artisan? What makes your craft special?
                           </p>
+                        </div>
+
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-800">Hide profile from Artisans section</p>
+                              <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                                Enable this to keep your profile from appearing in the public Shop &gt; Artisans listing. Default is No, which means your profile will remain visible.
+                              </p>
+                            </div>
+                            <label className="inline-flex items-center cursor-pointer gap-3">
+                              <span className={`text-sm font-semibold ${profileData.hide_from_artisans ? 'text-red-700' : 'text-emerald-700'}`}>
+                                {profileData.hide_from_artisans ? 'Hidden' : 'Visible'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setProfileData(prev => ({ ...prev, hide_from_artisans: !prev.hide_from_artisans }))}
+                                className={`relative inline-flex h-7 w-14 flex-shrink-0 items-center rounded-full transition-colors duration-200 ${
+                                  profileData.hide_from_artisans ? 'bg-red-500' : 'bg-gray-300'
+                                }`}
+                                aria-pressed={profileData.hide_from_artisans}
+                              >
+                                <span className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                                  profileData.hide_from_artisans ? 'translate-x-7' : 'translate-x-0'
+                                }`} />
+                              </button>
+                            </label>
+                          </div>
                         </div>
                       </div>
                     </div>

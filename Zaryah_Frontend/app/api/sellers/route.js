@@ -84,6 +84,7 @@ export async function GET(request) {
           business_description,
           story,
           featured_story,
+          hide_from_artisans,
           city,
           primary_mobile,
           instagram,
@@ -102,6 +103,11 @@ export async function GET(request) {
       // Filter by approved user IDs if not admin
       if (approvedUserIds) {
         query = query.in('id', approvedUserIds)
+      }
+
+      // Public seller listing: hide profiles explicitly hidden by sellers.
+      if (!user || user.user_type !== 'Admin') {
+        query = query.or('hide_from_artisans.is.null,hide_from_artisans.eq.false')
       }
 
       // Filter by featured_story if requested
@@ -630,6 +636,7 @@ export async function PUT(request) {
     
     const allowedSellerFields = [
       'cover_photo', 'business_description', 'story', 'featured_story', 'instagram', 'facebook', 'x', 'linkedin',
+      'hide_from_artisans',
       'allow_cod', 'username',
       'primary_mobile', 'business_address', 'city', 'alternate_mobile',
       'account_holder_name', 'upi_id', 'id_type', 'id_number'

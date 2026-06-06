@@ -243,11 +243,10 @@ export const LoginPage = () => {
               <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-2">
                 I am a
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: 'Buyer', label: 'Buyer', icon: User },
-                  { value: 'Seller', label: 'Seller', icon: User },
-                  { value: 'Admin', label: 'Admin', icon: User }
+                  { value: 'Seller', label: 'Seller', icon: User }
                 ].map((type) => {
                   const Icon = type.icon
                   return (
