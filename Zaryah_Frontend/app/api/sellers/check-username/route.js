@@ -12,11 +12,11 @@ export async function GET(request) {
     }
 
     // Validate username format
-    const usernameRegex = /^[a-z0-9_-]+$/
+    const usernameRegex = /^[a-z0-9-]+$/
     if (!usernameRegex.test(username)) {
       return NextResponse.json({ 
         available: false, 
-        error: 'Invalid username format' 
+        error: 'Invalid username format. Only lowercase letters, numbers, and hyphens allowed.' 
       }, { status: 400 })
     }
 

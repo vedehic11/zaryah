@@ -164,10 +164,10 @@ export const RegisterPage = () => {
     }
 
     // Validate format
-    const usernameRegex = /^[a-z0-9_-]+$/
+    const usernameRegex = /^[a-z0-9-]+$/
     if (!usernameRegex.test(username)) {
       setUsernameAvailable(false)
-      setErrors(prev => ({ ...prev, username: 'Only lowercase letters, numbers, hyphens, and underscores allowed' }))
+      setErrors(prev => ({ ...prev, username: 'Only lowercase letters, numbers, and hyphens allowed' }))
       return
     }
 
@@ -265,7 +265,7 @@ export const RegisterPage = () => {
       if (!formData.businessName.trim()) newErrors.businessName = 'Business name is required'
       if (!formData.username.trim()) newErrors.username = 'Username is required'
       else if (formData.username.length < 3) newErrors.username = 'Username must be at least 3 characters'
-      else if (!/^[a-z0-9_-]+$/.test(formData.username)) newErrors.username = 'Only lowercase letters, numbers, hyphens, and underscores allowed'
+      else if (!/^[a-z0-9-]+$/.test(formData.username)) newErrors.username = 'Only lowercase letters, numbers, and hyphens allowed'
       else if (usernameAvailable === false) newErrors.username = 'This username is already taken'
       if (!formData.description.trim()) newErrors.description = 'Business description is required'
       if (!formData.businessAddress.trim()) newErrors.businessAddress = 'Business address is required'

@@ -17,10 +17,10 @@ export const UsernameInput = ({ value, onChange, error, className = '' }) => {
       }
 
       // Validate format
-      const usernameRegex = /^[a-z0-9_-]+$/
+      const usernameRegex = /^[a-z0-9-]+$/
       if (!usernameRegex.test(value)) {
         setAvailable(false)
-        setMessage('Only lowercase letters, numbers, hyphens, and underscores allowed')
+        setMessage('Only lowercase letters, numbers, and hyphens allowed')
         return
       }
 
@@ -73,7 +73,7 @@ export const UsernameInput = ({ value, onChange, error, className = '' }) => {
           type="text"
           value={value}
           onChange={(e) => {
-            const newValue = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '')
+            const newValue = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
             onChange(newValue)
           }}
           placeholder="your-username"
@@ -127,10 +127,10 @@ export const UsernameInput = ({ value, onChange, error, className = '' }) => {
       }
 
       // Validate format
-      const usernameRegex = /^[a-z0-9_-]+$/
+      const usernameRegex = /^[a-z0-9-]+$/
       if (!usernameRegex.test(value)) {
         setAvailable(false)
-        setMessage('Only lowercase letters, numbers, hyphens, and underscores allowed')
+        setMessage('Only lowercase letters, numbers, and hyphens allowed')
         return
       }
 
@@ -183,7 +183,7 @@ export const UsernameInput = ({ value, onChange, error, className = '' }) => {
           type="text"
           value={value}
           onChange={(e) => {
-            const newValue = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '')
+            const newValue = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
             onChange(newValue)
           }}
           placeholder="your-username"

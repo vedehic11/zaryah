@@ -29,6 +29,21 @@ export async function POST(request) {
       return Response.json({ success: false, error: 'Invalid phone number. Must be 10 digits.' }, { status: 400 })
     }
 
+    // Server-side username validation for sellers
+    if (userType === 'seller') {
+      const username = businessInfo?.username;
+      if (!username) {
+        return Response.json({ success: false, error: 'Username is required for sellers.' }, { status: 400 });
+      }
+      const usernameRegex = /^[a-z0-9-]+$/;
+      if (!usernameRegex.test(username)) {
+        return Response.json({ success: false, error: 'Invalid username format. Only lowercase letters, numbers, and hyphens allowed.' }, { status: 400 });
+      }
+      if (username.length < 3 || username.length > 50) {
+        return Response.json({ success: false, error: 'Username must be between 3 and 50 characters.' }, { status: 400 });
+      }
+    }
+
     // Check if user already exists by email
     const { data: existingUser } = await supabaseAdmin
       .from('users')
