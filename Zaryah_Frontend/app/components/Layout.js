@@ -121,6 +121,14 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
     }
   }, [])
 
+  const [currentPath, setCurrentPath] = useState('/')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCurrentPath(window.location.pathname + window.location.search)
+    }
+  }, [pathname])
+
   const handleRedirectParam = useCallback((redirectParam) => {
     setReturnToSeller(redirectParam)
   }, [])
@@ -425,14 +433,14 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
             {!user && (
               <>
                 <Link
-                  href="/login"
+                  href={`/login${currentPath ? `?redirect=${encodeURIComponent(currentPath)}` : ''}`}
                   className="bg-primary-100 text-primary-700 hover:bg-primary-200 rounded-xl px-3 xl:px-4 py-1 xl:py-2 font-bold text-base xl:text-lg transition-colors"
                   style={{ boxShadow: 'none' }}
                 >
                   Sign In
                 </Link>
                 <Link
-                  href="/register"
+                  href={`/register${currentPath ? `?redirect=${encodeURIComponent(currentPath)}` : ''}`}
                   className="bg-primary-600 border border-primary-600 text-white hover:bg-primary-700 hover:border-primary-700 rounded-xl px-3 xl:px-4 py-1 xl:py-2 font-bold text-base xl:text-lg transition-colors shadow-lg"
                   style={{ boxShadow: 'none' }}
                 >
@@ -623,14 +631,14 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
               ) : (
                 <div className="flex space-x-4 pt-2">
                   <Link
-                    href="/login"
+                    href={`/login${currentPath ? `?redirect=${encodeURIComponent(currentPath)}` : ''}`}
                     onClick={() => setIsMenuOpen(false)}
                     className="flex-1 text-center text-neutral-900 hover:text-primary-700 font-semibold px-6 py-3 rounded-xl hover:bg-neutral-100 transition-all text-base"
                   >
                     Login
                   </Link>
                   <Link
-                    href="/register"
+                    href={`/register${currentPath ? `?redirect=${encodeURIComponent(currentPath)}` : ''}`}
                     onClick={() => setIsMenuOpen(false)}
                     className="flex-1 text-center bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl transition-all font-semibold shadow-soft text-base"
                   >

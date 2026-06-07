@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true)
   const [supabaseUser, setSupabaseUser] = useState(null)
   const [pendingVerification, setPendingVerification] = useState(null)
+  const [pendingCredentials, setPendingCredentials] = useState(null)
   const router = useRouter()
 
   const isResetPasswordRoute = () => {
@@ -318,7 +319,7 @@ export const AuthProvider = ({ children }) => {
                 name: buyerData.name,
                 user_type: 'Buyer',
                 supabase_auth_id: authUser.id,
-                is_verified: true,
+                is_verified: false,
                 is_approved: true
               })
               .select()
@@ -394,7 +395,7 @@ export const AuthProvider = ({ children }) => {
               name: sellerData.name,
               user_type: 'Seller',
               supabase_auth_id: authUser.id,
-              is_verified: true,
+              is_verified: false,
               is_approved: true // Sellers are approved by default
             })
             .select()
@@ -494,6 +495,22 @@ export const AuthProvider = ({ children }) => {
         return
       }
 
+      // User exists, check if email is verified
+      if (!userData.is_verified) {
+        console.log('User is not verified, signing out...')
+        await supabaseClient.auth.signOut()
+        clearLocalAuthState()
+        toast.error('Please verify your email address before logging in.')
+        try {
+          router.push(`/login?error=unverified&email=${encodeURIComponent(userData.email)}`)
+        } catch (e) {
+          if (typeof window !== 'undefined') {
+            window.location.href = `/login?error=unverified&email=${encodeURIComponent(userData.email)}`
+          }
+        }
+        return
+      }
+
       // User exists, set their data
       const userDataToSet = {
         id: userData.id,
@@ -502,7 +519,8 @@ export const AuthProvider = ({ children }) => {
         role: userData.user_type.toLowerCase(),
         userType: userData.user_type,
         supabaseAuthId: userData.supabase_auth_id,
-        isApproved: userData.is_approved
+        isApproved: userData.is_approved,
+        isVerified: !!userData.is_verified
       }
       
       setSupabaseUser(userData)
@@ -521,7 +539,18 @@ export const AuthProvider = ({ children }) => {
 
 
   // Login function - uses Supabase Auth
-  const login = async (email, password, userType = 'Buyer') => {
+  const login = async (email, password, userType = 'Buyer', options = {}) => {
+    // Clear registration flags so they don't interfere with login
+    sessionStorage.removeItem('registering')
+    sessionStorage.removeItem('pendingBuyerData')
+    sessionStorage.removeItem('pendingSellerData')
+    // Don't clear pendingVerification when called from verifyOtp
+    // so the OTP component stays mounted for the success redirect
+    if (!options.fromVerification) {
+      setPendingVerification(null)
+    }
+    setPendingCredentials(null)
+
     try {
       const waitForAuthEvent = (timeoutMs = 20000) => new Promise((resolve, reject) => {
         let timeoutId = null
@@ -605,6 +634,12 @@ export const AuthProvider = ({ children }) => {
       // Set flag BEFORE signup to block onAuthStateChange from calling syncUser
       sessionStorage.setItem('registering', 'true')
       
+      // Store credentials temporarily for auto-login after OTP verification
+      setPendingCredentials({ email, password })
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('pendingCredentials', JSON.stringify({ email, password }))
+      }
+      
       // Sign up with Supabase Auth
       const { data, error } = await supabaseClient.auth.signUp({
         email,
@@ -631,33 +666,9 @@ export const AuthProvider = ({ children }) => {
         return { success: false, requiresOtp: false }
       }
 
-      // If email confirmation is required
-      if (data.user && !data.session) {
-        // Store registration data temporarily for after email verification
-        const registrationData = {
-          email,
-          name,
-          city,
-          businessName,
-          description,
-          mobile,
-          address,
-          verificationData
-        }
-        
-        if (role === 'seller') {
-          sessionStorage.setItem('pendingSellerData', JSON.stringify(registrationData))
-        } else {
-          sessionStorage.setItem('pendingBuyerData', JSON.stringify(registrationData))
-        }
-        
-        toast.success('Please check your email to confirm your account')
-        setPendingVerification({ email, userType: role })
-        return { success: true, requiresOtp: true }
-      }
-
-      // If immediate login (no email confirmation required)
-      // Create user and buyer/seller records via API
+      // Always proceed to create DB records and send OTP/verification email
+      // regardless of whether Supabase gave us a session or not.
+      // (When Supabase email confirmation is enabled, signUp returns user but no session)
       console.log('Creating user records via API...')
       
       const authUser = data.user
@@ -713,13 +724,13 @@ export const AuthProvider = ({ children }) => {
           
           // If already exists, sign out and show error
           if (result.alreadyExists) {
-            await supabaseClient.auth.signOut()
+            supabaseClient.auth.signOut({ scope: 'local' }).catch(() => {})
             sessionStorage.removeItem('registering')
             toast.error('Email already registered. Please login instead.')
             return { success: false, requiresOtp: false }
           }
           
-          await supabaseClient.auth.signOut()
+          supabaseClient.auth.signOut({ scope: 'local' }).catch(() => {})
           sessionStorage.removeItem('registering')
           
           // Show more specific error message if available
@@ -733,32 +744,34 @@ export const AuthProvider = ({ children }) => {
         // Clear the registering flag
         sessionStorage.removeItem('registering')
         
-        // Set user state manually to log them in immediately
-        const newUserData = {
-          id: result.user.id,
-          email: result.user.email,
-          name: result.user.name,
-          role: result.user.user_type.toLowerCase(),
-          userType: result.user.user_type,
-          isVerified: result.user.is_verified,
-          isApproved: result.user.is_approved,
-          supabaseAuthId: authUser.id,
-          created_at: result.user.created_at
+        // Determine the return value before any async cleanup
+        const requiresOtp = !!result.requiresOtp
+        
+        // Set pending verification state BEFORE signOut to ensure
+        // the OTP screen renders immediately
+        if (requiresOtp) {
+          setPendingVerification({ email, userType: role })
         }
         
-        setSupabaseUser(authUser)
-        setUser(newUserData)
+        // Clear local auth state immediately
+        clearLocalAuthState()
         
-        // Cache user data
-        sessionStorage.setItem('zaryah_user_cache', JSON.stringify(newUserData))
+        // Sign out locally (no server request) to clear the auto-created session
+        // without risking a race condition with the later login() call after OTP
+        if (data.session) {
+          await supabaseClient.auth.signOut({ scope: 'local' })
+        }
         
-        toast.success('Registration successful!')
-        return { success: true, requiresOtp: false }
+        if (requiresOtp) {
+          return { success: true, requiresOtp: true }
+        }
+        
+        return { success: true, requiresVerification: true }
       } catch (apiError) {
         // Clear the registering flag on error
         sessionStorage.removeItem('registering')
         console.error('Error calling register API:', apiError)
-        await supabaseClient.auth.signOut()
+        supabaseClient.auth.signOut({ scope: 'local' }).catch(() => {})
         toast.error('Failed to create user account')
         return { success: false, requiresOtp: false }
       }
@@ -808,21 +821,52 @@ export const AuthProvider = ({ children }) => {
   // Verify OTP - for email confirmation
   const verifyOtp = async (email, otp, userType) => {
     try {
-      const { data, error } = await supabaseClient.auth.verifyOtp({
-        email,
-        token: otp,
-        type: 'email'
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, otp }),
       })
 
-      if (error) {
-        toast.error(error.message || 'Verification failed')
+      const result = await response.json()
+
+      if (!result.success) {
+        toast.error(result.error || 'Verification failed')
         return false
       }
       
-      // Clear pending verification state
-      setPendingVerification(null)
+      // DO NOT clear pendingVerification here — the OTP component must stay
+      // mounted so handleVerificationSuccess can fire and redirect the user.
+      // It will be cleared by login() or by handleVerificationSuccess.
       
-      toast.success('Email verified successfully!')
+      // Auto-login if we have pending credentials (survives hard refresh)
+      let storedCreds = pendingCredentials
+      if (!storedCreds && typeof window !== 'undefined') {
+        try {
+          const rawCreds = sessionStorage.getItem('pendingCredentials')
+          if (rawCreds) {
+            storedCreds = JSON.parse(rawCreds)
+          }
+        } catch (e) {
+          console.error('Failed to parse pending credentials:', e)
+        }
+      }
+
+      if (storedCreds && storedCreds.email === email) {
+        toast.success('Email verified successfully! Logging you in...')
+        // Pass skipVerificationClear flag to prevent login() from clearing pendingVerification
+        const loginSuccess = await login(storedCreds.email, storedCreds.password, userType === 'seller' ? 'Seller' : 'Buyer', { fromVerification: true })
+        setPendingCredentials(null) // clear cache
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('pendingCredentials')
+        }
+        return loginSuccess
+      }
+      
+      // No stored credentials — clear pendingVerification and let user sign in manually
+      setPendingVerification(null)
+      toast.success('Email verified successfully! Please sign in.')
       return true
     } catch (error) {
       console.error('OTP verification error:', error)

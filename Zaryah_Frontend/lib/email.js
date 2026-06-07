@@ -82,6 +82,54 @@ If you didn't create an account with Zaryah, you can safely ignore this email.
 }
 
 /**
+ * Send OTP verification email
+ */
+export async function sendOtpEmail({ to, username, otp }) {
+  const transporter = createEmailTransporter();
+
+  const mailOptions = {
+    from: `"Zaryah" <${process.env.GMAIL_USER}>`,
+    to,
+    subject: 'Your Verification Code - Zaryah',
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 10px 10px; }
+            .otp { display: inline-block; padding: 15px 30px; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #667eea; background: #fff; border: 2px dashed #667eea; border-radius: 10px; margin: 20px 0; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Verify Your Email</h1>
+            </div>
+            <div class="content">
+              <p>Hi ${username || 'there'},</p>
+              <p>Thank you for registering with Zaryah! Please enter the 6-digit verification code below to verify your email address and activate your account.</p>
+              <div class="otp">${otp}</div>
+              <p><strong>This code will expire in 15 minutes.</strong></p>
+              <p>If you didn't request this, you can safely ignore this email.</p>
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} Zaryah. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `Hi ${username || 'there'},\n\nYour Zaryah verification code is: ${otp}\n\nThis code will expire in 15 minutes.\n\nIf you didn't request this, ignore this email.`
+  };
+
+  return transporter.sendMail(mailOptions);
+}
+
+/**
  * Send seller approval notification
  */
 export async function sendSellerApprovalEmail({ to, businessName, username, approved }) {

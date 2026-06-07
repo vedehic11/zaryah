@@ -55,10 +55,10 @@ export async function GET(request) {
       );
     }
 
-    // Update user's email_verified status
+    // Update user's is_verified status
     const { error: userUpdateError } = await supabase
       .from('users')
-      .update({ email_verified: true })
+      .update({ is_verified: true })
       .eq('id', verification.user_id);
 
     if (userUpdateError) {
@@ -66,13 +66,11 @@ export async function GET(request) {
     }
 
     // Redirect to success page
-    const appUrl = getServerBaseUrl(request)
     return NextResponse.redirect(
       `${appUrl}/login?message=email_verified`
     );
   } catch (error) {
     console.error('Email verification error:', error);
-    const appUrl = getServerBaseUrl(request)
     return NextResponse.redirect(
       `${appUrl}/login?error=verification_failed`
     );

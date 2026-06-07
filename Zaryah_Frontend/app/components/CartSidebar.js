@@ -13,14 +13,20 @@ export const CartSidebar = () => {
   const router = useRouter()
 
   const handleCheckout = () => {
-    if (!user) {
-      router.push('/login')
-      return
-    }
     setIsCartOpen(false)
     if (typeof window !== 'undefined') {
-      const redirect = encodeURIComponent(window.location.href)
+      const currentUrl = window.location.pathname + window.location.search
+      const redirect = encodeURIComponent(currentUrl)
+      if (!user) {
+        const checkoutRedirect = `/checkout?redirect=${redirect}`
+        router.push(`/login?redirect=${encodeURIComponent(checkoutRedirect)}`)
+        return
+      }
       router.push(`/checkout?redirect=${redirect}`)
+      return
+    }
+    if (!user) {
+      router.push('/login?redirect=/checkout')
       return
     }
     router.push('/checkout')

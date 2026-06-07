@@ -23,7 +23,8 @@ import {
   Instagram,
   Facebook,
   Twitter,
-  Linkedin
+  Linkedin,
+  Trash2
 } from 'lucide-react'
 import { UserAvatar } from './UserAvatar'
 import { DocumentViewerModal } from './DocumentViewerModal'
@@ -153,6 +154,28 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
     } catch (err) {
       console.error('Error rejecting seller:', err)
       toast.error('Failed to reject seller')
+    }
+  }
+
+  const handleDelete = async (sellerId, businessName) => {
+    const doubleConfirm = window.confirm(
+      `WARNING: You are about to permanently delete the seller account for "${businessName}".\n\nThis will permanently delete the seller, all of their products, reviews, sections, wallet details, support tickets, and associated order records.\n\nAre you sure you want to proceed?`
+    )
+    if (!doubleConfirm) return
+
+    try {
+      setLoading(true)
+      const result = await apiService.deleteSeller(sellerId)
+      toast.success(`Seller "${businessName}" and all associated data deleted successfully.`)
+      // Refresh sellers
+      const data = await apiService.getSellersForAdmin()
+      setSellers(data || [])
+      setFilteredSellers(data || [])
+    } catch (err) {
+      console.error('Error deleting seller:', err)
+      toast.error(err.message || 'Failed to delete seller')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -486,6 +509,15 @@ export const AdminSellerManagementPage = ({ initialView = 'all' }) => {
                             title="View documents"
                           >
                             <Eye className="w-4 h-4" />
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleDelete(seller.id, seller.businessName)}
+                            className="p-1.5 text-red-500 hover:text-red-700 transition-colors"
+                            title="Delete seller account"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </motion.button>
                         </div>
                       </td>

@@ -318,9 +318,11 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
         } catch (e) {
           console.error('Failed to save buyNow item to sessionStorage', e)
         }
+        const redirect = encodeURIComponent(window.location.href)
+        router.push(`/checkout?buyNow=1&redirect=${redirect}`)
+      } else {
+        router.push('/checkout?buyNow=1')
       }
-
-      router.push('/checkout?buyNow=1')
     } catch (error) {
       toast.error(error.message || 'Failed to proceed')
     }

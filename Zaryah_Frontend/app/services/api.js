@@ -703,6 +703,12 @@ class ApiService {
     })
   }
 
+  async deleteSeller(sellerId) {
+    return this.request(`/admin/sellers/${sellerId}`, {
+      method: 'DELETE'
+    })
+  }
+
   // Notification endpoints
   async getNotifications() {
     return this.request('/notifications', { method: 'GET' })

@@ -220,7 +220,10 @@ export const AddressProvider = ({ children }) => {
         await addAddress(autoAddress)
       }
     } catch (error) {
-      console.error('Location detection failed:', error)
+      console.error('Location detection failed:', {
+        code: error.code,
+        message: error.message || error.toString()
+      })
       
       // Provide specific error messages based on error type
       let errorMessage = 'Unable to detect location. Please add an address manually.'

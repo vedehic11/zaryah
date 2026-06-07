@@ -128,7 +128,10 @@ export default function CheckoutClient() {
 
     if (!user) {
       toast.error('Please login to checkout')
-      router.push('/login')
+      const currentUrl = typeof window !== 'undefined'
+        ? window.location.pathname + window.location.search
+        : '/checkout'
+      router.push(`/login?redirect=${encodeURIComponent(currentUrl)}`)
       return
     }
 

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, Lock, Eye, EyeOff, User, KeyRound, ArrowLeft } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, User, KeyRound, ArrowLeft, AlertCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { OtpVerification } from './OtpVerification'
 import Link from 'next/link'
 import Image from 'next/image'
 const LOGO_SRC = '/assets/image.png?v=20260501'
@@ -88,7 +89,9 @@ export const LoginPage = () => {
   const [errors, setErrors] = useState({})
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { login, isLoading } = useAuth()
+  const { login, isLoading, pendingVerification, setPendingVerification } = useAuth()
+  const [showUnverifiedWarning, setShowUnverifiedWarning] = useState(false)
+  const [unverifiedEmail, setUnverifiedEmail] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTarget = String(searchParams.get('redirect') || '').trim()
@@ -96,6 +99,65 @@ export const LoginPage = () => {
     ? redirectTarget
     : ''
   const backToSellerUrl = safeRedirectTarget.startsWith('http') ? safeRedirectTarget : ''
+
+  // Handle email verification message/error query parameters
+  useEffect(() => {
+    // Clear stale registration flags on login page mount
+    sessionStorage.removeItem('registering')
+    sessionStorage.removeItem('pendingBuyerData')
+    sessionStorage.removeItem('pendingSellerData')
+
+    const message = searchParams.get('message')
+    const error = searchParams.get('error')
+    const emailParam = searchParams.get('email')
+
+    if (emailParam) {
+      setUnverifiedEmail(emailParam)
+    }
+
+    if (message) {
+      if (message === 'email_verified') {
+        toast.success('Your email has been verified successfully! Please sign in.')
+      } else if (message === 'already_verified') {
+        toast.success('Your email is already verified. Please sign in.')
+      } else if (message === 'check_email') {
+        toast.success('Registration successful! Please check your email for a verification link.')
+      }
+      
+      // Clean up search params to avoid toast repeating on page reload
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search)
+        params.delete('message')
+        const newPath = window.location.pathname + (params.toString() ? `?${params.toString()}` : '')
+        window.history.replaceState({}, '', newPath)
+      }
+    }
+
+    if (error) {
+      if (error === 'invalid_token') {
+        toast.error('The verification link is invalid. Please request a new one.')
+      } else if (error === 'token_expired') {
+        toast.error('The verification link has expired. Please register again.')
+      } else if (error === 'verification_failed') {
+        toast.error('Verification failed. Please contact support.')
+      } else if (error === 'unverified') {
+        toast.error('Please verify your email address before logging in.')
+        setShowUnverifiedWarning(true)
+        if (emailParam) {
+          setFormData(prev => ({ ...prev, email: emailParam }))
+        }
+      }
+      
+      // Clean up search params to avoid toast repeating on page reload
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search)
+        params.delete('error')
+        params.delete('email')
+        const newPath = window.location.pathname + (params.toString() ? `?${params.toString()}` : '')
+        window.history.replaceState({}, '', newPath)
+      }
+    }
+  }, [searchParams])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -127,6 +189,45 @@ export const LoginPage = () => {
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
+  }
+
+  const handleResendAndVerify = async () => {
+    const email = formData.email || unverifiedEmail
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      toast.error('Please enter a valid email address')
+      return
+    }
+
+    try {
+      toast.loading('Sending verification code...', { id: 'resend-otp' })
+      const response = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        toast.error(data.error || 'Failed to send verification code', { id: 'resend-otp' })
+        return
+      }
+
+      toast.success('Verification code sent to your email!', { id: 'resend-otp' })
+      
+      // Save credentials for auto-login after OTP verification (survives hard refresh)
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('pendingCredentials', JSON.stringify({
+          email: email,
+          password: formData.password
+        }))
+      }
+
+      setPendingVerification({ email, userType: formData.userType.toLowerCase() })
+      setShowUnverifiedWarning(false)
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to send verification code', { id: 'resend-otp' })
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -163,6 +264,26 @@ export const LoginPage = () => {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (pendingVerification) {
+    return (
+      <OtpVerification
+        email={pendingVerification.email}
+        userType={pendingVerification.userType}
+        onVerificationSuccess={() => {
+          const safeRedirectTarget = redirectTarget.startsWith('/') || redirectTarget.startsWith('http')
+            ? redirectTarget
+            : '/'
+          if (safeRedirectTarget.startsWith('http') && typeof window !== 'undefined') {
+            window.location.href = safeRedirectTarget
+          } else {
+            router.push(safeRedirectTarget)
+          }
+        }}
+        onBack={() => setPendingVerification(null)}
+      />
+    )
   }
 
   return (
@@ -228,15 +349,40 @@ export const LoginPage = () => {
         {/* Login Form */}
         <AnimatePresence mode="wait">
         {!showForgotPassword && (
-        <motion.form
-          key="login"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mt-8 space-y-6 bg-white p-8 rounded-2xl shadow-xl"
-          onSubmit={handleSubmit}
-        >
+          <>
+            {showUnverifiedWarning && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-amber-800 space-y-3 mt-4"
+              >
+                <div className="flex items-start">
+                  <AlertCircle className="w-5 h-5 mr-2 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm">Email Verification Pending</h4>
+                    <p className="text-xs text-amber-600 mt-1 leading-relaxed">
+                      Your email address <strong>{formData.email || unverifiedEmail}</strong> is registered but not verified yet.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleResendAndVerify}
+                  className="w-full text-center bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-colors"
+                >
+                  Verify Email Now
+                </button>
+              </motion.div>
+            )}
+            <motion.form
+              key="login"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mt-8 space-y-6 bg-white p-8 rounded-2xl shadow-xl"
+              onSubmit={handleSubmit}
+            >
           <div className="space-y-4">
             {/* User Type Selection */}
             <div>
@@ -354,12 +500,16 @@ export const LoginPage = () => {
             </button>
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <Link href="/register" className="text-primary-600 hover:text-primary-700 font-medium">
+              <Link 
+                href={`/register${redirectTarget ? `?redirect=${encodeURIComponent(redirectTarget)}` : ''}`} 
+                className="text-primary-600 hover:text-primary-700 font-medium"
+              >
                 Sign up here
               </Link>
             </p>
           </div>
         </motion.form>
+          </>
         )}
         </AnimatePresence>
       </motion.div>

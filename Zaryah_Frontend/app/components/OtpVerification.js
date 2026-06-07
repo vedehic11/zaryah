@@ -62,9 +62,19 @@ export const OtpVerification = ({
     setError('')
     
     try {
-      // For now, we'll just show a success message
-      // In a real implementation, you'd call an API to resend OTP
-      toast.success('OTP resent successfully!')
+      const response = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        toast.error(data.error || 'Failed to resend code')
+        return
+      }
+
+      toast.success('Verification code resent successfully!')
     } catch (error) {
       toast.error('Failed to resend OTP')
     } finally {

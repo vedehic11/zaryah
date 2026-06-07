@@ -63,13 +63,14 @@ export const RegisterPage = () => {
   const [isUploading, setIsUploading] = useState(false)
   const [usernameAvailable, setUsernameAvailable] = useState(null)
   const [checkingUsername, setCheckingUsername] = useState(false)
-  const { register, isLoading, pendingVerification } = useAuth()
+  const { register, isLoading, pendingVerification, setPendingVerification } = useAuth()
   const { addAddress, requestLocation, userCity, isLocationLoading } = useAddress()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [showAddressModal, setShowAddressModal] = useState(false)
   const redirectTarget = String(searchParams.get('redirect') || '').trim()
   const backToSellerUrl = redirectTarget.startsWith('http') ? redirectTarget : ''
+  const [emailVerificationSent, setEmailVerificationSent] = useState(null)
 
   const indianStates = [
     'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
@@ -449,32 +450,14 @@ export const RegisterPage = () => {
           return
         }
 
-        // Wait a bit for user to be synced in auth context
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
+        if (result.requiresVerification) {
+          toast.success('Registration successful! Please check your email to verify your account.')
+          setEmailVerificationSent(formData.email)
+          return
+        }
+
         // Seller profile is already created by /api/auth/register
         // No need for separate /api/sellers call anymore
-        
-        // Get user from auth context to send verification email
-        if (user?.id) {
-          try {
-            const verifyResponse = await fetch('/api/email/send-verification', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: formData.email,
-                userId: user.id,
-                username: formData.name || formData.username
-              })
-            });
-
-            if (!verifyResponse.ok) {
-              console.error('Failed to send verification email');
-            }
-          } catch (emailError) {
-            console.error('Verification email error:', emailError);
-          }
-        }
         
         // Navigate based on role
         if (formData.role === 'seller') {
@@ -523,8 +506,23 @@ export const RegisterPage = () => {
       }
     }
     
-    if (formData.role === 'seller') router.push('/seller/dashboard')
-    else router.push('/')
+    // Clear the pending verification state before redirecting
+    setPendingVerification(null)
+    
+    // Redirect buyer directly to home or redirect target since they are auto-logged in
+    if (formData.role === 'buyer') {
+      const safeRedirectTarget = redirectTarget.startsWith('/') || redirectTarget.startsWith('http')
+        ? redirectTarget
+        : '/'
+      
+      if (safeRedirectTarget.startsWith('http') && typeof window !== 'undefined') {
+        window.location.href = safeRedirectTarget
+      } else {
+        router.push(safeRedirectTarget)
+      }
+    } else {
+      router.push('/login?message=email_verified')
+    }
   }
 
   const handleAddressDetected = (addressData) => {
@@ -539,7 +537,7 @@ export const RegisterPage = () => {
       }
     }))
   }
-  const handleBackFromOtp = () => setCurrentStep(1)
+  const handleBackFromOtp = () => { setPendingVerification(null); setCurrentStep(1) }
 
   // --- Step Indicator ---
   const renderStepIndicator = () => {
@@ -1170,6 +1168,37 @@ export const RegisterPage = () => {
   )
 
   // --- Main Render ---
+  if (emailVerificationSent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl text-center"
+        >
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-6 animate-pulse">
+            <Mail className="h-8 w-8 text-blue-600" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900">Verify Your Email</h2>
+          <p className="mt-4 text-gray-600 text-base">
+            We've sent a verification link to <strong className="text-gray-900">{emailVerificationSent}</strong>.
+          </p>
+          <p className="mt-2 text-sm text-gray-500 leading-relaxed">
+            Please check your inbox (including your spam/junk folder) and click the link to activate your account.
+          </p>
+          <div className="pt-6 border-t border-gray-200 mt-6">
+            <Link 
+              href={`/login${redirectTarget ? `?redirect=${encodeURIComponent(redirectTarget)}` : ''}`} 
+              className="w-full inline-flex justify-center bg-primary-600 hover:bg-primary-700 text-white py-3 px-4 rounded-xl font-semibold transition-colors"
+            >
+              Go to Sign In
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 py-12 px-4 sm:px-6 lg:px-8">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto">
@@ -1243,7 +1272,7 @@ export const RegisterPage = () => {
           {errors.submit && <p className="text-center text-red-600 mt-2">{errors.submit}</p>}
           {/* Links */}
           <div className="text-center pt-4 border-t border-gray-200">
-            <p className="text-sm text-gray-600">Already have an account?{' '}<Link href="/login" className="text-primary-600 hover:text-primary-700 font-medium">Sign in here</Link></p>
+            <p className="text-sm text-gray-600">Already have an account?{' '}<Link href={`/login${redirectTarget ? `?redirect=${encodeURIComponent(redirectTarget)}` : ''}`} className="text-primary-600 hover:text-primary-700 font-medium">Sign in here</Link></p>
           </div>
         </motion.form>
       </motion.div>
