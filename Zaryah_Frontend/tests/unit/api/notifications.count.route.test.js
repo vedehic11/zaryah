@@ -1,35 +1,34 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-async function loadRoute({ requireAuthImpl, getUserBySupabaseAuthIdImpl, fromImpl }) {
-  vi.resetModules()
+const mockRequireAuth = vi.fn()
+const mockGetUserBySupabaseAuthId = vi.fn()
+const mockFrom = vi.fn()
 
-  const requireAuth = vi.fn(requireAuthImpl)
-  const getUserBySupabaseAuthId = vi.fn(getUserBySupabaseAuthIdImpl)
-  const from = vi.fn(fromImpl)
+vi.mock('@/lib/auth', () => ({
+  requireAuth: (...args) => mockRequireAuth(...args),
+  getUserBySupabaseAuthId: (...args) => mockGetUserBySupabaseAuthId(...args),
+}))
 
-  vi.doMock('@/lib/auth', () => ({
-    requireAuth,
-    getUserBySupabaseAuthId,
-  }))
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: (...args) => mockFrom(...args),
+  },
+}))
 
-  vi.doMock('@/lib/supabase', () => ({
-    supabase: { from },
-  }))
-
-  const route = await import('@/app/api/notifications/count/route')
-  return { ...route, mocks: { requireAuth, getUserBySupabaseAuthId, from } }
-}
+import { GET } from '@/app/api/notifications/count/route'
 
 describe('/api/notifications/count GET', () => {
+  beforeEach(() => {
+    mockRequireAuth.mockReset()
+    mockGetUserBySupabaseAuthId.mockReset()
+    mockFrom.mockReset()
+  })
+
   it('returns 401 when auth throws', async () => {
-    const { GET } = await loadRoute({
-      requireAuthImpl: async () => {
-        throw new Error('Unauthorized')
-      },
-      getUserBySupabaseAuthIdImpl: async () => null,
-      fromImpl: () => ({
-        select: () => ({ eq: () => ({ eq: () => ({ eq: async () => ({ count: 0, error: null }) }) }) }),
-      }),
+    mockRequireAuth.mockRejectedValue(new Error('Unauthorized'))
+    mockGetUserBySupabaseAuthId.mockResolvedValue(null)
+    mockFrom.mockReturnValue({
+      select: () => ({ eq: () => ({ in: () => ({ eq: async () => ({ count: 0, error: null }) }) }) }),
     })
 
     const response = await GET(new Request('http://localhost/api/notifications/count'))
@@ -39,12 +38,10 @@ describe('/api/notifications/count GET', () => {
   })
 
   it('returns 404 when user lookup fails', async () => {
-    const { GET } = await loadRoute({
-      requireAuthImpl: async () => ({ user: { id: 'auth-1' } }),
-      getUserBySupabaseAuthIdImpl: async () => null,
-      fromImpl: () => ({
-        select: () => ({ eq: () => ({ eq: () => ({ eq: async () => ({ count: 0, error: null }) }) }) }),
-      }),
+    mockRequireAuth.mockResolvedValue({ user: { id: 'auth-1' } })
+    mockGetUserBySupabaseAuthId.mockResolvedValue(null)
+    mockFrom.mockReturnValue({
+      select: () => ({ eq: () => ({ in: () => ({ eq: async () => ({ count: 0, error: null }) }) }) }),
     })
 
     const response = await GET(new Request('http://localhost/api/notifications/count'))
@@ -54,15 +51,13 @@ describe('/api/notifications/count GET', () => {
   })
 
   it('returns unread count for the user', async () => {
-    const { GET } = await loadRoute({
-      requireAuthImpl: async () => ({ user: { id: 'auth-2' } }),
-      getUserBySupabaseAuthIdImpl: async () => ({ id: 'user-2', user_type: 'Buyer' }),
-      fromImpl: () => ({
-        select: () => ({
-          eq: () => ({
-            eq: () => ({
-              eq: async () => ({ count: 7, error: null }),
-            }),
+    mockRequireAuth.mockResolvedValue({ user: { id: 'auth-2' } })
+    mockGetUserBySupabaseAuthId.mockResolvedValue({ id: 'user-2', user_type: 'Buyer' })
+    mockFrom.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          in: () => ({
+            eq: async () => ({ count: 7, error: null }),
           }),
         }),
       }),

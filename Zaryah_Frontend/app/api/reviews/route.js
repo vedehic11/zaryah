@@ -119,7 +119,7 @@ export async function POST(request) {
       .single()
 
     if (existingReview) {
-      return NextResponse.json({ error: 'You have already reviewed this product' }, { status: 400 })
+      return NextResponse.json({ error: 'You have already reviewed this seller' }, { status: 400 })
     }
 
     const reviewData = {

@@ -130,29 +130,27 @@ describe('/api/sellers/username/[username] GET', () => {
         }
 
         if (table === 'products') {
-          return {
-            select: () => ({
-              eq: () => ({
-                eq: () => ({
-                  order: async () => ({
-                    data: [
-                      {
-                        id: 'p1',
-                        seller_id: 's2',
-                        name: 'Gift Box',
-                        description: 'Desc',
-                        price: '499',
-                        images: ['a.jpg'],
-                        status: 'approved',
-                        created_at: '2025-01-01T00:00:00.000Z',
-                        product_ratings: [{ rating: 4 }, { rating: 5 }],
-                      },
-                    ],
-                    error: null,
-                  }),
-                }),
-              }),
+          const mockQuery = {
+            eq: () => mockQuery,
+            order: async () => ({
+              data: [
+                {
+                  id: 'p1',
+                  seller_id: 's2',
+                  name: 'Gift Box',
+                  description: 'Desc',
+                  price: '499',
+                  images: ['a.jpg'],
+                  status: 'approved',
+                  created_at: '2025-01-01T00:00:00.000Z',
+                  product_ratings: [{ rating: 4 }, { rating: 5 }],
+                },
+              ],
+              error: null,
             }),
+          }
+          return {
+            select: () => mockQuery
           }
         }
 
@@ -164,6 +162,28 @@ describe('/api/sellers/username/[username] GET', () => {
                 error: null,
               }),
             }),
+          }
+        }
+
+        if (table === 'orders') {
+          const mockQuery = {
+            eq: () => mockQuery,
+            order: () => mockQuery,
+            then: (resolve) => resolve({ data: [], count: 0, error: null })
+          }
+          return {
+            select: () => mockQuery
+          }
+        }
+
+        if (table === 'seller_sections') {
+          const mockQuery = {
+            eq: () => mockQuery,
+            order: () => mockQuery,
+            then: (resolve) => resolve({ data: [], error: null })
+          }
+          return {
+            select: () => mockQuery
           }
         }
 

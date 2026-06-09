@@ -91,13 +91,13 @@ export const RegisterPage = () => {
   // --- File Upload Handlers ---
   const handleFileUpload = useCallback((file, type) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
-    const maxSize = 5 * 1024 * 1024 // 5MB
+    const maxSize = 4 * 1024 * 1024 // 4MB
     if (!allowedTypes.includes(file.type)) {
       setErrors(prev => ({ ...prev, [type]: 'Please upload a valid file (JPEG, PNG, or PDF)' }))
       return
     }
     if (file.size > maxSize) {
-      setErrors(prev => ({ ...prev, [type]: 'File size should be less than 5MB' }))
+      setErrors(prev => ({ ...prev, [type]: 'File size should be less than 4MB' }))
       return
     }
     if (type === 'businessDocuments') {
@@ -1074,7 +1074,7 @@ export const RegisterPage = () => {
               <Upload className="w-12 h-12 mx-auto text-gray-400" />
               <div>
                 <p className="text-sm font-medium text-gray-700">Drag and drop your ID document here, or{' '}<label className="text-primary-600 hover:text-primary-700 cursor-pointer">browse<input type="file" className="hidden" accept="image/*,.pdf" onChange={e => handleFileInput(e, 'idDocument')} /></label></p>
-                <p className="text-xs text-gray-500 mt-1">Supported formats: JPEG, PNG, PDF (Max 5MB)</p>
+                <p className="text-xs text-gray-500 mt-1">Supported formats: JPEG, PNG, PDF (Max 4MB)</p>
               </div>
             </div>
           )}

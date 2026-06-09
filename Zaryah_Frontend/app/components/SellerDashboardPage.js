@@ -679,8 +679,8 @@ export default function SellerDashboardPage() {
       return
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Section image must be 5MB or smaller')
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error('Section image must be 4MB or smaller due to server upload limits')
       return
     }
 
@@ -771,8 +771,8 @@ export default function SellerDashboardPage() {
       return
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Section image must be 5MB or smaller')
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error('Section image must be 4MB or smaller due to server upload limits')
       return
     }
 
@@ -908,10 +908,10 @@ export default function SellerDashboardPage() {
       return
     }
     
-    // Check file size (max 10MB for images, 50MB for videos)
-    const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024
+    // Check file size (max 4MB due to server upload limits)
+    const maxSize = 4 * 1024 * 1024
     if (file.size > maxSize) {
-      toast.error(`File too large. Maximum size is ${file.type.startsWith('video/') ? '50MB' : '10MB'}`)
+      toast.error('File too large. Maximum size is 4MB due to server upload limits')
       return
     }
     
@@ -954,8 +954,8 @@ export default function SellerDashboardPage() {
       return
     }
     
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File too large. Maximum size is 5MB')
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error('File too large. Maximum size is 4MB due to server upload limits')
       return
     }
     
@@ -3342,7 +3342,7 @@ export default function SellerDashboardPage() {
                             />
                           </label>
                           <p className="mt-2 text-xs text-gray-500">
-                            Recommended: 1920x1080px. Supports JPEG, PNG, WebP (max 10MB) or MP4, WebM (max 50MB)
+                            Recommended: 1920x1080px. Supports JPEG, PNG, WebP or MP4, WebM (max 4MB due to server upload limits)
                           </p>
                           {uploadingCover && (
                             <div className="mt-2 text-sm text-primary-600 flex items-center gap-2">
@@ -3391,7 +3391,7 @@ export default function SellerDashboardPage() {
                             />
                           </label>
                           <p className="mt-2 text-xs text-gray-500">
-                            Recommended: Square image, at least 400x400px. Supports JPEG, PNG, WebP (max 5MB)
+                            Recommended: Square image, at least 400x400px. Supports JPEG, PNG, WebP (max 4MB due to server upload limits)
                           </p>
                           {uploadingProfile && (
                             <div className="mt-2 text-sm text-primary-600 flex items-center gap-2">

@@ -179,7 +179,8 @@ describe('Register and Verification API Flow', () => {
           },
           businessInfo: {
             businessName: 'Happy Trees',
-            description: 'Painting stuff'
+            description: 'Painting stuff',
+            username: 'bobross'
           }
         })
       })

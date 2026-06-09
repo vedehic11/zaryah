@@ -36,7 +36,7 @@ describe('/api/sellers/check-username GET', () => {
     const response = await GET(new Request('http://localhost/api/sellers/check-username?username=Bad Name'))
 
     expect(response.status).toBe(400)
-    await expect(response.json()).resolves.toMatchObject({ available: false, error: 'Invalid username format' })
+    await expect(response.json()).resolves.toMatchObject({ available: false, error: 'Invalid username format. Only lowercase letters, numbers, and hyphens allowed.' })
   })
 
   it('returns available true when no matching seller exists', async () => {

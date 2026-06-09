@@ -93,6 +93,13 @@ export async function GET(request, { params }) {
 			? (sellerRatings.reduce((sum, r) => sum + r.rating, 0) / sellerRatings.length).toFixed(1)
 			: 0
 
+		const stats = {
+			productsCount: 0,
+			ordersCount: 0,
+			averageRating: parseFloat(avgRating),
+			ratingCount: sellerRatings.length
+		}
+
 		// Compute additional metrics for seller rank
 		try {
 			const reviewsCount = sellerRatings.length
@@ -181,12 +188,7 @@ export async function GET(request, { params }) {
 			}
 		})
 
-		const stats = {
-			productsCount: productsWithRatings.length,
-			ordersCount: 0,
-			averageRating: parseFloat(avgRating),
-			ratingCount: sellerRatings.length
-		}
+		stats.productsCount = productsWithRatings.length
 
 		// Fetch seller sections with images
 		const { data: sections, error: sectionsError } = await supabase

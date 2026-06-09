@@ -41,13 +41,12 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // Dynamic max size based on file type
-    const isVideo = file.type.startsWith('video/')
-    const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024 // 50MB for videos, 10MB for images
+    // Max size is 4MB due to Vercel's 4.5MB payload limit
+    const maxSize = 4 * 1024 * 1024
     
     if (file.size > maxSize) {
       return NextResponse.json({ 
-        error: `File too large. Maximum size is ${isVideo ? '50MB' : '10MB'}.` 
+        error: 'File too large. Maximum size is 4MB due to server upload limits.' 
       }, { status: 400 })
     }
 

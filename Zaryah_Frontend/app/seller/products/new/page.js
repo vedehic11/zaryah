@@ -285,14 +285,14 @@ export default function AddProductPage() {
 
     const validFiles = files.filter(file => {
       const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
-      const isValidSize = file.size <= 5 * 1024 * 1024 // 5MB limit
+      const isValidSize = file.size <= 4 * 1024 * 1024 // 4MB limit
       
       if (!isValidType) {
         toast.error(`${file.name} is not a valid image format`)
         return false
       }
       if (!isValidSize) {
-        toast.error(`${file.name} exceeds 5MB limit`)
+        toast.error(`${file.name} exceeds 4MB limit due to server upload limits`)
         return false
       }
       return true
@@ -422,7 +422,7 @@ export default function AddProductPage() {
     if (!file) return
 
     const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
-    const isValidSize = file.size <= 5 * 1024 * 1024
+    const isValidSize = file.size <= 4 * 1024 * 1024
 
     if (!isValidType) {
       toast.error('Only JPG, PNG, GIF, or WebP images are allowed')
@@ -430,7 +430,7 @@ export default function AddProductPage() {
     }
 
     if (!isValidSize) {
-      toast.error('Image must be 5MB or smaller')
+      toast.error('Image must be 4MB or smaller due to server upload limits')
       return
     }
 
@@ -481,7 +481,7 @@ export default function AddProductPage() {
     if (!file) return
 
     const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
-    const isValidSize = file.size <= 5 * 1024 * 1024
+    const isValidSize = file.size <= 4 * 1024 * 1024
 
     if (!isValidType) {
       toast.error('Only JPG, PNG, GIF, or WebP images are allowed')
@@ -489,7 +489,7 @@ export default function AddProductPage() {
     }
 
     if (!isValidSize) {
-      toast.error('Image must be 5MB or smaller')
+      toast.error('Image must be 4MB or smaller due to server upload limits')
       return
     }
 
@@ -920,7 +920,7 @@ export default function AddProductPage() {
                   <p className="text-sm text-gray-600">
                     {imageUploading ? 'Uploading images...' : images.length >= IMAGE_LIMIT ? `Maximum ${IMAGE_LIMIT} images` : 'Click to upload images'}
                   </p>
-                  <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB each. Up to {IMAGE_LIMIT} images total.</p>
+                  <p className="text-xs text-gray-500">PNG, JPG, GIF up to 4MB each. Up to {IMAGE_LIMIT} images total.</p>
                 </button>
                 {errors.images && <p className="text-sm text-red-600 mt-1">{errors.images}</p>}
               </div>

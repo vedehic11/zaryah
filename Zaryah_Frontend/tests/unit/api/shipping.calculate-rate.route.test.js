@@ -5,12 +5,24 @@ async function loadRoute({ calculateShippingRatesImpl, getCheapestShippingRateIm
 
   const calculateShippingRates = vi.fn(calculateShippingRatesImpl)
   const getCheapestShippingRate = vi.fn(getCheapestShippingRateImpl)
+  const getCheapestShippingRateDetails = vi.fn(async (...args) => {
+    const charge = await getCheapestShippingRateImpl(...args)
+    return {
+      deliveryCharge: charge,
+      baseRate: charge,
+      markup: 0,
+      buffer: 0,
+      fallback: false,
+      courier: 'test-courier'
+    }
+  })
   const normalizeWeightToKg = vi.fn(normalizeWeightToKgImpl)
   const from = vi.fn(fromImpl)
 
   vi.doMock('@/lib/shiprocket', () => ({
     calculateShippingRates,
     getCheapestShippingRate,
+    getCheapestShippingRateDetails,
   }))
 
   vi.doMock('@/lib/weight', () => ({
@@ -22,7 +34,7 @@ async function loadRoute({ calculateShippingRatesImpl, getCheapestShippingRateIm
   }))
 
   const route = await import('@/app/api/shipping/calculate-rate/route')
-  return { ...route, mocks: { calculateShippingRates, getCheapestShippingRate, normalizeWeightToKg, from } }
+  return { ...route, mocks: { calculateShippingRates, getCheapestShippingRate, getCheapestShippingRateDetails, normalizeWeightToKg, from } }
 }
 
 describe('/api/shipping/calculate-rate POST', () => {
@@ -75,7 +87,7 @@ describe('/api/shipping/calculate-rate POST', () => {
       pickupPincode: '400001',
       deliveryPincode: '560001',
     })
-    expect(mocks.getCheapestShippingRate).toHaveBeenCalled()
+    expect(mocks.getCheapestShippingRateDetails).toHaveBeenCalled()
   })
 
   it('returns all options and cheapest when returnAllOptions is true', async () => {

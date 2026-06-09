@@ -101,6 +101,14 @@ describe('/api/products GET', () => {
           }
         }
 
+        if (table === 'orders') {
+          return {
+            select: () => ({
+              in: async () => ({ data: [], error: null }),
+            }),
+          }
+        }
+
         return { select: () => query }
       },
     })
@@ -137,6 +145,14 @@ describe('/api/products GET', () => {
                 ],
                 error: null,
               }),
+            }),
+          }
+        }
+
+        if (table === 'orders') {
+          return {
+            select: () => ({
+              in: async () => ({ data: [], error: null }),
             }),
           }
         }
@@ -249,6 +265,14 @@ describe('/api/products GET', () => {
                 ],
                 error: null,
               }),
+            }),
+          }
+        }
+
+        if (table === 'orders') {
+          return {
+            select: () => ({
+              in: async () => ({ data: [], error: null }),
             }),
           }
         }

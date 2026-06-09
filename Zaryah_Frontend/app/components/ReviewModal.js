@@ -72,13 +72,13 @@ export const ReviewModal = ({ isOpen, onClose, seller }) => {
     const selectedFiles = Array.from(e.target.files)
     const validFiles = selectedFiles.filter(file => {
       const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
-      const isValidSize = file.size <= 5 * 1024 * 1024 // 5MB limit
+      const isValidSize = file.size <= 4 * 1024 * 1024 // 4MB limit
       
       if (!isValidType) {
         toast.error(`${file.name} is not a supported image type`)
       }
       if (!isValidSize) {
-        toast.error(`${file.name} is too large. Maximum size is 5MB`)
+        toast.error(`${file.name} is too large. Maximum size is 4MB due to server upload limits`)
       }
       
       return isValidType && isValidSize
@@ -286,7 +286,7 @@ export const ReviewModal = ({ isOpen, onClose, seller }) => {
                   <span>Click to upload photos</span>
                 </button>
                 <p className="text-xs text-gray-500 mt-1">
-                  Supported: JPEG, PNG, GIF, WebP (Max 5MB each)
+                  Supported: JPEG, PNG, GIF, WebP (Max 4MB each)
                 </p>
               </div>
               

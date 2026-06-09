@@ -317,7 +317,7 @@ export default function EditSellerProductPage() {
     if (!file) return
 
     const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
-    const isValidSize = file.size <= 5 * 1024 * 1024
+    const isValidSize = file.size <= 4 * 1024 * 1024
 
     if (!isValidType) {
       toast.error('Only JPG, PNG, GIF, or WebP images are allowed')
@@ -325,7 +325,7 @@ export default function EditSellerProductPage() {
     }
 
     if (!isValidSize) {
-      toast.error('Image must be 5MB or smaller')
+      toast.error('Image must be 4MB or smaller due to server upload limits')
       return
     }
 
@@ -378,7 +378,7 @@ export default function EditSellerProductPage() {
 
     const validFiles = files.filter(file => {
       const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
-      const isValidSize = file.size <= 5 * 1024 * 1024
+      const isValidSize = file.size <= 4 * 1024 * 1024
 
       if (!isValidType) {
         toast.error(`${file.name} is not a valid image format`)
@@ -386,7 +386,7 @@ export default function EditSellerProductPage() {
       }
 
       if (!isValidSize) {
-        toast.error(`${file.name} exceeds 5MB limit`)
+        toast.error(`${file.name} exceeds 4MB limit due to server upload limits`)
         return false
       }
 
@@ -442,7 +442,7 @@ export default function EditSellerProductPage() {
     if (!file) return
 
     const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
-    const isValidSize = file.size <= 5 * 1024 * 1024
+    const isValidSize = file.size <= 4 * 1024 * 1024
 
     if (!isValidType) {
       toast.error('Only JPG, PNG, GIF, or WebP images are allowed')
@@ -450,7 +450,7 @@ export default function EditSellerProductPage() {
     }
 
     if (!isValidSize) {
-      toast.error('Image must be 5MB or smaller')
+      toast.error('Image must be 4MB or smaller due to server upload limits')
       return
     }
 

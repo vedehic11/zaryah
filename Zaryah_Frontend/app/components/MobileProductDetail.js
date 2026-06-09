@@ -332,7 +332,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     if (!file) return
 
     const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
-    const isValidSize = file.size <= 5 * 1024 * 1024
+    const isValidSize = file.size <= 4 * 1024 * 1024
 
     if (!isValidType) {
       toast.error('Only JPG, PNG, GIF, or WebP images are allowed')
@@ -340,7 +340,7 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
     }
 
     if (!isValidSize) {
-      toast.error('Image must be 5MB or smaller')
+      toast.error('Image must be 4MB or smaller due to server upload limits')
       return
     }
 

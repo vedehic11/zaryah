@@ -1,36 +1,37 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-async function loadRoute({ requireAuthImpl, getUserBySupabaseAuthIdImpl, fromImpl }) {
-  vi.resetModules()
+const mockRequireAuth = vi.fn()
+const mockGetUserBySupabaseAuthId = vi.fn()
+const mockFrom = vi.fn()
 
-  const requireAuth = vi.fn(requireAuthImpl)
-  const getUserBySupabaseAuthId = vi.fn(getUserBySupabaseAuthIdImpl)
-  const from = vi.fn(fromImpl)
+vi.mock('@/lib/auth', () => ({
+  requireAuth: (...args) => mockRequireAuth(...args),
+  getUserBySupabaseAuthId: (...args) => mockGetUserBySupabaseAuthId(...args),
+}))
 
-  vi.doMock('@/lib/auth', () => ({
-    requireAuth,
-    getUserBySupabaseAuthId,
-  }))
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: (...args) => mockFrom(...args),
+  },
+}))
 
-  vi.doMock('@/lib/supabase', () => ({
-    supabase: { from },
-  }))
-
-  const route = await import('@/app/api/notifications/[id]/route')
-  return { ...route, mocks: { requireAuth, getUserBySupabaseAuthId, from } }
-}
+import { PATCH, DELETE } from '@/app/api/notifications/[id]/route'
 
 describe('/api/notifications/[id] route handlers', () => {
+  beforeEach(() => {
+    mockRequireAuth.mockReset()
+    mockGetUserBySupabaseAuthId.mockReset()
+    mockFrom.mockReset()
+  })
+
   it('PATCH marks a notification as read by default', async () => {
     const updateMock = vi.fn(() => ({
-      eq: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
+      eq: () => ({ eq: () => ({ in: async () => ({ error: null }) }) }),
     }))
 
-    const { PATCH } = await loadRoute({
-      requireAuthImpl: async () => ({ user: { id: 'auth-1' } }),
-      getUserBySupabaseAuthIdImpl: async () => ({ id: 'user-1', user_type: 'Buyer' }),
-      fromImpl: () => ({ update: updateMock }),
-    })
+    mockRequireAuth.mockResolvedValue({ user: { id: 'auth-1' } })
+    mockGetUserBySupabaseAuthId.mockResolvedValue({ id: 'user-1', user_type: 'Buyer' })
+    mockFrom.mockReturnValue({ update: updateMock })
 
     const response = await PATCH(
       new Request('http://localhost/api/notifications/n1', { method: 'PATCH' }),
@@ -44,14 +45,12 @@ describe('/api/notifications/[id] route handlers', () => {
 
   it('PATCH can mark a notification as unread', async () => {
     const updateMock = vi.fn(() => ({
-      eq: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
+      eq: () => ({ eq: () => ({ in: async () => ({ error: null }) }) }),
     }))
 
-    const { PATCH } = await loadRoute({
-      requireAuthImpl: async () => ({ user: { id: 'auth-2' } }),
-      getUserBySupabaseAuthIdImpl: async () => ({ id: 'user-2', user_type: 'Seller' }),
-      fromImpl: () => ({ update: updateMock }),
-    })
+    mockRequireAuth.mockResolvedValue({ user: { id: 'auth-2' } })
+    mockGetUserBySupabaseAuthId.mockResolvedValue({ id: 'user-2', user_type: 'Seller' })
+    mockFrom.mockReturnValue({ update: updateMock })
 
     const response = await PATCH(
       new Request('http://localhost/api/notifications/n2', {
@@ -68,12 +67,10 @@ describe('/api/notifications/[id] route handlers', () => {
   })
 
   it('DELETE returns 500 when delete fails', async () => {
-    const { DELETE } = await loadRoute({
-      requireAuthImpl: async () => ({ user: { id: 'auth-3' } }),
-      getUserBySupabaseAuthIdImpl: async () => ({ id: 'user-3', user_type: 'Buyer' }),
-      fromImpl: () => ({
-        delete: () => ({ eq: () => ({ eq: () => ({ eq: async () => ({ error: { message: 'db fail' } }) }) }) }),
-      }),
+    mockRequireAuth.mockResolvedValue({ user: { id: 'auth-3' } })
+    mockGetUserBySupabaseAuthId.mockResolvedValue({ id: 'user-3', user_type: 'Buyer' })
+    mockFrom.mockReturnValue({
+      delete: () => ({ eq: () => ({ eq: () => ({ in: async () => ({ error: { message: 'db fail' } }) }) }) }),
     })
 
     const response = await DELETE(new Request('http://localhost/api/notifications/n3', { method: 'DELETE' }), {

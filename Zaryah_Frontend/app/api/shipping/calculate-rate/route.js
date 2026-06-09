@@ -6,6 +6,7 @@ import { normalizeWeightToKg } from '@/lib/weight'
 
 // POST /api/shipping/calculate-rate - Calculate delivery charges
 export async function POST(request) {
+  let twoWayDelivery = false
   try {
     const body = await request.json()
     const includeDebug = process.env.NODE_ENV !== 'production' ||
@@ -15,9 +16,11 @@ export async function POST(request) {
       deliveryPincode, 
       cartItems = [],
       codAmount = 0,
-      twoWayDelivery = false,
       returnAllOptions = false 
     } = body
+    if (body && body.twoWayDelivery !== undefined) {
+      twoWayDelivery = body.twoWayDelivery
+    }
 
     // Validate delivery pincode
     if (!deliveryPincode || deliveryPincode.length !== 6) {
