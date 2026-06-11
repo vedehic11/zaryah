@@ -271,7 +271,7 @@ export async function POST(request) {
     if (newUser.user_type === 'Buyer') {
       // Generate 6-digit OTP code
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       // Save OTP to database
       const { error: otpDbError } = await supabaseAdmin

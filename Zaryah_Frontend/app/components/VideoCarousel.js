@@ -161,6 +161,7 @@ export const VideoCarousel = () => {
               </div>
               <button
                 onClick={scrollToProducts}
+                suppressHydrationWarning
                 className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-full text-base md:text-lg font-semibold transition-all duration-300 inline-flex items-center space-x-2 shadow-lg mx-auto"
               >
                 <span>Explore Their Creations</span>
@@ -176,6 +177,7 @@ export const VideoCarousel = () => {
         <>
           <button
             onClick={prevSlide}
+            suppressHydrationWarning
             className="absolute left-4 top-1/2 transform -translate-y-1/2 z-30 bg-white/20 backdrop-blur-sm text-white p-3 rounded-full hover:bg-white/30 transition-colors"
           >
             <ChevronLeft className="w-6 h-6" />
@@ -183,6 +185,7 @@ export const VideoCarousel = () => {
 
           <button
             onClick={nextSlide}
+            suppressHydrationWarning
             className="absolute right-4 top-1/2 transform -translate-y-1/2 z-30 bg-white/20 backdrop-blur-sm text-white p-3 rounded-full hover:bg-white/30 transition-colors"
           >
             <ChevronRight className="w-6 h-6" />
@@ -194,6 +197,7 @@ export const VideoCarousel = () => {
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
+                suppressHydrationWarning
                 className={`w-3 h-3 rounded-full transition-colors ${
                   index === currentSlide ? 'bg-white' : 'bg-white/50'
                 }`}

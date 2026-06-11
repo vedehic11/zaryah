@@ -113,7 +113,11 @@ export const ProductCard = ({ product, backHref, imagePriority = false }) => {
             className="block relative w-full h-36 sm:h-52 lg:h-64"
           >
             <Image
-              src={product.images && product.images.length > 0 ? product.images[0] : '/placeholder.jpg'}
+              src={
+                Array.isArray(product.images) && product.images.length > 0
+                  ? product.images[0]
+                  : product.image || '/placeholder.jpg'
+              }
               alt={product.name || 'Product Image'}
               fill
               priority={imagePriority}

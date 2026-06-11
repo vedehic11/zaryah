@@ -20,52 +20,84 @@ export function createEmailTransporter() {
 }
 
 /**
+ * Helper to send email using the Resend HTTP API
+ */
+async function sendViaResend({ to, subject, html, text }) {
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (!resendApiKey) {
+    throw new Error('RESEND_API_KEY is not configured');
+  }
+
+  const contactEmail = process.env.GMAIL_USER || 'vedehic@gmail.com';
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'Zaryah <onboarding@resend.dev>';
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${resendApiKey}`
+    },
+    body: JSON.stringify({
+      from: fromEmail,
+      to: Array.isArray(to) ? to : [to],
+      reply_to: contactEmail,
+      subject,
+      html,
+      text
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || data.error || 'Failed to send email via Resend API');
+  }
+
+  return data;
+}
+
+/**
  * Send email verification link
  */
 export async function sendVerificationEmail({ to, username, verificationUrl }) {
-  const transporter = createEmailTransporter();
-
-  const mailOptions = {
-    from: `"Zaryah" <${process.env.GMAIL_USER}>`,
-    to,
-    subject: 'Verify Your Email - Zaryah',
-    html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Welcome to Zaryah!</h1>
-            </div>
-            <div class="content">
-              <p>Hi ${username || 'there'},</p>
-              <p>Thank you for registering with Zaryah! Please verify your email address to complete your registration.</p>
-              <div style="text-align: center;">
-                <a href="${verificationUrl}" class="button">Verify Email Address</a>
-              </div>
-              <p>Or copy and paste this link into your browser:</p>
-              <p style="word-break: break-all; color: #667eea;">${verificationUrl}</p>
-              <p><strong>This link will expire in 24 hours.</strong></p>
-              <p>If you didn't create an account with Zaryah, you can safely ignore this email.</p>
-            </div>
-            <div class="footer">
-              <p>&copy; ${new Date().getFullYear()} Zaryah. All rights reserved.</p>
-            </div>
+  const subject = 'Verify Your Email - Zaryah';
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Welcome to Zaryah!</h1>
           </div>
-        </body>
-      </html>
-    `,
-    text: `Hi ${username || 'there'},
+          <div class="content">
+            <p>Hi ${username || 'there'},</p>
+            <p>Thank you for registering with Zaryah! Please verify your email address to complete your registration.</p>
+            <div style="text-align: center;">
+              <a href="${verificationUrl}" class="button">Verify Email Address</a>
+            </div>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #667eea;">${verificationUrl}</p>
+            <p><strong>This link will expire in 24 hours.</strong></p>
+            <p>If you didn't create an account with Zaryah, you can safely ignore this email.</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} Zaryah. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  const text = `Hi ${username || 'there'},
 
 Thank you for registering with Zaryah! Please verify your email address by clicking the link below:
 
@@ -75,7 +107,24 @@ This link will expire in 24 hours.
 
 If you didn't create an account with Zaryah, you can safely ignore this email.
 
-© ${new Date().getFullYear()} Zaryah. All rights reserved.`,
+© ${new Date().getFullYear()} Zaryah. All rights reserved.`;
+
+  if (process.env.RESEND_API_KEY) {
+    try {
+      console.log('Sending verification email via Resend API to:', to);
+      return await sendViaResend({ to, subject, html, text });
+    } catch (err) {
+      console.error('Failed to send verification email via Resend, falling back to Gmail SMTP:', err);
+    }
+  }
+
+  const transporter = createEmailTransporter();
+  const mailOptions = {
+    from: `"Zaryah" <${process.env.GMAIL_USER}>`,
+    to,
+    subject,
+    html,
+    text,
   };
 
   return transporter.sendMail(mailOptions);
@@ -85,45 +134,57 @@ If you didn't create an account with Zaryah, you can safely ignore this email.
  * Send OTP verification email
  */
 export async function sendOtpEmail({ to, username, otp }) {
-  const transporter = createEmailTransporter();
+  const subject = 'Your Verification Code - Zaryah';
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 10px 10px; }
+          .otp { display: inline-block; padding: 15px 30px; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #667eea; background: #fff; border: 2px dashed #667eea; border-radius: 10px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Verify Your Email</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${username || 'there'},</p>
+            <p>Thank you for registering with Zaryah! Please enter the 6-digit verification code below to verify your email address and activate your account.</p>
+            <div class="otp">${otp}</div>
+            <p><strong>This code will expire in 24 hours.</strong></p>
+            <p>If you didn't request this, you can safely ignore this email.</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} Zaryah. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  const text = `Hi ${username || 'there'},\n\nYour Zaryah verification code is: ${otp}\n\nThis code will expire in 24 hours.\n\nIf you didn't request this, ignore this email.`;
 
+  if (process.env.RESEND_API_KEY) {
+    try {
+      console.log('Sending OTP email via Resend API to:', to);
+      return await sendViaResend({ to, subject, html, text });
+    } catch (err) {
+      console.error('Failed to send OTP email via Resend, falling back to Gmail SMTP:', err);
+    }
+  }
+
+  const transporter = createEmailTransporter();
   const mailOptions = {
     from: `"Zaryah" <${process.env.GMAIL_USER}>`,
     to,
-    subject: 'Your Verification Code - Zaryah',
-    html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 10px 10px; }
-            .otp { display: inline-block; padding: 15px 30px; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #667eea; background: #fff; border: 2px dashed #667eea; border-radius: 10px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Verify Your Email</h1>
-            </div>
-            <div class="content">
-              <p>Hi ${username || 'there'},</p>
-              <p>Thank you for registering with Zaryah! Please enter the 6-digit verification code below to verify your email address and activate your account.</p>
-              <div class="otp">${otp}</div>
-              <p><strong>This code will expire in 15 minutes.</strong></p>
-              <p>If you didn't request this, you can safely ignore this email.</p>
-            </div>
-            <div class="footer">
-              <p>&copy; ${new Date().getFullYear()} Zaryah. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `,
-    text: `Hi ${username || 'there'},\n\nYour Zaryah verification code is: ${otp}\n\nThis code will expire in 15 minutes.\n\nIf you didn't request this, ignore this email.`
+    subject,
+    html,
+    text
   };
 
   return transporter.sendMail(mailOptions);
@@ -133,7 +194,6 @@ export async function sendOtpEmail({ to, username, otp }) {
  * Send seller approval notification
  */
 export async function sendSellerApprovalEmail({ to, businessName, username, approved }) {
-  const transporter = createEmailTransporter();
   const appUrl = getPublicAppUrl()
 
   const subject = approved 
@@ -162,39 +222,51 @@ export async function sendSellerApprovalEmail({ to, businessName, username, appr
       </div>
     `;
 
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          ul { margin: 15px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>${approved ? '🎉 Account Approved!' : 'Application Update'}</h1>
+          </div>
+          <div class="content">
+            ${content}
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} Zaryah. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  if (process.env.RESEND_API_KEY) {
+    try {
+      console.log('Sending seller approval email via Resend API to:', to);
+      return await sendViaResend({ to, subject, html });
+    } catch (err) {
+      console.error('Failed to send seller approval email via Resend, falling back to Gmail SMTP:', err);
+    }
+  }
+
+  const transporter = createEmailTransporter();
   const mailOptions = {
     from: `"Zaryah" <${process.env.GMAIL_USER}>`,
     to,
     subject,
-    html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-            ul { margin: 15px 0; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>${approved ? '🎉 Account Approved!' : 'Application Update'}</h1>
-            </div>
-            <div class="content">
-              ${content}
-            </div>
-            <div class="footer">
-              <p>&copy; ${new Date().getFullYear()} Zaryah. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `,
+    html,
   };
 
   return transporter.sendMail(mailOptions);
@@ -204,48 +276,60 @@ export async function sendSellerApprovalEmail({ to, businessName, username, appr
  * Send password reset email
  */
 export async function sendPasswordResetEmail({ to, resetUrl }) {
-  const transporter = createEmailTransporter();
+  const subject = 'Reset Your Password - Zaryah';
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Reset Your Password</h1>
+          </div>
+          <div class="content">
+            <p>We received a request to reset your password for your Zaryah account.</p>
+            <div style="text-align: center;">
+              <a href="${resetUrl}" class="button">Reset Password</a>
+            </div>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #667eea;">${resetUrl}</p>
+            <p><strong>This link will expire automatically.</strong></p>
+            <p>If you didn't request this, you can safely ignore this email.</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} Zaryah. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  const text = `Reset your Zaryah password using this link:\n\n${resetUrl}\n\nIf you didn't request this, you can ignore this email.`;
 
+  if (process.env.RESEND_API_KEY) {
+    try {
+      console.log('Sending password reset email via Resend API to:', to);
+      return await sendViaResend({ to, subject, html, text });
+    } catch (err) {
+      console.error('Failed to send password reset email via Resend, falling back to Gmail SMTP:', err);
+    }
+  }
+
+  const transporter = createEmailTransporter();
   const mailOptions = {
     from: `"Zaryah" <${process.env.GMAIL_USER}>`,
     to,
-    subject: 'Reset Your Password - Zaryah',
-    html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Reset Your Password</h1>
-            </div>
-            <div class="content">
-              <p>We received a request to reset your password for your Zaryah account.</p>
-              <div style="text-align: center;">
-                <a href="${resetUrl}" class="button">Reset Password</a>
-              </div>
-              <p>Or copy and paste this link into your browser:</p>
-              <p style="word-break: break-all; color: #667eea;">${resetUrl}</p>
-              <p><strong>This link will expire automatically.</strong></p>
-              <p>If you didn't request this, you can safely ignore this email.</p>
-            </div>
-            <div class="footer">
-              <p>&copy; ${new Date().getFullYear()} Zaryah. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `,
-    text: `Reset your Zaryah password using this link:\n\n${resetUrl}\n\nIf you didn't request this, you can ignore this email.`,
+    subject,
+    html,
+    text,
   };
 
   return transporter.sendMail(mailOptions);
@@ -262,7 +346,6 @@ export async function sendSellerOrderPlacedEmail({
   totalAmount,
   items
 }) {
-  const transporter = createEmailTransporter();
   const safeSellerName = sellerName || 'Seller';
   const safeBuyerName = buyerName || 'A buyer';
   const orderShort = String(orderId || '').slice(0, 8);
@@ -278,59 +361,73 @@ export async function sendSellerOrderPlacedEmail({
   }).join('');
 
   const appUrl = getPublicAppUrl()
+  const subject = `New order received - #${orderShort}`;
 
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #111827; color: white; padding: 24px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 24px; border-radius: 0 0 10px 10px; }
+          .summary { background: #fff; border: 1px solid #e5e7eb; padding: 16px; border-radius: 10px; margin-top: 16px; }
+          .button { display: inline-block; padding: 12px 22px; background: #111827; color: white; text-decoration: none; border-radius: 6px; margin-top: 16px; }
+          table { width: 100%; border-collapse: collapse; }
+          th { text-align: left; font-size: 12px; color: #6b7280; padding-bottom: 6px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2>New order received</h2>
+          </div>
+          <div class="content">
+            <p>Hi ${safeSellerName},</p>
+            <p>${safeBuyerName} just placed an order in your store.</p>
+            <div class="summary">
+              <p><strong>Order:</strong> #${orderShort}</p>
+              <p><strong>Total:</strong> ₹${formattedTotal}</p>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th style="text-align:center;">Qty</th>
+                    <th style="text-align:right;">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemRows || '<tr><td colspan="3" style="padding:6px 0;">Order items unavailable</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+            <div style="text-align:center;">
+              <a href="${appUrl}/seller/dashboard?tab=orders&orderId=${orderId}" class="button">View order in dashboard</a>
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  const text = `New order received\nOrder #${orderShort}\nTotal: ₹${formattedTotal}\nBuyer: ${safeBuyerName}`;
+
+  if (process.env.RESEND_API_KEY) {
+    try {
+      console.log('Sending seller order email via Resend API to:', to, 'order:', orderShort);
+      return await sendViaResend({ to, subject, html, text });
+    } catch (err) {
+      console.error('Failed to send seller order email via Resend, falling back to Gmail SMTP:', err);
+    }
+  }
+
+  const transporter = createEmailTransporter();
   const mailOptions = {
     from: `"Zaryah" <${process.env.GMAIL_USER}>`,
     to,
-    subject: `New order received - #${orderShort}`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #111827; color: white; padding: 24px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 24px; border-radius: 0 0 10px 10px; }
-            .summary { background: #fff; border: 1px solid #e5e7eb; padding: 16px; border-radius: 10px; margin-top: 16px; }
-            .button { display: inline-block; padding: 12px 22px; background: #111827; color: white; text-decoration: none; border-radius: 6px; margin-top: 16px; }
-            table { width: 100%; border-collapse: collapse; }
-            th { text-align: left; font-size: 12px; color: #6b7280; padding-bottom: 6px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h2>New order received</h2>
-            </div>
-            <div class="content">
-              <p>Hi ${safeSellerName},</p>
-              <p>${safeBuyerName} just placed an order in your store.</p>
-              <div class="summary">
-                <p><strong>Order:</strong> #${orderShort}</p>
-                <p><strong>Total:</strong> ₹${formattedTotal}</p>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Item</th>
-                      <th style="text-align:center;">Qty</th>
-                      <th style="text-align:right;">Price</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${itemRows || '<tr><td colspan="3" style="padding:6px 0;">Order items unavailable</td></tr>'}
-                  </tbody>
-                </table>
-              </div>
-              <div style="text-align:center;">
-                <a href="${appUrl}/seller/dashboard?tab=orders&orderId=${orderId}" class="button">View order in dashboard</a>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `,
-    text: `New order received\nOrder #${orderShort}\nTotal: ₹${formattedTotal}\nBuyer: ${safeBuyerName}`,
+    subject,
+    html,
+    text,
   };
 
   console.log('Sending seller order email to:', to, 'order:', orderShort);

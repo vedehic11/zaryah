@@ -33,7 +33,7 @@ async function parseJsonResponse(response) {
 export default function CheckoutClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const { cart, clearCart, updateQuantity, removeFromCart } = useCart()
   const [buyNowMode, setBuyNowMode] = useState(false)
   const [buyNowItem, setBuyNowItem] = useState(null)
@@ -108,6 +108,8 @@ export default function CheckoutClient() {
   }
 
   useEffect(() => {
+    if (authLoading) return
+
     // Parse buyNow flag and item synchronously to decide navigation in this effect
     const buyNowFlag = String(searchParams.get('buyNow') || '').trim()
     let initialBuyNow = false
@@ -148,7 +150,7 @@ export default function CheckoutClient() {
     } else if (addresses.length > 0) {
       setSelectedAddress(addresses[0])
     }
-  }, [user, cart, addresses, router, searchParams])
+  }, [user, authLoading, cart, addresses, router, searchParams])
 
   // Determine displayed items (supports buy-now single-item checkout)
   const displayedItems = useMemo(
@@ -589,6 +591,14 @@ export default function CheckoutClient() {
       toast.error(errorMessage)
       setIsProcessing(false)
     }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-200 border-t-primary-600"></div>
+      </div>
+    )
   }
 
   if (!user || (!buyNowMode && cart.length === 0)) {

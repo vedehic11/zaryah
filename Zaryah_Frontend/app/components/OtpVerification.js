@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Mail, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -17,6 +17,17 @@ export const OtpVerification = ({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [isVerified, setIsVerified] = useState(false)
+  const [cooldown, setCooldown] = useState(60)
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+
+    const timer = setTimeout(() => {
+      setCooldown((prev) => prev - 1)
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [cooldown])
 
   const handleOtpChange = (e) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 6)
@@ -58,6 +69,7 @@ export const OtpVerification = ({
   }
 
   const handleResendOtp = async () => {
+    if (cooldown > 0) return
     setIsLoading(true)
     setError('')
     
@@ -75,6 +87,7 @@ export const OtpVerification = ({
       }
 
       toast.success('Verification code resent successfully!')
+      setCooldown(60)
     } catch (error) {
       toast.error('Failed to resend OTP')
     } finally {
@@ -118,7 +131,7 @@ export const OtpVerification = ({
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Verify Your Email</h2>
           <p className="mt-2 text-gray-600">
-            We've sent a verification code to <strong>{email}</strong>
+            We've sent a verification code to <strong>{email}</strong>. The code is valid for 24 hours.
           </p>
         </div>
 
@@ -172,10 +185,10 @@ export const OtpVerification = ({
             <button
               type="button"
               onClick={handleResendOtp}
-              disabled={isLoading}
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50"
+              disabled={isLoading || cooldown > 0}
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Didn't receive the code? Resend
+              {cooldown > 0 ? `Resend code in ${cooldown}s` : "Didn't receive the code? Resend"}
             </button>
           </div>
 
