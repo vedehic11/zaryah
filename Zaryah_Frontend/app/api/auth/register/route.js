@@ -268,101 +268,52 @@ export async function POST(request) {
       }
     }
 
-    if (newUser.user_type === 'Buyer') {
-      // Generate 6-digit OTP code
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    // Generate 6-digit OTP code for both Buyers and Sellers
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-      // Save OTP to database
-      const { error: otpDbError } = await supabaseAdmin
-        .from('otps')
-        .insert({
-          email,
-          otp: otpCode,
-          user_type: 'Buyer',
-          expires_at: expiresAt.toISOString(),
-          is_used: false
-        });
-
-      if (otpDbError) {
-        console.error('Failed to create OTP verification record:', otpDbError);
-      } else {
-        // Send and await OTP verification email
-        try {
-          await sendOtpEmail({
-            to: email,
-            username: name || email.split('@')[0],
-            otp: otpCode
-          });
-          console.log('OTP email sent successfully to:', email);
-        } catch (emailError) {
-          console.error('Failed to send OTP email during registration:', emailError);
-        }
-      }
-
-      return Response.json({ 
-        success: true, 
-        requiresOtp: true,
-        email: newUser.email,
-        message: 'OTP sent successfully for verification',
-        user: {
-          id: newUser.id,
-          email: newUser.email,
-          name: newUser.name,
-          user_type: newUser.user_type,
-          is_verified: false,
-          is_approved: newUser.is_approved,
-          supabase_auth_id: newUser.supabase_auth_id
-        }
+    // Save OTP to database
+    const { error: otpDbError } = await supabaseAdmin
+      .from('otps')
+      .insert({
+        email,
+        otp: otpCode,
+        user_type: newUser.user_type,
+        expires_at: expiresAt.toISOString(),
+        is_used: false
       });
+
+    if (otpDbError) {
+      console.error('Failed to create OTP verification record:', otpDbError);
     } else {
-      // Generate verification link token for Sellers
-      const token = crypto.randomBytes(32).toString('hex');
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-      // Save verification token to database
-      const { error: dbError } = await supabaseAdmin
-        .from('email_verifications')
-        .insert({
-          user_id: newUser.id,
-          token,
-          expires_at: expiresAt.toISOString(),
+      // Send and await OTP verification email
+      try {
+        await sendOtpEmail({
+          to: email,
+          username: name || email.split('@')[0],
+          otp: otpCode
         });
-
-      if (dbError) {
-        console.error('Failed to create verification record:', dbError);
-      } else {
-        const appUrl = getServerBaseUrl(request);
-        const verificationUrl = `${appUrl}/api/email/verify?token=${token}`;
-
-        // Send and await verification email
-        try {
-          await sendVerificationEmail({
-            to: email,
-            username: name || email.split('@')[0],
-            verificationUrl,
-          });
-          console.log('Verification email sent successfully to:', email);
-        } catch (emailError) {
-          console.error('Failed to send verification email during registration:', emailError);
-        }
+        console.log('OTP email sent successfully to:', email);
+      } catch (emailError) {
+        console.error('Failed to send OTP email during registration:', emailError);
       }
-
-      return Response.json({ 
-        success: true, 
-        requiresVerification: true,
-        message: 'Verification link sent successfully',
-        user: {
-          id: newUser.id,
-          email: newUser.email,
-          name: newUser.name,
-          user_type: newUser.user_type,
-          is_verified: false,
-          is_approved: newUser.is_approved,
-          supabase_auth_id: newUser.supabase_auth_id
-        }
-      });
     }
+
+    return Response.json({ 
+      success: true, 
+      requiresOtp: true,
+      email: newUser.email,
+      message: 'OTP sent successfully for verification',
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+        user_type: newUser.user_type,
+        is_verified: false,
+        is_approved: newUser.is_approved,
+        supabase_auth_id: newUser.supabase_auth_id
+      }
+    });
 
   } catch (error) {
     console.error('Error in register API:', error);

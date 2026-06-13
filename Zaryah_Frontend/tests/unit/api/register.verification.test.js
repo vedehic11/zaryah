@@ -124,7 +124,7 @@ describe('Register and Verification API Flow', () => {
       }))
     })
 
-    it('successfully registers a seller with is_verified = false and triggers verification link email', async () => {
+    it('successfully registers a seller with is_verified = false and triggers OTP email', async () => {
       const { POST } = await import('@/app/api/auth/register/route')
 
       // Mock database calls for register
@@ -143,7 +143,7 @@ describe('Register and Verification API Flow', () => {
       })
       const checkSellerChain = createMockChain({ data: null, error: null })
       const insertSellerChain = createMockChain({ data: { id: 'seller-user-id' }, error: null })
-      const insertLinkChain = createMockChain({ data: {}, error: null })
+      const insertOtpChain = createMockChain({ data: {}, error: null })
 
       let callCount = 0
       mockSupabaseAdmin.from.mockImplementation((table) => {
@@ -154,13 +154,13 @@ describe('Register and Verification API Flow', () => {
         if (table === 'sellers') {
           return checkSellerChain
         }
-        if (table === 'email_verifications') {
-          return insertLinkChain
+        if (table === 'otps') {
+          return insertOtpChain
         }
         return createMockChain({ data: null, error: null })
       })
 
-      mockSendVerificationEmail.mockResolvedValue(true)
+      mockSendOtpEmail.mockResolvedValue(true)
 
       const request = new Request('http://localhost/api/auth/register', {
         method: 'POST',
@@ -190,12 +190,12 @@ describe('Register and Verification API Flow', () => {
 
       expect(response.status).toBe(200)
       expect(payload.success).toBe(true)
-      expect(payload.requiresVerification).toBe(true)
-      expect(mockSendVerificationEmail).toHaveBeenCalledTimes(1)
-      expect(mockSendVerificationEmail).toHaveBeenCalledWith(expect.objectContaining({
+      expect(payload.requiresOtp).toBe(true)
+      expect(mockSendOtpEmail).toHaveBeenCalledTimes(1)
+      expect(mockSendOtpEmail).toHaveBeenCalledWith(expect.objectContaining({
         to: 'seller@example.com',
         username: 'Bob Ross',
-        verificationUrl: expect.stringContaining('/api/email/verify?token=')
+        otp: expect.stringMatching(/^\d{6}$/)
       }))
     })
   })
