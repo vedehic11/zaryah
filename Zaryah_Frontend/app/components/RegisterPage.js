@@ -509,7 +509,7 @@ export const RegisterPage = () => {
     // Clear the pending verification state before redirecting
     setPendingVerification(null)
     
-    // Redirect buyer directly to home or redirect target since they are auto-logged in
+    // Redirect buyer directly to home or seller to dashboard since they are auto-logged in
     if (formData.role === 'buyer') {
       const safeRedirectTarget = redirectTarget.startsWith('/') || redirectTarget.startsWith('http')
         ? redirectTarget
@@ -520,6 +520,8 @@ export const RegisterPage = () => {
       } else {
         router.push(safeRedirectTarget)
       }
+    } else if (formData.role === 'seller') {
+      router.push('/seller/dashboard')
     } else {
       router.push('/login?message=email_verified')
     }

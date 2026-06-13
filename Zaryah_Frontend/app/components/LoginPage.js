@@ -256,7 +256,7 @@ export const LoginPage = () => {
         if (formData.userType === 'Admin') {
           router.push('/admin')
         } else if (formData.userType === 'Seller') {
-          router.push('/seller')
+          router.push('/seller/dashboard')
         } else {
           router.push('/')
         }
@@ -272,9 +272,10 @@ export const LoginPage = () => {
         email={pendingVerification.email}
         userType={pendingVerification.userType}
         onVerificationSuccess={() => {
+          const defaultTarget = formData.userType === 'Seller' ? '/seller/dashboard' : '/'
           const safeRedirectTarget = redirectTarget.startsWith('/') || redirectTarget.startsWith('http')
             ? redirectTarget
-            : '/'
+            : defaultTarget
           if (safeRedirectTarget.startsWith('http') && typeof window !== 'undefined') {
             window.location.href = safeRedirectTarget
           } else {
