@@ -48,16 +48,17 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Failed to generate verification code' }, { status: 500 })
     }
 
-    // Send OTP verification email in background
-    sendOtpEmail({
-      to: email,
-      username: user.name || email.split('@')[0],
-      otp: otpCode
-    }).then(() => {
+    // Send and await OTP verification email
+    try {
+      await sendOtpEmail({
+        to: email,
+        username: user.name || email.split('@')[0],
+        otp: otpCode
+      })
       console.log('Resend OTP email sent successfully to:', email)
-    }).catch((emailError) => {
+    } catch (emailError) {
       console.error('Failed to send resend OTP email:', emailError)
-    })
+    }
 
     return NextResponse.json({ success: true, message: 'Verification code resent successfully' })
   } catch (error) {

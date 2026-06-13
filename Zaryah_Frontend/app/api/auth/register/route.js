@@ -287,16 +287,17 @@ export async function POST(request) {
       if (otpDbError) {
         console.error('Failed to create OTP verification record:', otpDbError);
       } else {
-        // Send OTP verification email in the background without blocking the response
-        sendOtpEmail({
-          to: email,
-          username: name || email.split('@')[0],
-          otp: otpCode
-        }).then(() => {
+        // Send and await OTP verification email
+        try {
+          await sendOtpEmail({
+            to: email,
+            username: name || email.split('@')[0],
+            otp: otpCode
+          });
           console.log('OTP email sent successfully to:', email);
-        }).catch((emailError) => {
+        } catch (emailError) {
           console.error('Failed to send OTP email during registration:', emailError);
-        });
+        }
       }
 
       return Response.json({ 
@@ -334,16 +335,17 @@ export async function POST(request) {
         const appUrl = getServerBaseUrl(request);
         const verificationUrl = `${appUrl}/api/email/verify?token=${token}`;
 
-        // Send verification email in the background without blocking the response
-        sendVerificationEmail({
-          to: email,
-          username: name || email.split('@')[0],
-          verificationUrl,
-        }).then(() => {
+        // Send and await verification email
+        try {
+          await sendVerificationEmail({
+            to: email,
+            username: name || email.split('@')[0],
+            verificationUrl,
+          });
           console.log('Verification email sent successfully to:', email);
-        }).catch((emailError) => {
+        } catch (emailError) {
           console.error('Failed to send verification email during registration:', emailError);
-        });
+        }
       }
 
       return Response.json({ 
