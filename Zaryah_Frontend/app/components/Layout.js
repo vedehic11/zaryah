@@ -95,7 +95,8 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
     'privacy-policy',
     'refund-policy',
     'return-policy',
-    'shipping-policy'
+    'shipping-policy',
+    'contact-us'
   ]), [])
   const pathSegments = useMemo(() => (pathname || '').split('/').filter(Boolean), [pathname])
   const pathSellerUsername = useMemo(() => {
@@ -693,6 +694,7 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
               © {new Date().getFullYear()} Zaryah. Curated with heart.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs lg:text-sm text-neutral-600">
+              <Link href="/contact-us" className="hover:text-neutral-800 transition-colors">Contact Us</Link>
               <Link href="/terms" className="hover:text-neutral-800 transition-colors">Terms &amp; Conditions</Link>
               <Link href="/privacy-policy" className="hover:text-neutral-800 transition-colors">Privacy Policy</Link>
               <Link href="/refund-policy" className="hover:text-neutral-800 transition-colors">Refund Policy</Link>
