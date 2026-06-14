@@ -35,7 +35,7 @@ export default function ShippingPolicy() {
             <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100 mt-8">
               <h2 className="text-lg font-bold text-primary-900 mb-2">Need Shipment Updates?</h2>
               <p className="text-sm text-primary-950">
-                If you have questions about your order shipment, please track it from your dashboard or contact us at <strong className="text-primary-800">support@zaryah.in</strong>.
+                If you have questions about your order shipment, please track it from your dashboard or contact us at <strong className="text-primary-800">vedehic@gmail.com</strong>.
               </p>
             </div>
           </div>

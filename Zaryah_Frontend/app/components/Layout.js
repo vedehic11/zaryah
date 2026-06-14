@@ -691,11 +691,11 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
 
           <div className="border-t border-primary-100 mt-4 pt-3 flex flex-col md:flex-row justify-between items-center">
             <p className="text-xs lg:text-sm text-neutral-600 mb-2 md:mb-0 text-center md:text-left">
-              © {new Date().getFullYear()} Zaryah. Curated with heart.
+              © {new Date().getFullYear()} Zaryah. Curated with heart. Owned by Vedehi Ajay Choudhary.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs lg:text-sm text-neutral-600">
               <Link href="/contact-us" className="hover:text-neutral-800 transition-colors">Contact Us</Link>
-              <Link href="/terms" className="hover:text-neutral-800 transition-colors">Terms &amp; Conditions</Link>
+              <Link href="/terms-and-conditions" className="hover:text-neutral-800 transition-colors">Terms &amp; Conditions</Link>
               <Link href="/privacy-policy" className="hover:text-neutral-800 transition-colors">Privacy Policy</Link>
               <Link href="/refund-policy" className="hover:text-neutral-800 transition-colors">Refund Policy</Link>
               <Link href="/return-policy" className="hover:text-neutral-800 transition-colors">Return Policy</Link>

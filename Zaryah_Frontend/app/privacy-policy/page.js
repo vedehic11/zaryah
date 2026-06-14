@@ -14,8 +14,8 @@ export default function PrivacyPolicy() {
           <div className="space-y-6 text-neutral-700 leading-relaxed text-sm sm:text-base">
             <h2 className="text-xl font-bold text-primary-900 mt-6 mb-2">Introduction</h2>
             <p>
-              This Privacy Policy describes how <strong className="text-primary-800">7822855390</strong> and its affiliates 
-              (collectively &quot;7822855390, we, our, us&quot;) collect, use, share, protect or otherwise process your 
+              This Privacy Policy describes how <strong className="text-primary-800">Vedehi Ajay Choudhary</strong>, operating under the business name <strong className="text-primary-800">Zaryah</strong>, and its affiliates 
+              (collectively &quot;Zaryah, Vedehi Ajay Choudhary, we, our, us&quot;) collect, use, share, protect or otherwise process your 
               information/ personal data through our website <strong className="text-primary-800">www.zaryah.in</strong>{' '}
               (hereinafter referred to as Platform).
             </p>
@@ -31,7 +31,7 @@ export default function PrivacyPolicy() {
               Some of the sensitive personal data may be collected with your consent, such as your bank account or credit or debit card or other payment instrument information or biometric information such as your facial features or physiological information (in order to enable use of certain features when opted for, available on the Platform) etc., all of the above being in accordance with applicable law(s). You always have the option to not provide information, by choosing not to use a particular service or feature on the Platform. We may track your behaviour, preferences, and other information that you choose to provide on our Platform. This information is compiled and analysed on an aggregated basis. We will also collect your information related to your transactions on the Platform and such third-party business partner platforms. When such a third-party business partner collects your personal data directly from you, you will be governed by their privacy policies. We shall not be responsible for the third-party business partner’s privacy practices or the content of their privacy policies, and we request you to read their privacy policies prior to disclosing any information.
             </p>
             <p className="bg-red-50 text-red-800 p-4 rounded-xl border border-red-100 font-medium">
-              ⚠️ If you receive an email or a call from a person/association claiming to be 7822855390 seeking any personal data like debit/credit card PIN, net-banking or mobile banking password, we request you to never provide such information. If you have already revealed such information, report it immediately to an appropriate law enforcement agency.
+              ⚠️ If you receive an email or a call from a person/association claiming to be Vedehi Ajay Choudhary or Zaryah seeking any personal data like debit/credit card PIN, net-banking or mobile banking password, we request you to never provide such information. If you have already revealed such information, report it immediately to an appropriate law enforcement agency.
             </p>
 
             <h2 className="text-xl font-bold text-primary-900 mt-6 mb-2">Usage</h2>
@@ -78,10 +78,11 @@ export default function PrivacyPolicy() {
             <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100 mt-8">
               <h2 className="text-lg font-bold text-primary-900 mb-4">Grievance Officer &amp; Support</h2>
               <div className="space-y-2 text-sm sm:text-base text-primary-950">
+                <p><strong>Grievance Officer Name:</strong> Vedehi Ajay Choudhary</p>
                 <p><strong>Designation:</strong> Grievance Officer</p>
-                <p><strong>Company Name:</strong> 7822855390 (Platform Owner)</p>
-                <p><strong>Office Address:</strong> 14, shivsagar society, shingada talav, gurudwara road, nashik</p>
-                <p><strong>Contact Email:</strong> support@zaryah.in</p>
+                <p><strong>Company/Business Name:</strong> Zaryah (Owned by Vedehi Ajay Choudhary)</p>
+                <p><strong>Office Address:</strong> 14, shivsagar society, shingada talav, gurudwara road, nashik, Maharashtra, 422001</p>
+                <p><strong>Contact Email:</strong> vedehic@gmail.com</p>
               </div>
             </div>
           </div>

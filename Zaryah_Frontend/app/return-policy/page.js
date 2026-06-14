@@ -44,7 +44,7 @@ export default function ReturnPolicy() {
             <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100 mt-8">
               <h2 className="text-lg font-bold text-primary-900 mb-2">Questions?</h2>
               <p className="text-sm text-primary-950">
-                For return and exchange queries, please write to our support team at <strong className="text-primary-800">support@zaryah.in</strong>.
+                For return and exchange queries, please write to our support team at <strong className="text-primary-800">vedehic@gmail.com</strong>.
               </p>
             </div>
           </div>

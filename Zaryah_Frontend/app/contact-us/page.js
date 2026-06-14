@@ -62,7 +62,7 @@ export default function ContactUs() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-neutral-900">Email</h3>
-                      <p className="text-neutral-600 mt-1">support@zaryah.in</p>
+                      <p className="text-neutral-600 mt-1">vedehic@gmail.com</p>
                     </div>
                   </div>
 
@@ -98,7 +98,7 @@ export default function ContactUs() {
               </div>
 
               <div className="mt-8 pt-6 border-t border-cream-100 text-xs text-neutral-500">
-                <p><strong>Merchant Legal Entity Name:</strong> 7822855390</p>
+                <p><strong>Merchant Legal Entity Name:</strong> Vedehi Ajay Choudhary</p>
               </div>
             </div>
 

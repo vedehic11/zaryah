@@ -1095,7 +1095,7 @@ export default function SellerDashboardPage() {
             </ul>
           </div>
 
-          <p className="text-xs text-gray-500 text-center">Need help? Contact support@zaryah.in</p>
+          <p className="text-xs text-gray-500 text-center">Need help? Contact vedehic@gmail.com</p>
         </motion.div>
       </div>
     )

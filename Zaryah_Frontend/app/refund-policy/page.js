@@ -27,7 +27,7 @@ export default function RefundPolicy() {
               </li>
               
               <li>
-                <strong>Perishable Items:</strong> 7822855390 does not accept cancellation requests for perishable items 
+                <strong>Perishable Items:</strong> Zaryah does not accept cancellation requests for perishable items 
                 like flowers, eatables, etc. However, a refund or replacement can be made if the user establishes that 
                 the quality of the product delivered is not good.
               </li>
@@ -52,7 +52,7 @@ export default function RefundPolicy() {
               </li>
 
               <li>
-                <strong>Processing Timeframe:</strong> In case of any refunds approved by 7822855390, it will take{' '}
+                <strong>Processing Timeframe:</strong> In case of any refunds approved by Vedehi Ajay Choudhary, it will take{' '}
                 <span className="font-semibold text-primary-800">7 days</span> for the refund to be processed back 
                 to your original payment source.
               </li>
@@ -62,7 +62,7 @@ export default function RefundPolicy() {
               <h2 className="text-lg font-bold text-primary-900 mb-2">Need Assistance?</h2>
               <p className="text-sm text-primary-950">
                 If you have any questions about cancellations or refunds, please reach out to our customer support team 
-                via email at <strong className="text-primary-800">support@zaryah.in</strong>.
+                via email at <strong className="text-primary-800">vedehic@gmail.com</strong>.
               </p>
             </div>
           </div>
