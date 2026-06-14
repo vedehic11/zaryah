@@ -89,7 +89,13 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
     'wishlist',
     'addresses',
     'reset-password',
-    'api'
+    'api',
+    'terms',
+    'terms-and-conditions',
+    'privacy-policy',
+    'refund-policy',
+    'return-policy',
+    'shipping-policy'
   ]), [])
   const pathSegments = useMemo(() => (pathname || '').split('/').filter(Boolean), [pathname])
   const pathSellerUsername = useMemo(() => {
@@ -686,9 +692,12 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
             <p className="text-xs lg:text-sm text-neutral-600 mb-2 md:mb-0 text-center md:text-left">
               © {new Date().getFullYear()} Zaryah. Curated with heart.
             </p>
-            <div className="flex items-center space-x-4 text-xs lg:text-sm text-neutral-600">
-              <Link href="#" className="hover:text-neutral-800 transition-colors">Privacy Policy</Link>
-              <Link href="#" className="hover:text-neutral-800 transition-colors">Terms of Service</Link>
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs lg:text-sm text-neutral-600">
+              <Link href="/terms" className="hover:text-neutral-800 transition-colors">Terms &amp; Conditions</Link>
+              <Link href="/privacy-policy" className="hover:text-neutral-800 transition-colors">Privacy Policy</Link>
+              <Link href="/refund-policy" className="hover:text-neutral-800 transition-colors">Refund Policy</Link>
+              <Link href="/return-policy" className="hover:text-neutral-800 transition-colors">Return Policy</Link>
+              <Link href="/shipping-policy" className="hover:text-neutral-800 transition-colors">Shipping Policy</Link>
             </div>
           </div>
         </div>
