@@ -62,6 +62,7 @@ export const UserAvatar = ({
             fill
             className="object-cover"
             onError={() => setImageError(true)}
+            unoptimized
           />
         </div>
         {showName && (

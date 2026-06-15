@@ -504,6 +504,7 @@ export default function SellerProfilePage({ params }) {
                   fill
                   className="object-cover"
                   priority
+                  unoptimized
                 />
               )}
             </div>
@@ -536,6 +537,7 @@ export default function SellerProfilePage({ params }) {
                             width={96}
                             height={96}
                             className="h-full w-full object-cover"
+                            unoptimized
                           />
                         ) : (
                           <div className="h-full w-full grid place-items-center">
@@ -653,6 +655,7 @@ export default function SellerProfilePage({ params }) {
                             alt={section}
                             fill
                             className="object-cover"
+                            unoptimized
                           />
                           {isActive && (
                             <div className="absolute inset-0 bg-charcoal-900/40" />
@@ -690,6 +693,7 @@ export default function SellerProfilePage({ params }) {
                 fill
                 className="object-cover"
                 priority
+                unoptimized
               />
               <div className="absolute inset-0 bg-gradient-to-t from-charcoal-900/70 via-charcoal-900/20 to-transparent flex items-end p-6">
                 <h2 className="text-3xl md:text-4xl font-serif font-bold text-white">

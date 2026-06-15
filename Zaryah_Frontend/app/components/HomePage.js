@@ -275,6 +275,7 @@ export const HomePage = () => {
                           fill
                           sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          unoptimized
                         />
                       )}
                       {!coverPhoto && (
@@ -290,6 +291,7 @@ export const HomePage = () => {
                             fill
                             sizes="64px"
                             className="object-cover"
+                            unoptimized
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center">

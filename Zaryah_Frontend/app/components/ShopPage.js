@@ -422,6 +422,7 @@ export const ShopPage = () => {
                               alt={artisan.business_name}
                               fill
                               className="object-cover"
+                              unoptimized
                             />
                           </div>
                         ) : (

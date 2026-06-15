@@ -27,7 +27,7 @@ async function main() {
   const { data: sellers, error } = await client
     .from('sellers')
     .select('id, business_name, username, cover_photo, users:users!sellers_id_fkey(id, name, email, profile_photo)')
-    .eq('username', 'pickdontpluck')
+    .in('username', ['pedorasmilesofficial', 'kalyani-resin-jewelry', 'ksira'])
 
   if (error) {
     console.error('Error:', error)
