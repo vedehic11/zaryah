@@ -51,12 +51,13 @@ export const UserAvatar = ({
   const initials = getInitials(user?.fullName || user?.name || user?.businessName)
 
   // If user has a profile photo and image hasn't errored, show the photo
-  if (user?.profilePhoto && !imageError) {
+  const photoUrl = user?.profilePhoto || user?.profile_photo
+  if (photoUrl && !imageError) {
     return (
       <div className={`flex items-center space-x-2 ${className}`}>
         <div className={`${avatarSize} rounded-full overflow-hidden flex-shrink-0 relative`}>
           <Image
-            src={user.profilePhoto}
+            src={photoUrl}
             alt={user.fullName || user.name || user.businessName || 'User'}
             fill
             className="object-cover"
