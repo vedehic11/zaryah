@@ -529,9 +529,9 @@ export default function SellerProfilePage({ params }) {
                     <div className="relative shrink-0">
                       <div className="absolute inset-0 rounded-full bg-secondary-200/60 blur-xl scale-110" />
                       <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full border-4 border-white/90 overflow-hidden bg-primary-300">
-                        {sellerUser.profile_photo ? (
+                        {sellerUser.profile_photo || sellerUser.profilePhoto ? (
                           <Image
-                            src={sellerUser.profile_photo}
+                            src={sellerUser.profile_photo || sellerUser.profilePhoto}
                             alt={seller.business_name}
                             width={96}
                             height={96}

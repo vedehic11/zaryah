@@ -415,10 +415,10 @@ export const ShopPage = () => {
                     <div className="flex items-center gap-4">
                       {/* Profile Photo */}
                       <div className="flex-shrink-0">
-                        {artisan.users?.profile_photo || artisan.cover_photo ? (
+                        {artisan.users?.profile_photo || artisan.users?.profilePhoto || artisan.cover_photo ? (
                           <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-primary-200">
                             <Image
-                              src={artisan.users?.profile_photo || artisan.cover_photo}
+                              src={artisan.users?.profile_photo || artisan.users?.profilePhoto || artisan.cover_photo}
                               alt={artisan.business_name}
                               fill
                               className="object-cover"
