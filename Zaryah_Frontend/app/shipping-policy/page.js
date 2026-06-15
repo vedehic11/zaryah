@@ -19,7 +19,7 @@ export default function ShippingPolicy() {
 
             <h2 className="text-xl font-bold text-primary-900 mt-6 mb-2">Processing &amp; Dispatch Timeline</h2>
             <p>
-              Orders are shipped within <span className="font-semibold text-primary-800">7 days</span> from the date of the order and/or payment, or as per the delivery date agreed at the time of order confirmation and dispatching of the shipment, subject to courier company / post office norms.
+              Orders are shipped and delivered within <span className="font-semibold text-primary-800">4-7 days</span> from the date of the order and/or payment, subject to courier company / post office norms.
             </p>
 
             <h2 className="text-xl font-bold text-primary-900 mt-6 mb-2">Delivery &amp; Delay Responsibility</h2>

@@ -98,7 +98,7 @@ export default function ContactUs() {
               </div>
 
               <div className="mt-8 pt-6 border-t border-cream-100 text-xs text-neutral-500">
-                <p><strong>Merchant Legal Entity Name:</strong> Vedehi Ajay Choudhary</p>
+                <p><strong>Merchant Legal Entity Name:</strong> Vedehi Ajay Choudhary (Proprietor of Zaryah)</p>
               </div>
             </div>
 

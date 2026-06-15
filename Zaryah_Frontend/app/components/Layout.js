@@ -687,6 +687,11 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
             <p className="text-neutral-600 text-sm lg:text-base leading-relaxed">
               Thoughtful gifting that feels personal, supports independent artisans, and turns every purchase into a meaningful connection.
             </p>
+            <div className="mt-4 space-y-1 text-xs lg:text-sm text-neutral-500 border-t border-primary-100/50 pt-3">
+              <p><strong>Merchant Legal Entity Name:</strong> Vedehi Ajay Choudhary (Proprietor of Zaryah)</p>
+              <p><strong>Registered Address:</strong> 14, shivsagar society, shingada talav, gurudwara road, nashik, Maharashtra, 422001</p>
+              <p><strong>Customer Support:</strong> +91 7822855390 | vedehic@gmail.com</p>
+            </div>
           </div>
 
           <div className="border-t border-primary-100 mt-4 pt-3 flex flex-col md:flex-row justify-between items-center">

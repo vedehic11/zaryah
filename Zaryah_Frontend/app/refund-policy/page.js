@@ -52,9 +52,7 @@ export default function RefundPolicy() {
               </li>
 
               <li>
-                <strong>Processing Timeframe:</strong> In case of any refunds approved by Vedehi Ajay Choudhary, it will take{' '}
-                <span className="font-semibold text-primary-800">7 days</span> for the refund to be processed back 
-                to your original payment source.
+                <strong>Processing Timeframe:</strong> In case of any refunds approved by Vedehi Ajay Choudhary, the refund will be credited within <span className="font-semibold text-primary-800">6-7 days</span> to the original source of payment method.
               </li>
             </ul>
 

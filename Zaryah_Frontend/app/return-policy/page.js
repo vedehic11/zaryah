@@ -41,6 +41,13 @@ export default function ReturnPolicy() {
               If the return is approved after the quality check at our end, your request (i.e. return / exchange) will be processed in accordance with our policies.
             </p>
 
+            <h2 className="text-xl font-bold text-primary-900 mt-6 mb-2">Processing Timelines:</h2>
+            <ul className="list-disc list-inside space-y-3 pl-2">
+              <li>Refund will be credited within <span className="font-semibold text-primary-800">6-7 days</span> to the original source of payment method.</li>
+              <li>Replacement or exchange products will be delivered within <span className="font-semibold text-primary-800">4-5 days</span>.</li>
+            </ul>
+
+
             <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100 mt-8">
               <h2 className="text-lg font-bold text-primary-900 mb-2">Questions?</h2>
               <p className="text-sm text-primary-950">

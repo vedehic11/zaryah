@@ -28,7 +28,7 @@ export default function TermsAndConditions() {
             </p>
 
             <p>
-              The Platform is owned by <strong className="text-primary-800">Vedehi Ajay Choudhary</strong>, operating under the business name <strong className="text-primary-800">Zaryah</strong>, with its registered office at{' '}
+              The Platform is owned by <strong className="text-primary-800">Vedehi Ajay Choudhary (Proprietor of Zaryah)</strong>, with its registered office at{' '}
               <strong>14, shivsagar society, shingada talav, gurudwara road, nashik, Maharashtra, 422001</strong> (hereinafter 
               referred to as 'Platform Owner', 'we', 'us', 'our').
             </p>
