@@ -12,31 +12,26 @@ export default function ShippingPolicy() {
           </h1>
 
           <div className="space-y-6 text-neutral-700 leading-relaxed text-sm sm:text-base">
-            <h2 className="text-xl font-bold text-primary-900 mt-6 mb-2">Shipping Methods</h2>
             <p>
-              The orders for the user are shipped through registered domestic courier companies and/or speed post only.
-            </p>
-
-            <h2 className="text-xl font-bold text-primary-900 mt-6 mb-2">Processing &amp; Dispatch Timeline</h2>
-            <p>
-              Orders are shipped and delivered within <span className="font-semibold text-primary-800">4-7 days</span> from the date of the order and/or payment, subject to courier company / post office norms.
-            </p>
-
-            <h2 className="text-xl font-bold text-primary-900 mt-6 mb-2">Delivery &amp; Delay Responsibility</h2>
-            <p>
-              The Platform Owner shall not be liable for any delay in delivery by the courier company / postal authority. Delivery of all orders will be made to the address provided by the buyer at the time of purchase. Delivery of our services will be confirmed via your registered email ID as specified at the time of registration.
-            </p>
-
-            <h2 className="text-xl font-bold text-primary-900 mt-6 mb-2">Shipping Charges</h2>
-            <p>
-              If there are any shipping cost(s) levied by the seller or the Platform Owner (as the case may be), the same is strictly non-refundable.
+              The orders for the user are shipped through registered domestic courier companies and/or speed post 
+              only. Orders are shipped and delivered within <strong>4-7 days</strong> from the date of the order 
+              and/or payment or as per the delivery date agreed at the time of order confirmation and 
+              delivering of the shipment, subject to courier company / post office norms. Platform Owner shall 
+              not be liable for any delay in delivery by the courier company / postal authority. Delivery of 
+              all orders will be made to the address provided by the buyer at the time of purchase. Delivery of 
+              our services will be confirmed on your email ID as specified at the time of registration. If there 
+              are any shipping cost(s) levied by the seller or the Platform Owner (as the case be), the same is 
+              not refundable.
             </p>
 
             <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100 mt-8">
-              <h2 className="text-lg font-bold text-primary-900 mb-2">Need Shipment Updates?</h2>
-              <p className="text-sm text-primary-950">
-                If you have questions about your order shipment, please track it from your dashboard or contact us at <strong className="text-primary-800">vedehic@gmail.com</strong>.
-              </p>
+              <h2 className="text-lg font-bold text-primary-900 mb-2">Merchant Contact &amp; Entity Details</h2>
+              <div className="space-y-1.5 text-sm text-primary-950 mt-3">
+                <p><strong>Merchant Legal Entity Name:</strong> Vedehi Ajay Choudhary (Proprietor of Zaryah)</p>
+                <p><strong>Registered Address:</strong> 14, shivsagar society, shingada talav, gurudwara road, nashik, Maharashtra, 422001</p>
+                <p><strong>Customer Support Phone:</strong> +91 7822855390</p>
+                <p><strong>Customer Support Email:</strong> vedehic@gmail.com</p>
+              </div>
             </div>
           </div>
         </div>

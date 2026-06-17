@@ -13,55 +13,67 @@ export default function RefundPolicy() {
 
           <div className="space-y-6 text-neutral-700 leading-relaxed text-sm sm:text-base">
             <p>
-              This refund and cancellation policy outlines how you can cancel or seek a refund for a product 
-              or service that you have purchased through the Platform. Under this policy:
+              This refund and cancellation policy outlines how you can cancel or seek a refund for a product / 
+              service that you have purchased through the Platform. Under this policy:
             </p>
 
-            <ul className="list-disc list-inside space-y-4 pl-2">
-              <li>
-                <strong>Cancellation Window:</strong> Cancellations will only be considered if the request is made 
-                within <span className="font-semibold text-primary-800">7 days</span> of placing the order. However, 
-                cancellation requests may not be entertained if the orders have been communicated to the sellers / 
-                merchant(s) listed on the Platform and they have initiated the process of shipping them, or the 
-                product is out for delivery. In such an event, you may choose to reject the product at the doorstep.
+            <ul className="list-none space-y-4 pl-4 sm:pl-6">
+              <li className="flex items-start">
+                <span className="font-semibold text-primary-800 mr-2 flex-shrink-0">1.</span>
+                <span>
+                  Cancellations will only be considered if the request is made <strong>7 days</strong> of placing the order. 
+                  However, cancellation requests may not be entertained if the orders have been communicated to such 
+                  sellers / merchant(s) listed on the Platform and they have initiated the process of shipping them, 
+                  or the product is out for delivery. In such an event, you may choose to reject the product at the doorstep.
+                </span>
               </li>
               
-              <li>
-                <strong>Perishable Items:</strong> Zaryah does not accept cancellation requests for perishable items 
-                like flowers, eatables, etc. However, a refund or replacement can be made if the user establishes that 
-                the quality of the product delivered is not good.
+              <li className="flex items-start">
+                <span className="font-semibold text-primary-800 mr-2 flex-shrink-0">2.</span>
+                <span>
+                  <strong>Vedehi Ajay Choudhary (Proprietor of Zaryah)</strong> does not accept cancellation requests for perishable 
+                  items like flowers, eatables, etc. However, the refund / replacement can be made if the user 
+                  establishes that the quality of the product delivered is not good.
+                </span>
               </li>
 
-              <li>
-                <strong>Damaged or Defective Items:</strong> In case of receipt of damaged or defective items, please 
-                report this to our customer service team. The request would be entertained once the seller / merchant 
-                listed on the Platform has checked and determined the same at their own end. This should be reported 
-                within <span className="font-semibold text-primary-800">7 days</span> of receipt of the products.
+              <li className="flex items-start">
+                <span className="font-semibold text-primary-800 mr-2 flex-shrink-0">3.</span>
+                <span>
+                  In case of receipt of damaged or defective items, please report to our customer service team. The 
+                  request would be entertained once the seller/ merchant listed on the Platform, has checked and 
+                  determined the same at its own end. This should be reported within <strong>7 days</strong> of receipt of products. 
+                  In case you feel that the product received is not as shown on the site or as per your expectations, 
+                  you must bring it to the notice of our customer service within <strong>7 days</strong> of receiving the product. 
+                  The customer service team after looking into your complaint will take an appropriate decision.
+                </span>
               </li>
 
-              <li>
-                <strong>Expectation Mismatch:</strong> In case you feel that the product received is not as shown on 
-                the site or as per your expectations, you must bring it to the notice of our customer service within{' '}
-                <span className="font-semibold text-primary-800">7 days</span> of receiving the product. The customer 
-                service team, after looking into your complaint, will take an appropriate decision.
+              <li className="flex items-start">
+                <span className="font-semibold text-primary-800 mr-2 flex-shrink-0">4.</span>
+                <span>
+                  In case of complaints regarding the products that come with a warranty from the manufacturers, 
+                  please refer the issue to them.
+                </span>
               </li>
 
-              <li>
-                <strong>Product Warranty:</strong> In case of complaints regarding products that come with a warranty 
-                from the manufacturers, please refer the issue directly to them.
-              </li>
-
-              <li>
-                <strong>Processing Timeframe:</strong> In case of any refunds approved by Vedehi Ajay Choudhary, the refund will be credited within <span className="font-semibold text-primary-800">6-7 days</span> to the original source of payment method.
+              <li className="flex items-start">
+                <span className="font-semibold text-primary-800 mr-2 flex-shrink-0">5.</span>
+                <span>
+                  In case of any refunds approved by <strong>Vedehi Ajay Choudhary (Proprietor of Zaryah)</strong>, it will take 
+                  <strong> 6-7 days</strong> for the refund to be processed to you.
+                </span>
               </li>
             </ul>
 
             <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100 mt-8">
-              <h2 className="text-lg font-bold text-primary-900 mb-2">Need Assistance?</h2>
-              <p className="text-sm text-primary-950">
-                If you have any questions about cancellations or refunds, please reach out to our customer support team 
-                via email at <strong className="text-primary-800">vedehic@gmail.com</strong>.
-              </p>
+              <h2 className="text-lg font-bold text-primary-900 mb-2">Merchant Contact &amp; Entity Details</h2>
+              <div className="space-y-1.5 text-sm text-primary-950 mt-3">
+                <p><strong>Merchant Legal Entity Name:</strong> Vedehi Ajay Choudhary (Proprietor of Zaryah)</p>
+                <p><strong>Registered Address:</strong> 14, shivsagar society, shingada talav, gurudwara road, nashik, Maharashtra, 422001</p>
+                <p><strong>Customer Support Phone:</strong> +91 7822855390</p>
+                <p><strong>Customer Support Email:</strong> vedehic@gmail.com</p>
+              </div>
             </div>
           </div>
         </div>

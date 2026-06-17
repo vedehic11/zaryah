@@ -13,46 +13,40 @@ export default function ReturnPolicy() {
 
           <div className="space-y-6 text-neutral-700 leading-relaxed text-sm sm:text-base">
             <p>
-              We offer refund / exchange within the first <span className="font-semibold text-primary-800">7 days</span> from the date of your purchase. If 7 days have passed since your purchase, you will not be offered a return, exchange, or refund of any kind.
+              We offer refund / exchange within first <strong>7 days</strong> from the date of your purchase. 
+              If 7 days have passed since your purchase, you will not be offered a return, exchange or refund 
+              of any kind. In order to become eligible for a return or an exchange, (i) the purchased item 
+              should be unused and in the same condition as you received it, (ii) the item must have original 
+              packaging, (iii) if the item that you purchased on a sale, then the item may not be eligible 
+              for a return / exchange. Further, only such items are replaced by us (based on an exchange 
+              request), if such items are found defective or damaged.
             </p>
 
-            <h2 className="text-xl font-bold text-primary-900 mt-6 mb-2">Eligibility for Return or Exchange:</h2>
             <p>
-              In order to become eligible for a return or an exchange, you must meet the following criteria:
-            </p>
-            
-            <ul className="list-disc list-inside space-y-3 pl-2">
-              <li>The purchased item should be unused and in the same condition as you received it.</li>
-              <li>The item must have its original packaging intact.</li>
-              <li>If the item was purchased on a sale, it may not be eligible for a return / exchange.</li>
-              <li>Only items found to be defective or damaged will be replaced by us (based on an exchange request).</li>
-            </ul>
-
-            <h2 className="text-xl font-bold text-primary-900 mt-6 mb-2">Exempted Categories:</h2>
-            <p>
-              You agree that there may be a certain category of products or items that are exempted from returns or refunds. Such categories of products will be identified to you at the time of purchase.
+              You agree that there may be a certain category of products / items that are exempted from 
+              returns or refunds. Such categories of the products would be identified to you at the item of 
+              purchase. For exchange / return accepted request(s) (as applicable), once your returned 
+              product / item is received and inspected by us, we will send you an email to notify you about 
+              receipt of the returned / exchanged product. Further. If the same has been approved after the 
+              quality check at our end, your request (i.e. return / exchange) will be processed in accordance 
+              with our policies.
             </p>
 
-            <h2 className="text-xl font-bold text-primary-900 mt-6 mb-2">Evaluation Process:</h2>
-            <p>
-              For exchange or return accepted requests (as applicable), once your returned product/item is received and inspected by the seller, we will send you an email to notify you about the receipt of the returned/exchanged product. 
+            <p className="bg-primary-50 p-4 rounded-xl border border-primary-100 font-semibold text-primary-950">
+              For return or exchange requests approved by <strong>Vedehi Ajay Choudhary (Proprietor of Zaryah)</strong>, 
+              the refund will be credited within <span className="text-primary-800">6-7 days</span> to the original 
+              source of payment method, and replacement or exchange products will be delivered within{' '}
+              <span className="text-primary-800">4-5 days</span>.
             </p>
-            <p>
-              If the return is approved after the quality check at our end, your request (i.e. return / exchange) will be processed in accordance with our policies.
-            </p>
-
-            <h2 className="text-xl font-bold text-primary-900 mt-6 mb-2">Processing Timelines:</h2>
-            <ul className="list-disc list-inside space-y-3 pl-2">
-              <li>Refund will be credited within <span className="font-semibold text-primary-800">6-7 days</span> to the original source of payment method.</li>
-              <li>Replacement or exchange products will be delivered within <span className="font-semibold text-primary-800">4-5 days</span>.</li>
-            </ul>
-
 
             <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100 mt-8">
-              <h2 className="text-lg font-bold text-primary-900 mb-2">Questions?</h2>
-              <p className="text-sm text-primary-950">
-                For return and exchange queries, please write to our support team at <strong className="text-primary-800">vedehic@gmail.com</strong>.
-              </p>
+              <h2 className="text-lg font-bold text-primary-900 mb-2">Merchant Contact &amp; Entity Details</h2>
+              <div className="space-y-1.5 text-sm text-primary-950 mt-3">
+                <p><strong>Merchant Legal Entity Name:</strong> Vedehi Ajay Choudhary (Proprietor of Zaryah)</p>
+                <p><strong>Registered Address:</strong> 14, shivsagar society, shingada talav, gurudwara road, nashik, Maharashtra, 422001</p>
+                <p><strong>Customer Support Phone:</strong> +91 7822855390</p>
+                <p><strong>Customer Support Email:</strong> vedehic@gmail.com</p>
+              </div>
             </div>
           </div>
         </div>
