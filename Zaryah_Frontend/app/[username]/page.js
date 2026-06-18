@@ -12,6 +12,7 @@ import { Reviews } from '@/app/components/Reviews'
 import { ReviewModal } from '@/app/components/ReviewModal'
 import Link from 'next/link'
 import Image from 'next/image'
+import OptimizedImage from '@/app/components/OptimizedImage'
 import { useCart } from '@/app/contexts/CartContext'
 import { useWishlist } from '@/app/contexts/WishlistContext'
 import { useAuth } from '@/app/contexts/AuthContext'
@@ -498,13 +499,13 @@ export default function SellerProfilePage({ params }) {
                   playsInline
                 />
               ) : (
-                <Image
+                <OptimizedImage
                   src={seller.cover_photo}
                   alt={`${seller.business_name} storefront cover`}
                   fill
                   className="object-cover"
                   priority
-                  unoptimized
+                  width={1200}
                 />
               )}
             </div>
@@ -531,13 +532,12 @@ export default function SellerProfilePage({ params }) {
                       <div className="absolute inset-0 rounded-full bg-secondary-200/60 blur-xl scale-110" />
                       <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full border-4 border-white/90 overflow-hidden bg-primary-300">
                         {sellerUser.profile_photo || sellerUser.profilePhoto ? (
-                          <Image
+                          <OptimizedImage
                             src={sellerUser.profile_photo || sellerUser.profilePhoto}
                             alt={seller.business_name}
-                            width={96}
-                            height={96}
-                            className="h-full w-full object-cover"
-                            unoptimized
+                            fill
+                            className="object-cover"
+                            width={150}
                           />
                         ) : (
                           <div className="h-full w-full grid place-items-center">
@@ -650,12 +650,12 @@ export default function SellerProfilePage({ params }) {
                     >
                       {sectionImage ? (
                         <div className="relative h-full w-full">
-                          <Image
+                          <OptimizedImage
                             src={sectionImage}
                             alt={section}
                             fill
                             className="object-cover"
-                            unoptimized
+                            width={150}
                           />
                           {isActive && (
                             <div className="absolute inset-0 bg-charcoal-900/40" />
@@ -687,13 +687,13 @@ export default function SellerProfilePage({ params }) {
               animate={{ opacity: 1, y: 0 }}
               className="relative h-48 md:h-64 rounded-3xl overflow-hidden mb-6 shadow-soft border border-cream-200"
             >
-              <Image
+              <OptimizedImage
                 src={selectedSectionImage}
                 alt={selectedSection}
                 fill
                 className="object-cover"
                 priority
-                unoptimized
+                width={800}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-charcoal-900/70 via-charcoal-900/20 to-transparent flex items-end p-6">
                 <h2 className="text-3xl md:text-4xl font-serif font-bold text-white">

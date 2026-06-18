@@ -31,6 +31,7 @@ import { CreateSupportTicket } from './CreateSupportTicket'
 import { ReviewModal } from './ReviewModal'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
+import OptimizedImage from './OptimizedImage'
 
 export const OrderHistoryPage = () => {
   const router = useRouter()
@@ -640,11 +641,12 @@ export const OrderHistoryPage = () => {
                                 {/* Product Image */}
                                 <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center relative">
                                   {productImage ? (
-                                    <Image 
+                                    <OptimizedImage 
                                       src={productImage} 
                                       alt={product.name}
                                       fill
                                       className="object-cover"
+                                      width={150}
                                     />
                                   ) : null}
                                   <div className="w-full h-full flex items-center justify-center text-gray-400 absolute inset-0" style={{ display: productImage ? 'none' : 'flex' }}>

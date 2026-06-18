@@ -8,6 +8,7 @@ import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import OptimizedImage from './OptimizedImage'
 import toast from 'react-hot-toast'
 
 export const HamperBuilderPage = () => {
@@ -232,11 +233,12 @@ export const HamperBuilderPage = () => {
                   selectedProducts.map((item) => (
                     <div key={item.product.id} className="flex items-center space-x-3 p-3 bg-cream-50 rounded-lg border border-cream-200">
                       <div className="relative w-12 h-12 flex-shrink-0">
-                        <Image
+                        <OptimizedImage
                           src={item.product.image}
                           alt={item.product.name}
                           fill
                           className="object-cover rounded-lg"
+                          width={150}
                         />
                       </div>
                       <div className="flex-1">

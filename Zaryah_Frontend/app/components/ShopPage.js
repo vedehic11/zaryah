@@ -5,10 +5,10 @@ import { motion } from 'framer-motion'
 import { Search, Filter, Grid, List, SlidersHorizontal, User, MapPin } from 'lucide-react'
 import { ProductCard } from './ProductCard'
 import { apiService } from '../services/api'
-import { getSellerUrl } from '@/lib/url-utils'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
+import OptimizedImage from './OptimizedImage'
+import { getSellerUrl, isProductionDomain } from '@/lib/url-utils'
 
 export const ShopPage = () => {
   const router = useRouter()
@@ -417,12 +417,12 @@ export const ShopPage = () => {
                       <div className="flex-shrink-0">
                         {artisan.users?.profile_photo || artisan.users?.profilePhoto || artisan.cover_photo ? (
                           <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-primary-200">
-                            <Image
+                            <OptimizedImage
                               src={artisan.users?.profile_photo || artisan.users?.profilePhoto || artisan.cover_photo}
                               alt={artisan.business_name}
                               fill
                               className="object-cover"
-                              unoptimized
+                              width={150}
                             />
                           </div>
                         ) : (

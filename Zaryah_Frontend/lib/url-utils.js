@@ -44,6 +44,8 @@ export const getSellerUrl = (username) => {
   return `${window.location.origin}/${username}`
 }
 
+export const SVG_PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiB2aWV3Qm94PSIwIDAgNDAwIDQwMCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI0YzRjRGNiIvPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE2MCwgMTQwKSIgc3Ryb2tlPSIjOUNBM0FGIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIyIiB5PSIyIiB3aWR0aD0iNzYiIGhlaWdodD0iNzYiIHJ4PSI4Ii8+PGNpcmNsZSBjeD0iMjgiIGN5PSIyOCIgcj0iNiIvPjxwYXRoIGQ9Ik0yIDU4bDE4LTE4YTYgNiAwIDAgMSA4LjUgMEw1NCA2NiIvPjxwYXRoIGQ9Ik0yIDUwTDE0IDM4YTYgNiAwIDAgMSA4LjUgMEw3OCA2MCIvPjwvZz48dGV4dCB4PSI1MCUiIHk9IjY1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InN5c3RlbS11aSwgLWFwcGxlLXN5c3RlbSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9IjUwMCIgZmlsbD0iIzlDQTNBRiI+WmFyeWFoPC90ZXh0Pjwvc3ZnPg==';
+
 /**
  * Optimizes image URLs from Cloudinary or Supabase Storage.
  * Bypasses local next/image optimization to stay under Vercel free limits,
@@ -55,10 +57,13 @@ export const getSellerUrl = (username) => {
  * @returns {string} - Optimized image URL
  */
 export const optimizeImageUrl = (url, width = 600, quality = 80) => {
-  if (!url || typeof url !== 'string') return url || '/placeholder.jpg'
+  if (!url || typeof url !== 'string') return SVG_PLACEHOLDER
 
   // Relative path or local asset
   if (url.startsWith('/') || url.startsWith('data:') || url.startsWith('blob:')) {
+    if (url.includes('placeholder.jpg') || url.includes('placeholder-product.png')) {
+      return SVG_PLACEHOLDER
+    }
     return url
   }
 

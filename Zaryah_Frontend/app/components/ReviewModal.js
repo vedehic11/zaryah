@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Star, X, Upload, Image as ImageIcon, Trash2 } from 'lucide-react'
 import Image from 'next/image'
+import OptimizedImage from './OptimizedImage'
 import toast from 'react-hot-toast'
 
 export const ReviewModal = ({ isOpen, onClose, seller }) => {
@@ -184,12 +185,12 @@ export const ReviewModal = ({ isOpen, onClose, seller }) => {
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center relative">
                   {seller?.profile_photo ? (
-                    <Image 
+                    <OptimizedImage 
                       src={seller.profile_photo} 
                       alt={seller.name || 'Seller'}
                       fill
                       className="object-cover"
-                      unoptimized
+                      width={150}
                     />
                   ) : (
                     <ImageIcon className="w-6 h-6 text-gray-400" />

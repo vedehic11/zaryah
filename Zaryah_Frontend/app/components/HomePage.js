@@ -7,6 +7,7 @@ import { VideoCarousel } from './VideoCarousel'
 import { ProductCard } from './ProductCard'
 import Link from 'next/link'
 import Image from 'next/image'
+import OptimizedImage from './OptimizedImage'
 import { apiService } from '../services/api'
 import { getSellerUrl } from '@/lib/url-utils'
 
@@ -269,13 +270,13 @@ export const HomePage = () => {
                         />
                       )}
                       {coverPhoto && !hasVideo && (
-                        <Image 
+                        <OptimizedImage 
                           src={coverPhoto} 
                           alt={seller.business_name}
                           fill
                           sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
-                          unoptimized
+                          width={600}
                         />
                       )}
                       {!coverPhoto && (
@@ -285,13 +286,13 @@ export const HomePage = () => {
                       )}
                       <div className="absolute -bottom-8 left-6 w-16 h-16 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
                         {user.profile_photo ? (
-                          <Image 
+                          <OptimizedImage 
                             src={user.profile_photo} 
                             alt={seller.business_name}
                             fill
                             sizes="64px"
                             className="object-cover"
-                            unoptimized
+                            width={150}
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center">

@@ -5,6 +5,7 @@ import { Star, User, Calendar, ThumbsUp, MessageSquare } from 'lucide-react'
 import { apiService } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import Image from 'next/image'
+import OptimizedImage from './OptimizedImage'
 
 export const Reviews = ({ sellerId, showWriteReview = false, onWriteReview, lazyLoad = false }) => {
   const [reviews, setReviews] = useState([])
@@ -259,12 +260,12 @@ export const Reviews = ({ sellerId, showWriteReview = false, onWriteReview, lazy
                   <div className="flex space-x-2 mb-3">
                     {review.images.map((image, index) => (
                       <div key={index} className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-200">
-                        <Image
+                        <OptimizedImage
                           src={image}
                           alt={`Review image ${index + 1}`}
                           fill
-                          unoptimized
                           className="object-cover"
+                          width={150}
                         />
                       </div>
                     ))}
