@@ -140,6 +140,18 @@ export const HomePage = () => {
     { title: 'Personalized Gifts', img: '/assets/personalised.jpg', link: '/shop?category=Personalized Gifts' },
   ]
 
+  const displayCategories = productsLoaded
+    ? categories.filter(cat => {
+        return products.some(p => {
+          const primaryMatch = p.category && String(p.category).trim().toLowerCase() === String(cat.title).trim().toLowerCase()
+          const listMatch = Array.isArray(p.categories) && p.categories.some(c => String(c).trim().toLowerCase() === String(cat.title).trim().toLowerCase())
+          return primaryMatch || listMatch
+        })
+      })
+    : categories
+
+  const finalCategories = displayCategories.length > 0 ? displayCategories : categories
+
   return (
     <div className="relative min-h-screen bg-gradient-elegant pt-0 md:pt-0">
       <div ref={heroRef} className="relative w-full overflow-visible mt-0">
@@ -156,7 +168,7 @@ export const HomePage = () => {
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-charcoal-800 mb-8 text-center font-serif px-4">Shop by Category</h2>
           <div className="flex space-x-4 overflow-x-auto px-4 pb-4 scrollbar-hide">
-            {categories.map(cat => (
+            {finalCategories.map(cat => (
               <Link 
                 href={cat.link} 
                 key={cat.title} 
