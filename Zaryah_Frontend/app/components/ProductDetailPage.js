@@ -35,6 +35,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Reviews } from './Reviews'
 import { ReviewModal } from './ReviewModal'
 import Image from 'next/image'
+import OptimizedImage from './OptimizedImage'
 import toast from 'react-hot-toast'
 import { formatWeightDisplay } from '@/lib/weight'
 
@@ -602,14 +603,14 @@ export const ProductDetailPage = ({ productId }) => {
                   >
                     {displayImages.length > 0 ? (
                       <>
-                        <Image
+                        <OptimizedImage
                           src={displayImages[activeImageIndex] || displayImages[0]}
                           alt={product.name}
                           fill
-                          unoptimized
                           className="object-cover"
                           priority
                           onLoad={() => setGalleryReady(true)}
+                          width={1000}
                         />
 
                         {/* Prev / Next Controls */}
@@ -662,13 +663,13 @@ export const ProductDetailPage = ({ productId }) => {
                                 activeImageIndex === index ? 'ring-2 ring-primary-600' : 'ring-0'
                               }`}
                             >
-                              <Image
+                              <OptimizedImage
                                 src={image}
                                 alt={`${product.name} ${index + 1}`}
                                 fill
-                                unoptimized
                                 className="object-cover"
                                 loading="lazy"
+                                width={200}
                               />
                             </button>
                           ))}
@@ -1309,25 +1310,25 @@ export const ProductDetailPage = ({ productId }) => {
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {chart.urls.map((imageUrl, imgIndex) => (
                                       <div key={`${index}-${imgIndex}`} className="relative w-full aspect-[4/5] bg-white rounded-lg overflow-hidden">
-                                        <Image
+                                        <OptimizedImage
                                           src={imageUrl}
                                           alt={`${chart.label} - Image ${imgIndex + 1}`}
                                           fill
-                                          unoptimized
                                           className="object-contain"
+                                          width={800}
                                         />
                                       </div>
                                     ))}
                                   </div>
                                 ) : chart.url ? (
                                   <div className="relative w-full max-w-2xl mx-auto aspect-[4/5] bg-white rounded-lg overflow-hidden">
-                                    <Image
-                                      src={chart.url}
-                                      alt={chart.label}
-                                      fill
-                                      unoptimized
-                                      className="object-contain"
-                                    />
+                                     <OptimizedImage
+                                       src={chart.url}
+                                       alt={chart.label}
+                                       fill
+                                       className="object-contain"
+                                       width={800}
+                                     />
                                   </div>
                                 ) : null}
                               </div>
@@ -1337,13 +1338,13 @@ export const ProductDetailPage = ({ productId }) => {
                           <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                             <h4 className="text-lg font-medium text-charcoal-800 mb-4">Size Chart</h4>
                             <div className="relative w-full max-w-2xl mx-auto aspect-[4/5] bg-white rounded-lg overflow-hidden">
-                              <Image
-                                src={product.sizeChartUrl || product.size_chart_url}
-                                alt="Size Chart"
-                                fill
-                                unoptimized
-                                className="object-contain"
-                              />
+                               <OptimizedImage
+                                 src={product.sizeChartUrl || product.size_chart_url}
+                                 alt="Size Chart"
+                                 fill
+                                 className="object-contain"
+                                 width={800}
+                               />
                             </div>
                           </div>
                         ) : null}

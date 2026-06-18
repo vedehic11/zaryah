@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import OptimizedImage from './OptimizedImage'
 import toast from 'react-hot-toast'
 
 export const WishlistPage = () => {
@@ -230,12 +231,13 @@ export const WishlistPage = () => {
                 {/* Product Image */}
                 <div className="relative overflow-hidden">
                   <Link href={`/product/${item.product_id}`} className="block relative w-full h-32 sm:h-48 lg:h-64">
-                    <Image
+                    <OptimizedImage
                       src={item.product?.images?.[0] || '/placeholder.jpg'}
                       alt={item.product?.name}
                       fill
                       className="object-cover rounded-lg"
                       sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      width={400}
                     />
                   </Link>
 

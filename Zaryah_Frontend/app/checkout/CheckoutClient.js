@@ -13,6 +13,7 @@ import {
   ArrowLeft, CheckCircle, AlertCircle, Truck, Home
 } from 'lucide-react'
 import Image from 'next/image'
+import OptimizedImage from '../components/OptimizedImage'
 import toast from 'react-hot-toast'
 
 async function parseJsonResponse(response) {
@@ -989,11 +990,12 @@ export default function CheckoutClient() {
                 {displayedItems.map((item) => (
                   <div key={item.cartItemId} className="flex items-center space-x-3">
                     <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-                      <Image
+                      <OptimizedImage
                         src={item.images?.[0] || '/placeholder.jpg'}
                         alt={item.name}
                         fill
                         className="object-cover"
+                        width={150}
                       />
                     </div>
                     <div className="flex-1">

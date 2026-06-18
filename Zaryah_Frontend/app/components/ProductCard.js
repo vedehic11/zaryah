@@ -10,6 +10,7 @@ import { useWishlist } from '../contexts/WishlistContext'
 import { getSellerUrl, isProductionDomain } from '@/lib/url-utils'
 import Link from 'next/link'
 import Image from 'next/image'
+import OptimizedImage from './OptimizedImage'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
@@ -22,6 +23,8 @@ export const ProductCard = ({ product, backHref, imagePriority = false }) => {
   
   const productId = product.id || product._id
   const sellerUsername = product?.seller?.username || product?.seller_username || null
+
+
   const customizationQuestions = Array.isArray(product?.customQuestions)
     ? product.customQuestions
     : Array.isArray(product?.custom_questions)
@@ -112,7 +115,7 @@ export const ProductCard = ({ product, backHref, imagePriority = false }) => {
             href={productHref}
             className="block relative w-full h-36 sm:h-52 lg:h-64"
           >
-            <Image
+            <OptimizedImage
               src={
                 Array.isArray(product.images) && product.images.length > 0
                   ? product.images[0]
@@ -125,7 +128,7 @@ export const ProductCard = ({ product, backHref, imagePriority = false }) => {
               fetchPriority={imagePriority ? 'high' : 'auto'}
               className="object-cover group-hover:scale-105 transition-transform duration-700 rounded-lg"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              unoptimized
+              width={600}
             />
           </Link>
           

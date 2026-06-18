@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { User } from 'lucide-react'
 import Image from 'next/image'
+import OptimizedImage from './OptimizedImage'
 
 export const UserAvatar = ({ 
   user, 
@@ -52,17 +53,19 @@ export const UserAvatar = ({
 
   // If user has a profile photo and image hasn't errored, show the photo
   const photoUrl = user?.profilePhoto || user?.profile_photo
+
+
   if (photoUrl && !imageError) {
     return (
       <div className={`flex items-center space-x-2 ${className}`}>
         <div className={`${avatarSize} rounded-full overflow-hidden flex-shrink-0 relative`}>
-          <Image
+          <OptimizedImage
             src={photoUrl}
             alt={user.fullName || user.name || user.businessName || 'User'}
             fill
             className="object-cover"
             onError={() => setImageError(true)}
-            unoptimized
+            width={150}
           />
         </div>
         {showName && (

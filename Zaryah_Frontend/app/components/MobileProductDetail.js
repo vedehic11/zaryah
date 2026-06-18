@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 import { Reviews } from './Reviews'
 import Image from 'next/image'
+import OptimizedImage from './OptimizedImage'
 import { formatWeightDisplay } from '@/lib/weight'
 import { getSellerUrl, getMainDomainUrl } from '@/lib/url-utils'
 import { apiService } from '../services/api'
@@ -643,14 +644,14 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
         }}
       >
         <div className="w-full h-[86vw] overflow-hidden relative">
-          <Image
+          <OptimizedImage
             src={displayImages[currentImageIndex] || '/placeholder-product.png'}
             alt={product.name}
             fill
-            unoptimized
             className="object-cover"
             priority
             onLoad={() => setGalleryReady(true)}
+            width={800}
           />
         </div>
         {/* Prev / Next Controls */}
@@ -1109,24 +1110,24 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                           <div className="grid grid-cols-2 gap-2">
                             {chart.urls.map((imageUrl, imgIndex) => (
                               <div key={`${index}-${imgIndex}`} className="relative w-full aspect-[4/5] bg-white rounded-lg overflow-hidden">
-                                <Image
+                                <OptimizedImage
                                   src={imageUrl}
                                   alt={`${chart.label} - Image ${imgIndex + 1}`}
                                   fill
-                                  unoptimized
                                   className="object-contain"
+                                  width={800}
                                 />
                               </div>
                             ))}
                           </div>
                         ) : chart.url ? (
                           <div className="relative w-full aspect-[4/5] bg-white rounded-lg overflow-hidden">
-                            <Image
+                            <OptimizedImage
                               src={chart.url}
                               alt={chart.label}
                               fill
-                              unoptimized
                               className="object-contain"
+                              width={800}
                             />
                           </div>
                         ) : null}
@@ -1302,11 +1303,12 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
                   className="flex-shrink-0 w-36 group"
                 >
                   <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-2 relative">
-                    <Image
+                    <OptimizedImage
                       src={item.images?.[0] || '/placeholder-product.png'}
                       alt={item.name}
                       fill
                       className="object-cover"
+                      width={300}
                     />
                   </div>
                   <p className="text-xs text-gray-700 font-medium line-clamp-2 mb-1">

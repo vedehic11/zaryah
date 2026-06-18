@@ -13,6 +13,7 @@ import { apiService } from '../services/api'
 import toast from 'react-hot-toast'
 import Script from 'next/script'
 import Image from 'next/image'
+import OptimizedImage from './OptimizedImage'
 
 async function parseJsonResponse(response) {
   const contentType = response.headers.get('content-type') || ''
@@ -555,11 +556,12 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
                       {cart.map((item, index) => (
                         <div key={index} className="flex gap-3">
                           <div className="relative w-16 h-16 flex-shrink-0">
-                            <Image 
+                            <OptimizedImage 
                               src={item.product.images?.[0] || '/placeholder.jpg'} 
                               alt={item.product.name}
                               fill
                               className="object-cover rounded-lg"
+                              width={150}
                             />
                           </div>
                           <div className="flex-1">

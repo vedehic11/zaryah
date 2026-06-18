@@ -6,6 +6,7 @@ import { ShoppingBag, X, Plus, Minus, Trash2, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import OptimizedImage from './OptimizedImage'
 
 export const CartSidebar = () => {
   const { carts, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, totalItems, totalPrice } = useCart()
@@ -83,11 +84,12 @@ export const CartSidebar = () => {
                       {/* Product Image */}
                       <div className="relative w-20 h-20 flex-shrink-0 bg-gray-200 rounded-lg overflow-hidden">
                         {item.images && item.images.length > 0 ? (
-                          <Image
+                          <OptimizedImage
                             src={item.images[0]}
                             alt={item.name}
                             fill
                             className="object-cover"
+                            width={150}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
