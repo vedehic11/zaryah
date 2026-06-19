@@ -31,15 +31,6 @@ export default function RefundPolicy() {
               <li className="flex items-start">
                 <span className="font-semibold text-primary-800 mr-2 flex-shrink-0">2.</span>
                 <span>
-                  <strong>Vedehi Ajay Choudhary (Proprietor of Zaryah)</strong> does not accept cancellation requests for perishable 
-                  items like flowers, eatables, etc. However, the refund / replacement can be made if the user 
-                  establishes that the quality of the product delivered is not good.
-                </span>
-              </li>
-
-              <li className="flex items-start">
-                <span className="font-semibold text-primary-800 mr-2 flex-shrink-0">3.</span>
-                <span>
                   In case of receipt of damaged or defective items, please report to our customer service team. The 
                   request would be entertained once the seller/ merchant listed on the Platform, has checked and 
                   determined the same at its own end. This should be reported within <strong>7 days</strong> of receipt of products. 
@@ -50,7 +41,7 @@ export default function RefundPolicy() {
               </li>
 
               <li className="flex items-start">
-                <span className="font-semibold text-primary-800 mr-2 flex-shrink-0">4.</span>
+                <span className="font-semibold text-primary-800 mr-2 flex-shrink-0">3.</span>
                 <span>
                   In case of complaints regarding the products that come with a warranty from the manufacturers, 
                   please refer the issue to them.
@@ -58,7 +49,7 @@ export default function RefundPolicy() {
               </li>
 
               <li className="flex items-start">
-                <span className="font-semibold text-primary-800 mr-2 flex-shrink-0">5.</span>
+                <span className="font-semibold text-primary-800 mr-2 flex-shrink-0">4.</span>
                 <span>
                   In case of any refunds approved by <strong>Vedehi Ajay Choudhary (Proprietor of Zaryah)</strong>, it will take 
                   <strong> 6-7 days</strong> for the refund to be processed to you.
