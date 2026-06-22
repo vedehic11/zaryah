@@ -135,22 +135,23 @@ export const HomePage = () => {
     { title: 'Painting', img: '/assets/paint.png', link: '/shop?category=Painting' },
     { title: 'Soap Making', img: '/assets/soap.png', link: '/shop?category=Soap Making' },
     { title: 'For Him', img: '/assets/for-him.jpg', link: '/shop?category=For Him' },
-    { title: 'For Her', img: '/assets/for-her.jpg', link: '/shop?category=For Her' },
     { title: 'For Kids', img: '/assets/for-kids.jpg', link: '/shop?category=For Kids' },
-    { title: 'Personalized Gifts', img: '/assets/personalised.jpg', link: '/shop?category=Personalized Gifts' },
   ]
 
   const displayCategories = productsLoaded
     ? categories.filter(cat => {
+        const catName = String(cat.title).trim().toLowerCase()
         return products.some(p => {
-          const primaryMatch = p.category && String(p.category).trim().toLowerCase() === String(cat.title).trim().toLowerCase()
-          const listMatch = Array.isArray(p.categories) && p.categories.some(c => String(c).trim().toLowerCase() === String(cat.title).trim().toLowerCase())
-          return primaryMatch || listMatch
+          const primaryMatch = p.category && String(p.category).trim().toLowerCase() === catName
+          const listMatch = Array.isArray(p.categories) && p.categories.some(c => String(c).trim().toLowerCase() === catName)
+          const sectionMatch = p.section && String(p.section).trim().toLowerCase() === catName
+          const sectionsMatch = Array.isArray(p.sections) && p.sections.some(s => String(s).trim().toLowerCase() === catName)
+          return primaryMatch || listMatch || sectionMatch || sectionsMatch
         })
       })
-    : categories
+    : []
 
-  const finalCategories = displayCategories.length > 0 ? displayCategories : categories
+  const finalCategories = displayCategories
 
   return (
     <div className="relative min-h-screen bg-gradient-elegant pt-0 md:pt-0">
@@ -164,6 +165,7 @@ export const HomePage = () => {
       </div>
 
       {/* Shop by Category - Horizontal Scroll on All Screens */}
+      {finalCategories.length > 0 && (
       <section className="py-10 sm:py-12 bg-cream-50 w-full">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-charcoal-800 mb-8 text-center font-serif px-4">Shop by Category</h2>
@@ -192,6 +194,7 @@ export const HomePage = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Featured Products */}
       <section
