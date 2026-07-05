@@ -62,14 +62,47 @@ export async function POST(request, { params }) {
 
       // Process withdrawal using database function
       try {
-        // Create transaction record
+        // Fetch seller wallet details
+        const { data: wallet, error: walletFetchError } = await supabase
+          .from('wallets')
+          .select('id, available_balance, total_withdrawn')
+          .eq('seller_id', withdrawal.seller_id)
+          .single()
+
+        if (walletFetchError || !wallet) {
+          throw new Error(`Wallet not found for seller: ${walletFetchError?.message || 'Not found'}`)
+        }
+
+        const currentAvailable = parseFloat(wallet.available_balance || 0)
+        const currentWithdrawn = parseFloat(wallet.total_withdrawn || 0)
+        const amount = parseFloat(withdrawal.amount)
+
+        if (currentAvailable < amount) {
+          throw new Error('Wallet balance is insufficient for this withdrawal')
+        }
+
+        // 1. Update wallet balance (debit)
+        const { error: walletUpdateError } = await supabase
+          .from('wallets')
+          .update({
+            available_balance: currentAvailable - amount,
+            total_withdrawn: currentWithdrawn + amount,
+            last_withdrawal_at: new Date().toISOString()
+          })
+          .eq('id', wallet.id)
+
+        if (walletUpdateError) {
+          throw new Error(`Failed to update wallet balances: ${walletUpdateError.message}`)
+        }
+
+        // 2. Create transaction record
         const { data: transaction, error: txError } = await supabase
           .from('transactions')
           .insert({
             seller_id: withdrawal.seller_id,
-            amount: -withdrawal.amount, // Negative for debit
+            amount: -amount, // Negative for debit
             type: 'debit_withdrawal',
-            description: `Withdrawal to UPI ID ${withdrawal.upi_id || 'unknown'}`,
+            description: `Withdrawal to UPI ID ${withdrawal.bank_account_number || 'unknown'}`,
             status: 'completed',
             created_by: user.id
           })
@@ -80,11 +113,11 @@ export async function POST(request, { params }) {
           throw new Error(`Transaction creation failed: ${txError.message}`)
         }
 
-        // Update withdrawal_requests record directly
+        // 3. Update withdrawal_requests record directly (status is completed)
         const { error: metaUpdateError } = await supabase
           .from('withdrawal_requests')
           .update({
-            status: 'approved',
+            status: 'completed',
             processed_at: new Date().toISOString(),
             processed_by: user.id,
             manual_transaction_id: normalizedManualTransactionId,
