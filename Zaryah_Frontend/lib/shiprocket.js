@@ -452,7 +452,7 @@ function readNumberEnv(name, fallbackValue) {
 function applyRateBuffer(baseRate) {
   const base = Math.ceil(baseRate)
   const markup = readNumberEnv('SHIPROCKET_RATE_MARKUP', 10)
-  const bufferPercent = readNumberEnv('SHIPROCKET_BUFFER_PERCENT', 20)
+  const bufferPercent = readNumberEnv('SHIPROCKET_BUFFER_PERCENT', 0)
   const bufferFlat = readNumberEnv('SHIPROCKET_BUFFER_FLAT', 0)
   const bufferMin = readNumberEnv('SHIPROCKET_BUFFER_MIN', 0)
   const bufferFromPercent = (base * bufferPercent) / 100
