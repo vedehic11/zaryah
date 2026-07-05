@@ -369,7 +369,7 @@ export default function SellerDashboardPage() {
       const intervalId = activeTab === 'orders'
         ? setInterval(() => {
             fetchDashboardData({ reason: 'poll' })
-          }, 60000)
+          }, 180000)
         : null
 
       const handleVisibilityChange = () => {
@@ -378,21 +378,13 @@ export default function SellerDashboardPage() {
         }
       }
 
-      const handleWindowFocus = () => {
-        if (activeTab === 'orders') {
-          fetchDashboardData({ reason: 'focus' })
-        }
-      }
-
       document.addEventListener('visibilitychange', handleVisibilityChange)
-      window.addEventListener('focus', handleWindowFocus)
 
       return () => {
         if (intervalId) {
           clearInterval(intervalId)
         }
         document.removeEventListener('visibilitychange', handleVisibilityChange)
-        window.removeEventListener('focus', handleWindowFocus)
       }
     }
   }, [user?.id, user?.role, authLoading, activeTab]) // Keep polling scoped to current tab
@@ -404,7 +396,7 @@ export default function SellerDashboardPage() {
 
     const now = Date.now()
     // Cooldown for automated triggers to avoid burst duplicate calls
-    if (reason !== 'manual' && now - dashboardLastFetchAt.current < 4000) {
+    if (reason !== 'manual' && now - dashboardLastFetchAt.current < 15000) {
       return
     }
 
@@ -461,7 +453,7 @@ export default function SellerDashboardPage() {
           order?.awb_code &&
           !['delivered', 'cancelled'].includes(order.status)
         )
-        .slice(0, 6)
+        .slice(0, 3)
 
       if (ordersNeedingLiveSync.length > 0) {
         const trackingResults = await Promise.allSettled(
@@ -3058,27 +3050,16 @@ export default function SellerDashboardPage() {
                             <QrCode className="h-4 w-4" />
                             QR Code
                           </div>
-                          {profileUrl ? (
-                            <img
-                              src={qrPreviewUrl}
-                              alt="Profile QR code"
-                              className="h-32 w-32 rounded-md border border-gray-200 bg-white"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="h-32 w-32 rounded-md border border-gray-200 bg-white flex items-center justify-center text-xs text-gray-400">
-                              Add username
-                            </div>
-                          )}
+                          <img
+                            src={qrPreviewUrl || `/api/qr?size=160&data=${encodeURIComponent(`https://zaryah.in/seller/${profileData?.username || profileData?.id || 'store'}`)}`}
+                            alt="Profile QR code"
+                            className="h-32 w-32 rounded-md border border-gray-200 bg-white p-1"
+                            loading="lazy"
+                          />
                           <a
-                            href={qrDownloadUrl || '#'}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
-                            aria-disabled={!profileUrl}
-                            onClick={(event) => {
-                              if (!profileUrl) {
-                                event.preventDefault()
-                              }
-                            }}
+                            href={qrDownloadUrl || `/api/qr?size=512&data=${encodeURIComponent(`https://zaryah.in/seller/${profileData?.username || profileData?.id || 'store'}`)}&download=1`}
+                            download="zaryah-store-qr.png"
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
                           >
                             <Download className="h-4 w-4" />
                             Download QR

@@ -1,46 +1,18 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
-CREATE TABLE public.addresses (
+CREATE TABLE public.users (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  user_id uuid NOT NULL,
-  name character varying NOT NULL,
-  phone character varying NOT NULL,
-  address text NOT NULL,
-  city character varying NOT NULL,
-  state character varying NOT NULL,
-  pincode character varying NOT NULL,
-  country character varying DEFAULT 'India'::character varying,
-  is_default boolean DEFAULT false,
-  is_active boolean DEFAULT true,
+  email character varying NOT NULL UNIQUE,
+  name character varying,
+  user_type character varying NOT NULL CHECK (user_type::text = ANY (ARRAY['Buyer'::character varying, 'Seller'::character varying, 'Admin'::character varying]::text[])),
+  is_verified boolean DEFAULT false,
+  is_approved boolean DEFAULT true,
+  profile_photo text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT addresses_pkey PRIMARY KEY (id),
-  CONSTRAINT addresses_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
-);
-CREATE TABLE public.admin_earnings (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  order_id uuid NOT NULL UNIQUE,
-  seller_id uuid NOT NULL,
-  order_amount numeric NOT NULL,
-  commission_rate numeric NOT NULL DEFAULT 5.00,
-  commission_amount numeric NOT NULL,
-  seller_amount numeric NOT NULL,
-  status character varying DEFAULT 'earned'::character varying CHECK (status::text = ANY (ARRAY['earned'::character varying, 'reversed'::character varying]::text[])),
-  earned_at timestamp with time zone DEFAULT now(),
-  reversed_at timestamp with time zone,
-  created_at timestamp with time zone DEFAULT now(),
-  delivery_fee numeric DEFAULT 0,
-  CONSTRAINT admin_earnings_pkey PRIMARY KEY (id),
-  CONSTRAINT admin_earnings_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id),
-  CONSTRAINT admin_earnings_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.sellers(id)
-);
-CREATE TABLE public.admins (
-  id uuid NOT NULL,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT admins_pkey PRIMARY KEY (id),
-  CONSTRAINT admins_id_fkey FOREIGN KEY (id) REFERENCES public.users(id)
+  supabase_auth_id uuid UNIQUE,
+  CONSTRAINT users_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.buyers (
   id uuid NOT NULL,
@@ -54,138 +26,50 @@ CREATE TABLE public.buyers (
   CONSTRAINT buyers_pkey PRIMARY KEY (id),
   CONSTRAINT buyers_id_fkey FOREIGN KEY (id) REFERENCES public.users(id)
 );
-CREATE TABLE public.cart_items (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  cart_id uuid NOT NULL,
-  product_id uuid NOT NULL,
-  quantity integer NOT NULL DEFAULT 1 CHECK (quantity >= 1),
-  gift_packaging boolean DEFAULT false,
-  customizations jsonb,
+CREATE TABLE public.sellers (
+  id uuid NOT NULL,
+  full_name character varying NOT NULL,
+  business_name character varying NOT NULL,
+  username character varying UNIQUE CHECK (username IS NULL OR username::text ~ '^[a-z0-9_-]+$'::text AND length(username::text) >= 3 AND length(username::text) <= 50),
+  cover_photo text,
+  primary_mobile character varying NOT NULL,
+  business_address text NOT NULL,
+  business_description text NOT NULL,
+  city character varying NOT NULL,
+  gst_number character varying,
+  pan_number character varying,
+  id_type character varying NOT NULL CHECK (id_type::text = ANY (ARRAY['Aadhar Card'::character varying, 'PAN Card'::character varying, 'Driving License'::character varying, 'Passport'::character varying]::text[])),
+  id_number character varying NOT NULL,
+  id_document text NOT NULL,
+  business_document text,
+  instagram character varying,
+  facebook character varying,
+  x character varying,
+  linkedin character varying,
+  alternate_mobile character varying,
+  account_holder_name character varying NOT NULL,
+  approved_by uuid,
+  approved_at timestamp with time zone,
+  registration_date timestamp with time zone DEFAULT now(),
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
-  selected_size character varying,
-  selected_color character varying,
-  unit_price numeric,
-  CONSTRAINT cart_items_pkey PRIMARY KEY (id),
-  CONSTRAINT cart_items_cart_id_fkey FOREIGN KEY (cart_id) REFERENCES public.carts(id),
-  CONSTRAINT cart_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
+  state text,
+  pincode text,
+  story text,
+  featured_story boolean DEFAULT false,
+  upi_id text,
+  allow_cod boolean DEFAULT true,
+  hide_from_artisans boolean NOT NULL DEFAULT false,
+  CONSTRAINT sellers_pkey PRIMARY KEY (id),
+  CONSTRAINT sellers_id_fkey FOREIGN KEY (id) REFERENCES public.users(id),
+  CONSTRAINT sellers_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(id)
 );
-CREATE TABLE public.carts (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  buyer_id uuid NOT NULL UNIQUE,
+CREATE TABLE public.admins (
+  id uuid NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
-  seller_id uuid,
-  CONSTRAINT carts_pkey PRIMARY KEY (id),
-  CONSTRAINT carts_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES public.buyers(id),
-  CONSTRAINT carts_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.sellers(id)
-);
-CREATE TABLE public.email_verifications (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  user_id uuid NOT NULL,
-  token text NOT NULL UNIQUE,
-  expires_at timestamp with time zone NOT NULL,
-  verified_at timestamp with time zone,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT email_verifications_pkey PRIMARY KEY (id),
-  CONSTRAINT email_verifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
-);
-CREATE TABLE public.notifications (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  user_id uuid NOT NULL,
-  user_model character varying NOT NULL CHECK (user_model::text = ANY (ARRAY['Buyer'::character varying, 'Seller'::character varying, 'Admin'::character varying]::text[])),
-  title character varying NOT NULL,
-  message text NOT NULL,
-  type character varying DEFAULT 'system'::character varying CHECK (type::text = ANY (ARRAY['order'::character varying, 'payment'::character varying, 'delivery'::character varying, 'system'::character varying, 'promotion'::character varying]::text[])),
-  is_read boolean DEFAULT false,
-  related_order_id uuid,
-  related_product_id uuid,
-  action_url text,
-  priority character varying DEFAULT 'medium'::character varying CHECK (priority::text = ANY (ARRAY['low'::character varying, 'medium'::character varying, 'high'::character varying]::text[])),
-  expires_at timestamp with time zone,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT notifications_pkey PRIMARY KEY (id),
-  CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT notifications_related_order_id_fkey FOREIGN KEY (related_order_id) REFERENCES public.orders(id),
-  CONSTRAINT notifications_related_product_id_fkey FOREIGN KEY (related_product_id) REFERENCES public.products(id)
-);
-CREATE TABLE public.order_items (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  order_id uuid NOT NULL,
-  product_id uuid NOT NULL,
-  quantity integer NOT NULL DEFAULT 1,
-  customizations jsonb,
-  gift_packaging boolean DEFAULT false,
-  price numeric NOT NULL,
-  created_at timestamp with time zone DEFAULT now(),
-  selected_size character varying,
-  selected_color character varying,
-  CONSTRAINT order_items_pkey PRIMARY KEY (id),
-  CONSTRAINT order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id),
-  CONSTRAINT order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
-);
-CREATE TABLE public.orders (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  buyer_id uuid NOT NULL,
-  seller_id uuid NOT NULL,
-  status character varying DEFAULT 'pending'::character varying CHECK (status::text = ANY (ARRAY['pending'::character varying, 'confirmed'::character varying, 'pickup_dispatched'::character varying, 'received_by_seller'::character varying, 'ready'::character varying, 'dispatched'::character varying, 'delivered'::character varying, 'cancelled'::character varying, 'rto'::character varying]::text[])),
-  total_amount numeric NOT NULL,
-  address text NOT NULL,
-  payment_method character varying DEFAULT 'cod'::character varying CHECK (payment_method::text = ANY (ARRAY['cod'::character varying, 'online'::character varying]::text[])),
-  payment_id character varying,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  payment_status character varying DEFAULT 'pending'::character varying CHECK (payment_status::text = ANY (ARRAY['pending'::character varying, 'paid'::character varying, 'failed'::character varying, 'refunded'::character varying]::text[])),
-  razorpay_order_id character varying,
-  razorpay_payment_id character varying,
-  commission_amount numeric DEFAULT 0.00,
-  seller_amount numeric,
-  wallet_credited boolean DEFAULT false,
-  shipment_id character varying,
-  awb_code character varying,
-  courier_name character varying,
-  tracking_url text,
-  shipment_status character varying,
-  shipment_created_at timestamp with time zone,
-  notes text,
-  delivery_fee numeric DEFAULT 0,
-  service_charge numeric DEFAULT 0,
-  gift_packaging_fee numeric DEFAULT 0,
-  platform_fee numeric DEFAULT 0,
-  two_way_delivery boolean DEFAULT false,
-  inbound_shipment_id text,
-  inbound_awb_code text,
-  inbound_courier_name text,
-  inbound_tracking_url text,
-  inbound_shipment_status text,
-  inbound_shipment_created_at timestamp with time zone,
-  CONSTRAINT orders_pkey PRIMARY KEY (id),
-  CONSTRAINT orders_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES public.buyers(id),
-  CONSTRAINT orders_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.sellers(id)
-);
-CREATE TABLE public.otps (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  email character varying NOT NULL,
-  otp character varying NOT NULL,
-  user_type character varying NOT NULL,
-  expires_at timestamp with time zone NOT NULL,
-  is_used boolean DEFAULT false,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT otps_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.product_ratings (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  product_id uuid NOT NULL,
-  user_id uuid NOT NULL,
-  rating integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
-  review text,
-  date timestamp with time zone DEFAULT now(),
-  title text,
-  created_at timestamp without time zone DEFAULT now(),
-  updated_at timestamp without time zone DEFAULT now(),
-  CONSTRAINT product_ratings_pkey PRIMARY KEY (id),
-  CONSTRAINT product_ratings_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id),
-  CONSTRAINT product_ratings_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+  CONSTRAINT admins_pkey PRIMARY KEY (id),
+  CONSTRAINT admins_id_fkey FOREIGN KEY (id) REFERENCES public.users(id)
 );
 CREATE TABLE public.products (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -235,6 +119,117 @@ CREATE TABLE public.products (
   CONSTRAINT products_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(id),
   CONSTRAINT products_rejected_by_fkey FOREIGN KEY (rejected_by) REFERENCES public.users(id)
 );
+CREATE TABLE public.product_ratings (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  product_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  rating integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  review text,
+  date timestamp with time zone DEFAULT now(),
+  title text,
+  created_at timestamp without time zone DEFAULT now(),
+  updated_at timestamp without time zone DEFAULT now(),
+  CONSTRAINT product_ratings_pkey PRIMARY KEY (id),
+  CONSTRAINT product_ratings_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id),
+  CONSTRAINT product_ratings_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.addresses (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  name character varying NOT NULL,
+  phone character varying NOT NULL,
+  address text NOT NULL,
+  city character varying NOT NULL,
+  state character varying NOT NULL,
+  pincode character varying NOT NULL,
+  country character varying DEFAULT 'India'::character varying,
+  is_default boolean DEFAULT false,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT addresses_pkey PRIMARY KEY (id),
+  CONSTRAINT addresses_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.carts (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  buyer_id uuid NOT NULL UNIQUE,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  seller_id uuid,
+  CONSTRAINT carts_pkey PRIMARY KEY (id),
+  CONSTRAINT carts_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES public.buyers(id),
+  CONSTRAINT carts_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.sellers(id)
+);
+CREATE TABLE public.cart_items (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  cart_id uuid NOT NULL,
+  product_id uuid NOT NULL,
+  quantity integer NOT NULL DEFAULT 1 CHECK (quantity >= 1),
+  gift_packaging boolean DEFAULT false,
+  customizations jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  selected_size character varying,
+  selected_color character varying,
+  unit_price numeric,
+  CONSTRAINT cart_items_pkey PRIMARY KEY (id),
+  CONSTRAINT cart_items_cart_id_fkey FOREIGN KEY (cart_id) REFERENCES public.carts(id),
+  CONSTRAINT cart_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
+);
+CREATE TABLE public.orders (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  buyer_id uuid NOT NULL,
+  seller_id uuid NOT NULL,
+  status character varying DEFAULT 'pending'::character varying CHECK (status::text = ANY (ARRAY['pending'::character varying, 'confirmed'::character varying, 'pickup_dispatched'::character varying, 'received_by_seller'::character varying, 'ready'::character varying, 'dispatched'::character varying, 'delivered'::character varying, 'cancelled'::character varying, 'rto'::character varying]::text[])),
+  total_amount numeric NOT NULL,
+  address text NOT NULL,
+  payment_method character varying DEFAULT 'cod'::character varying CHECK (payment_method::text = ANY (ARRAY['cod'::character varying, 'online'::character varying]::text[])),
+  payment_id character varying,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  payment_status character varying DEFAULT 'pending'::character varying CHECK (payment_status::text = ANY (ARRAY['pending'::character varying, 'paid'::character varying, 'failed'::character varying, 'refunded'::character varying]::text[])),
+  razorpay_order_id character varying,
+  razorpay_payment_id character varying,
+  commission_amount numeric DEFAULT 0.00,
+  seller_amount numeric,
+  wallet_credited boolean DEFAULT false,
+  shipment_id character varying,
+  awb_code character varying,
+  courier_name character varying,
+  tracking_url text,
+  shipment_status character varying,
+  shipment_created_at timestamp with time zone,
+  notes text,
+  delivery_fee numeric DEFAULT 0,
+  service_charge numeric DEFAULT 0,
+  gift_packaging_fee numeric DEFAULT 0,
+  platform_fee numeric DEFAULT 0,
+  two_way_delivery boolean DEFAULT false,
+  inbound_shipment_id text,
+  inbound_awb_code text,
+  inbound_courier_name text,
+  inbound_tracking_url text,
+  inbound_shipment_status text,
+  inbound_shipment_created_at timestamp with time zone,
+  CONSTRAINT orders_pkey PRIMARY KEY (id),
+  CONSTRAINT orders_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES public.buyers(id),
+  CONSTRAINT orders_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.sellers(id)
+);
+CREATE TABLE public.order_items (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  order_id uuid NOT NULL,
+  product_id uuid NOT NULL,
+  quantity integer NOT NULL DEFAULT 1,
+  customizations jsonb,
+  gift_packaging boolean DEFAULT false,
+  price numeric NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  selected_size character varying,
+  selected_color character varying,
+  CONSTRAINT order_items_pkey PRIMARY KEY (id),
+  CONSTRAINT order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id),
+  CONSTRAINT order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
+);
 CREATE TABLE public.reviews (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   product_id uuid NOT NULL,
@@ -250,88 +245,24 @@ CREATE TABLE public.reviews (
   CONSTRAINT reviews_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id),
   CONSTRAINT reviews_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES public.buyers(id)
 );
-CREATE TABLE public.seller_reviews (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  seller_id uuid NOT NULL,
+CREATE TABLE public.notifications (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
   user_id uuid NOT NULL,
-  rating integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
-  title text,
-  comment text NOT NULL DEFAULT ''::text,
-  images ARRAY DEFAULT ARRAY[]::text[],
-  order_id uuid,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT seller_reviews_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.seller_sections (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  seller_id uuid NOT NULL,
-  name text NOT NULL,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  image_url text,
-  CONSTRAINT seller_sections_pkey PRIMARY KEY (id),
-  CONSTRAINT seller_sections_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.sellers(id)
-);
-CREATE TABLE public.sellers (
-  id uuid NOT NULL,
-  full_name character varying NOT NULL,
-  business_name character varying NOT NULL,
-  username character varying UNIQUE CHECK (username IS NULL OR username::text ~ '^[a-z0-9_-]+$'::text AND length(username::text) >= 3 AND length(username::text) <= 50),
-  cover_photo text,
-  primary_mobile character varying NOT NULL,
-  business_address text NOT NULL,
-  business_description text NOT NULL,
-  city character varying NOT NULL,
-  gst_number character varying,
-  pan_number character varying,
-  id_type character varying NOT NULL CHECK (id_type::text = ANY (ARRAY['Aadhar Card'::character varying, 'PAN Card'::character varying, 'Driving License'::character varying, 'Passport'::character varying]::text[])),
-  id_number character varying NOT NULL,
-  id_document text NOT NULL,
-  business_document text,
-  instagram character varying,
-  facebook character varying,
-  x character varying,
-  linkedin character varying,
-  alternate_mobile character varying,
-  account_holder_name character varying NOT NULL,
-  approved_by uuid,
-  approved_at timestamp with time zone,
-  registration_date timestamp with time zone DEFAULT now(),
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  state text,
-  pincode text,
-  story text,
-  featured_story boolean DEFAULT false,
-  upi_id text,
-  allow_cod boolean DEFAULT true,
-  CONSTRAINT sellers_pkey PRIMARY KEY (id),
-  CONSTRAINT sellers_id_fkey FOREIGN KEY (id) REFERENCES public.users(id),
-  CONSTRAINT sellers_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(id)
-);
-CREATE TABLE public.support_messages (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  ticket_id uuid NOT NULL,
-  sender character varying NOT NULL CHECK (sender::text = ANY (ARRAY['user'::character varying, 'seller'::character varying, 'admin'::character varying]::text[])),
-  sender_id uuid NOT NULL,
+  user_model character varying NOT NULL CHECK (user_model::text = ANY (ARRAY['Buyer'::character varying, 'Seller'::character varying, 'Admin'::character varying]::text[])),
+  title character varying NOT NULL,
   message text NOT NULL,
-  attachments jsonb,
+  type character varying DEFAULT 'system'::character varying CHECK (type::text = ANY (ARRAY['order'::character varying, 'payment'::character varying, 'delivery'::character varying, 'system'::character varying, 'promotion'::character varying]::text[])),
+  is_read boolean DEFAULT false,
+  related_order_id uuid,
+  related_product_id uuid,
+  action_url text,
+  priority character varying DEFAULT 'medium'::character varying CHECK (priority::text = ANY (ARRAY['low'::character varying, 'medium'::character varying, 'high'::character varying]::text[])),
+  expires_at timestamp with time zone,
   created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT support_messages_pkey PRIMARY KEY (id),
-  CONSTRAINT support_messages_ticket_id_fkey FOREIGN KEY (ticket_id) REFERENCES public.support_tickets(id),
-  CONSTRAINT support_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(id)
-);
-CREATE TABLE public.support_ticket_messages (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  ticket_id uuid NOT NULL,
-  sender_id uuid NOT NULL,
-  message text NOT NULL,
-  is_admin boolean DEFAULT false,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT support_ticket_messages_pkey PRIMARY KEY (id),
-  CONSTRAINT support_ticket_messages_ticket_id_fkey FOREIGN KEY (ticket_id) REFERENCES public.support_tickets(id),
-  CONSTRAINT support_ticket_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(id)
+  CONSTRAINT notifications_pkey PRIMARY KEY (id),
+  CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT notifications_related_order_id_fkey FOREIGN KEY (related_order_id) REFERENCES public.orders(id),
+  CONSTRAINT notifications_related_product_id_fkey FOREIGN KEY (related_product_id) REFERENCES public.products(id)
 );
 CREATE TABLE public.support_tickets (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -363,6 +294,51 @@ CREATE TABLE public.support_tickets (
   CONSTRAINT support_tickets_order_reference_id_fkey FOREIGN KEY (order_reference_id) REFERENCES public.orders(id),
   CONSTRAINT support_tickets_product_reference_id_fkey FOREIGN KEY (product_reference_id) REFERENCES public.products(id)
 );
+CREATE TABLE public.support_messages (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  ticket_id uuid NOT NULL,
+  sender character varying NOT NULL CHECK (sender::text = ANY (ARRAY['user'::character varying, 'seller'::character varying, 'admin'::character varying]::text[])),
+  sender_id uuid NOT NULL,
+  message text NOT NULL,
+  attachments jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT support_messages_pkey PRIMARY KEY (id),
+  CONSTRAINT support_messages_ticket_id_fkey FOREIGN KEY (ticket_id) REFERENCES public.support_tickets(id),
+  CONSTRAINT support_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.otps (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  email character varying NOT NULL,
+  otp character varying NOT NULL,
+  user_type character varying NOT NULL,
+  expires_at timestamp with time zone NOT NULL,
+  is_used boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT otps_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.email_verifications (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  token text NOT NULL UNIQUE,
+  expires_at timestamp with time zone NOT NULL,
+  verified_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT email_verifications_pkey PRIMARY KEY (id),
+  CONSTRAINT email_verifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.wallets (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  seller_id uuid NOT NULL UNIQUE,
+  available_balance numeric NOT NULL DEFAULT 0.00 CHECK (available_balance >= 0::numeric),
+  pending_balance numeric NOT NULL DEFAULT 0.00 CHECK (pending_balance >= 0::numeric),
+  total_earned numeric NOT NULL DEFAULT 0.00,
+  total_withdrawn numeric NOT NULL DEFAULT 0.00,
+  last_withdrawal_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT wallets_pkey PRIMARY KEY (id),
+  CONSTRAINT wallets_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.sellers(id)
+);
 CREATE TABLE public.transactions (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   seller_id uuid NOT NULL,
@@ -380,40 +356,22 @@ CREATE TABLE public.transactions (
   CONSTRAINT transactions_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id),
   CONSTRAINT transactions_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id)
 );
-CREATE TABLE public.users (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  email character varying NOT NULL UNIQUE,
-  name character varying,
-  user_type character varying NOT NULL CHECK (user_type::text = ANY (ARRAY['Buyer'::character varying, 'Seller'::character varying, 'Admin'::character varying]::text[])),
-  is_verified boolean DEFAULT false,
-  is_approved boolean DEFAULT true,
-  profile_photo text,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  supabase_auth_id uuid UNIQUE,
-  CONSTRAINT users_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.wallets (
+CREATE TABLE public.admin_earnings (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  seller_id uuid NOT NULL UNIQUE,
-  available_balance numeric NOT NULL DEFAULT 0.00 CHECK (available_balance >= 0::numeric),
-  pending_balance numeric NOT NULL DEFAULT 0.00 CHECK (pending_balance >= 0::numeric),
-  total_earned numeric NOT NULL DEFAULT 0.00,
-  total_withdrawn numeric NOT NULL DEFAULT 0.00,
-  last_withdrawal_at timestamp with time zone,
+  order_id uuid NOT NULL UNIQUE,
+  seller_id uuid NOT NULL,
+  order_amount numeric NOT NULL,
+  commission_rate numeric NOT NULL DEFAULT 5.00,
+  commission_amount numeric NOT NULL,
+  seller_amount numeric NOT NULL,
+  status character varying DEFAULT 'earned'::character varying CHECK (status::text = ANY (ARRAY['earned'::character varying, 'reversed'::character varying]::text[])),
+  earned_at timestamp with time zone DEFAULT now(),
+  reversed_at timestamp with time zone,
   created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT wallets_pkey PRIMARY KEY (id),
-  CONSTRAINT wallets_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.sellers(id)
-);
-CREATE TABLE public.wishlist (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  user_id uuid NOT NULL,
-  product_id uuid NOT NULL,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT wishlist_pkey PRIMARY KEY (id),
-  CONSTRAINT wishlist_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT wishlist_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
+  delivery_fee numeric DEFAULT 0,
+  CONSTRAINT admin_earnings_pkey PRIMARY KEY (id),
+  CONSTRAINT admin_earnings_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id),
+  CONSTRAINT admin_earnings_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.sellers(id)
 );
 CREATE TABLE public.withdrawal_requests (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -437,4 +395,47 @@ CREATE TABLE public.withdrawal_requests (
   CONSTRAINT withdrawal_requests_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.sellers(id),
   CONSTRAINT withdrawal_requests_transaction_id_fkey FOREIGN KEY (transaction_id) REFERENCES public.transactions(id),
   CONSTRAINT withdrawal_requests_processed_by_fkey FOREIGN KEY (processed_by) REFERENCES public.users(id)
+);
+CREATE TABLE public.wishlist (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  product_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT wishlist_pkey PRIMARY KEY (id),
+  CONSTRAINT wishlist_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT wishlist_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
+);
+CREATE TABLE public.support_ticket_messages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  ticket_id uuid NOT NULL,
+  sender_id uuid NOT NULL,
+  message text NOT NULL,
+  is_admin boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT support_ticket_messages_pkey PRIMARY KEY (id),
+  CONSTRAINT support_ticket_messages_ticket_id_fkey FOREIGN KEY (ticket_id) REFERENCES public.support_tickets(id),
+  CONSTRAINT support_ticket_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.seller_sections (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  seller_id uuid NOT NULL,
+  name text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  image_url text,
+  CONSTRAINT seller_sections_pkey PRIMARY KEY (id),
+  CONSTRAINT seller_sections_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.sellers(id)
+);
+CREATE TABLE public.seller_reviews (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  seller_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  rating integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  title text,
+  comment text NOT NULL DEFAULT ''::text,
+  images ARRAY DEFAULT ARRAY[]::text[],
+  order_id uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT seller_reviews_pkey PRIMARY KEY (id)
 );

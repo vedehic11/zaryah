@@ -1,18 +1,28 @@
-// Next.js API route for payment order creation with Razorpay + Wallet System
+// Next.js API route for payment initiation with PhonePe Standard Checkout SDK
 import { NextResponse } from 'next/server'
 import { requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import Razorpay from 'razorpay'
+import { StandardCheckoutClient, StandardCheckoutPayRequest, Env } from '@phonepe-pg/pg-sdk-node'
+import { randomUUID } from 'crypto'
 
-// Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-})
+// Singleton PhonePe client
+let phonepeClient = null
+function getPhonePeClient() {
+  if (!phonepeClient) {
+    const env = process.env.PHONEPE_ENV === 'PRODUCTION' ? Env.PRODUCTION : Env.SANDBOX
+    phonepeClient = StandardCheckoutClient.getInstance(
+      process.env.PHONEPE_CLIENT_ID,
+      process.env.PHONEPE_CLIENT_SECRET,
+      parseInt(process.env.PHONEPE_CLIENT_VERSION || '1'),
+      env
+    )
+  }
+  return phonepeClient
+}
 
 const SELLER_COMMISSION_RATE = 2.5
 
-// POST /api/payment/create-order - Create Razorpay order for checkout
+// POST /api/payment/create-order - Initiate PhonePe payment and get redirect URL
 export async function POST(request) {
   try {
     const session = await requireAuth(request)
@@ -69,21 +79,21 @@ export async function POST(request) {
       }
     }
 
-    // Check if Razorpay is configured
-    if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      console.error('Razorpay credentials not configured')
-      console.error('NEXT_PUBLIC_RAZORPAY_KEY_ID:', process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ? 'Set' : 'Missing')
-      console.error('RAZORPAY_KEY_SECRET:', process.env.RAZORPAY_KEY_SECRET ? 'Set' : 'Missing')
+    // Check if PhonePe is configured
+    if (!process.env.PHONEPE_CLIENT_ID || !process.env.PHONEPE_CLIENT_SECRET) {
+      console.error('PhonePe credentials not configured')
       return NextResponse.json({ 
         error: 'Payment system not configured',
         message: 'Please contact support'
       }, { status: 500 })
     }
 
-    console.log('Creating Razorpay order with amount (paise):', amount, 'for order:', orderId)
+    // Generate unique merchant order ID
+    const merchantOrderId = `ORD_${Date.now()}_${user.id.substring(0, 8)}`
 
-    // Amount is in paise from frontend (total * 100)
-    // Keep order creation as source of truth for commission/seller amounts
+    console.log('Creating PhonePe payment with amount (paise):', amount, 'for order:', orderId)
+
+    // Calculate commission/seller amounts
     const orderAmountInRupees = parseFloat(amount) / 100
     const commissionAmount = orderFinancials
       ? orderFinancials.commissionAmount
@@ -92,36 +102,39 @@ export async function POST(request) {
       ? orderFinancials.sellerAmount
       : parseFloat((orderAmountInRupees - commissionAmount).toFixed(2))
 
-    // Create Razorpay order (amount already in paise)
-    // Receipt must be max 40 chars - use short format
-    const receipt = `ord_${Date.now()}_${user.id.substring(0, 8)}`
-    const options = {
-      amount: Math.round(amount), // Already in paise, just ensure it's integer
-      currency,
-      receipt: receipt,
-      notes: {
-        user_id: user.id,
-        user_email: user.email,
-        order_id: orderId,
-        commission_amount: commissionAmount,
-        seller_amount: sellerAmount,
-        ...notes
-      }
+    // Determine redirect URL
+    const origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://zaryah.in'
+    const redirectUrl = `${origin}/payment/callback?merchantOrderId=${merchantOrderId}`
+
+    // Build payment request using SDK
+    const client = getPhonePeClient()
+    const payRequest = StandardCheckoutPayRequest.builder()
+      .merchantOrderId(merchantOrderId)
+      .amount(Math.round(amount)) // Already in paise
+      .redirectUrl(redirectUrl)
+      .build()
+
+    console.log('PhonePe payment request prepared, merchantOrderId:', merchantOrderId)
+
+    const response = await client.pay(payRequest)
+    const checkoutPageUrl = response.redirectUrl
+
+    if (!checkoutPageUrl) {
+      console.error('No redirect URL in PhonePe response:', response)
+      return NextResponse.json({
+        error: 'Payment initiation failed',
+        message: 'No payment page URL received'
+      }, { status: 500 })
     }
 
-    console.log('Razorpay order options:', JSON.stringify(options, null, 2))
-    const razorpayOrder = await razorpay.orders.create(options)
-    console.log('Razorpay response:', JSON.stringify(razorpayOrder, null, 2))
-
-    console.log('Razorpay order created successfully:', razorpayOrder.id)
+    console.log('PhonePe payment initiated successfully:', merchantOrderId)
 
     // Update order with payment details
     if (orderId) {
       await supabase
         .from('orders')
         .update({
-          payment_id: razorpayOrder.id,
-          razorpay_order_id: razorpayOrder.id,
+          payment_id: merchantOrderId,
           payment_status: 'pending'
         })
         .eq('id', orderId)
@@ -129,142 +142,26 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      order_id: razorpayOrder.id,
-      amount: razorpayOrder.amount,
-      currency: razorpayOrder.currency,
-      key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-      receipt: razorpayOrder.receipt,
+      merchantTransactionId: merchantOrderId,
+      redirectUrl: checkoutPageUrl,
+      amount: Math.round(amount),
+      currency: currency,
       commission_amount: commissionAmount,
       seller_amount: sellerAmount
     })
 
   } catch (error) {
-    console.error('=== Payment Order Creation Error ===')
+    console.error('=== Payment Initiation Error ===')
     console.error('Error type:', error.constructor.name)
     console.error('Error message:', error.message)
-    console.error('Full error:', error)
     
     if (error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Handle Razorpay specific errors
-    if (error.error) {
-      console.error('Razorpay error description:', error.error.description)
-      return NextResponse.json({ 
-        error: 'Payment order creation failed',
-        message: error.error.description || 'Please try again'
-      }, { status: 400 })
     }
 
     return NextResponse.json({ 
       error: 'Internal server error',
-      message: error.message || 'Unable to create payment order'
-    }, { status: 500 })
-  }
-}
-
-// DEPRECATED: PATCH method moved to /api/payment/verify
-// This PATCH handler should not be used - kept for backwards compatibility only
-// Use POST /api/payment/verify instead
-export async function PATCH(request) {
-  try {
-    console.warn('⚠️ DEPRECATED: Use POST /api/payment/verify instead of PATCH /api/payment/create-order')
-    
-    const session = await requireAuth(request)
-    const user = await getUserBySupabaseAuthId(session.user.id)
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    const body = await request.json()
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id } = body
-
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return NextResponse.json({ error: 'Missing payment verification data' }, { status: 400 })
-    }
-
-    // Verify signature
-    const crypto = require('crypto')
-    const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest('hex')
-
-    const isValid = expectedSignature === razorpay_signature
-
-    if (!isValid) {
-      return NextResponse.json({ 
-        success: false,
-        error: 'Invalid payment signature' 
-      }, { status: 400 })
-    }
-
-    // Payment verified! Now process wallet credits
-    if (order_id) {
-      // Update order payment status
-      await supabase
-        .from('orders')
-        .update({
-          payment_status: 'paid',
-          razorpay_payment_id: razorpay_payment_id
-        })
-        .eq('id', order_id)
-
-      // Get order details
-      const { data: order } = await supabase
-        .from('orders')
-        .select('seller_id, seller_amount, commission_amount, total_amount')
-        .eq('id', order_id)
-        .single()
-
-      if (order && order.seller_id) {
-        const fallbackCommissionAmount = parseFloat((order.total_amount * (2.5 / 100)).toFixed(2))
-        const fallbackSellerAmount = parseFloat((order.total_amount - fallbackCommissionAmount).toFixed(2))
-
-        // Credit seller wallet (PENDING balance until delivery)
-        await supabase.rpc('credit_seller_wallet_pending', {
-          p_seller_id: order.seller_id,
-          p_order_id: order_id,
-          p_amount: order.seller_amount || fallbackSellerAmount,
-          p_description: `Payment received for order - pending delivery confirmation`
-        })
-
-        // Record admin commission
-        await supabase
-          .from('admin_earnings')
-          .insert({
-            order_id: order_id,
-            seller_id: order.seller_id,
-            order_amount: order.total_amount,
-            commission_rate: SELLER_COMMISSION_RATE,
-            commission_amount: order.commission_amount || fallbackCommissionAmount,
-            seller_amount: order.seller_amount || fallbackSellerAmount,
-            status: 'earned'
-          })
-
-        console.log(`✅ Wallet credited (pending) for seller ${order.seller_id}: ₹${order.seller_amount}`)
-        console.log(`💰 Admin commission: ₹${order.commission_amount}`)
-      }
-    }
-
-    return NextResponse.json({ 
-      success: true,
-      message: 'Payment verified successfully',
-      payment_id: razorpay_payment_id
-    })
-
-  } catch (error) {
-    console.error('Error verifying payment:', error)
-    
-    if (error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    return NextResponse.json({ 
-      error: 'Payment verification failed',
-      details: error.message
+      message: error.message || 'Unable to initiate payment'
     }, { status: 500 })
   }
 }

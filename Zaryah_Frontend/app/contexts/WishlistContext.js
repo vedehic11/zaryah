@@ -106,7 +106,7 @@ export const WishlistProvider = ({ children }) => {
         toast.success('Added to wishlist')
         return true
       } else if (data.exists) {
-        toast.info('Already in wishlist')
+        toast('Already in wishlist', { icon: 'ℹ️' })
         return true
       } else {
         console.error('Error adding to wishlist:', data)

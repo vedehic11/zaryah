@@ -1,0 +1,5416 @@
+[
+  {
+    "id": "2d578145-46bf-48ab-943a-3b5c1c11da07",
+    "name": "Grifter Spider mask",
+    "description": "3D-Printed high quality Grifter Spider Mask",
+    "price": 1799,
+    "images": [
+      "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=800&auto=format&fit=crop"
+    ],
+    "video_url": null,
+    "category": "For Him",
+    "section": "Trending",
+    "weight": 500,
+    "stock": 1,
+    "customisable": false,
+    "custom_questions": [
+      {
+        "question": "custom size requirement",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f812ae81-e5ef-4a44-aaf6-5a84560fe8b3",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-03T10:59:54.816873+00:00",
+    "updated_at": "2026-06-10T19:05:20.818355+00:00",
+    "exchange_available": false,
+    "mrp": 5999,
+    "material": "Hard Plastic (similar material used for making bike helmets) stretchable spandex fabric with premium elastic bands for wearing",
+    "care_instructions": null,
+    "size_options": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "return_available": false,
+    "return_days": 2,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product packaging will contain only the spider man mask",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "S",
+        "price": 1799
+      },
+      {
+        "label": "M",
+        "price": 1799
+      },
+      {
+        "label": "L",
+        "price": 1799
+      },
+      {
+        "label": "XL",
+        "price": 1799
+      }
+    ],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Him",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Trending",
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "231ab515-b5c9-4354-be9a-ce35a6a6902b",
+    "name": "Couple photo Resin keychain",
+    "description": "A couple photo and elements like pearls ,golden crystals and golden dust.",
+    "price": 350,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_231ab515_1783152755666_694.webp"
+    ],
+    "video_url": null,
+    "category": "Resin Art",
+    "section": "DIY Couple Gifts",
+    "weight": 80,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Photos should be sent by document",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T13:17:35.73734+00:00",
+    "updated_at": "2026-06-06T05:46:18.549155+00:00",
+    "exchange_available": false,
+    "mrp": 350,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Resin Art",
+      "For Her",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "DIY Couple Gifts"
+    ],
+    "archived": false
+  },
+  {
+    "id": "d3c8a3ad-70bd-41e2-8ff9-1230e78ac809",
+    "name": "Mushroom Opticwash Unisex T-shirt",
+    "description": "A fusion of surreal art and futuristic streetwear, the Opticwash Mushroom Tee features a dreamy psychedelic graphic with a mystical eye illustration and maze-inspired detailing. Designed for creators, explorers, and lovers of experimental fashion.",
+    "price": 1599,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_d3c8a3ad_1783152784663_304.webp"
+    ],
+    "video_url": null,
+    "category": "Other",
+    "section": "Uni-sex Oversized T-shirt",
+    "weight": 150,
+    "stock": 100,
+    "customisable": false,
+    "custom_questions": [],
+    "features": [
+      "Premium washed cotton fabric",
+      "High-quality durable print"
+    ],
+    "delivery_time_min": 2,
+    "delivery_time_max": 4,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "37c07e6f-d508-45e1-bc11-bc9495f032a9",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-20T08:24:49.634642+00:00",
+    "updated_at": "2026-05-23T06:42:25.547641+00:00",
+    "exchange_available": false,
+    "mrp": 1999,
+    "material": null,
+    "care_instructions": null,
+    "size_options": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "2XL"
+    ],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "S",
+        "price": 1599
+      },
+      {
+        "label": "M",
+        "price": 1599
+      },
+      {
+        "label": "L",
+        "price": 1599
+      },
+      {
+        "label": "XL",
+        "price": 1599
+      },
+      {
+        "label": "2XL",
+        "price": 1598.99
+      }
+    ],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Other"
+    ],
+    "sections": [
+      "Uni-sex Oversized T-shirt"
+    ],
+    "archived": false
+  },
+  {
+    "id": "fbc1f85a-0b73-4434-8122-081a37dab2c3",
+    "name": "Apothecary Luxury Candle",
+    "description": "A calming fragrance inspired by old apothecaries, botanical remedies, and moments of quiet reflection. Apothecary opens with the bright freshness of lemongrass, unfolds into soothing lavender, and settles into a warm sandalwood base. Hand-poured in small batches using 100% natural, eco-friendly soy wax. Fragrance notes: Top: Lemon Grass, Heart: Lavender, Base: Sandalwood. Materials: 100% Eco-Friendly Natural Soy Wax Blend • Premium Fragrance oils",
+    "price": 499,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_fbc1f85a_1783152789070_212.webp"
+    ],
+    "video_url": null,
+    "category": "Candles",
+    "section": "Launch Candles Collection",
+    "weight": 80,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": null,
+    "features": [
+      "Lead-free cotton wick, eco-friendly soy wax, Premium fragrance oils"
+    ],
+    "delivery_time_min": 2,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "0e276292-a59e-4d85-9340-635a7a96540e",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-29T15:37:38.992923+00:00",
+    "updated_at": "2026-06-07T14:15:10.516606+00:00",
+    "exchange_available": false,
+    "mrp": 555,
+    "material": "Natural Soy wax; Cotton and Lead free wick",
+    "care_instructions": "Trim wick to 5 mm before each burn.\r\nAllow wax to melt evenly across the surface.\r\nDo not burn for more than 4 hours at a time.\r\nNever leave a burning candle unattended.",
+    "size_options": [
+      "80g"
+    ],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": "Due to the handcrafted nature of our candles, slight variations in color, texture, and appearance may occur. These variations do not affect product performance or quality.",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "80g",
+        "price": 499
+      }
+    ],
+    "color_options": [
+      {
+        "name": "Brown",
+        "image": ""
+      }
+    ],
+    "size_charts": [],
+    "categories": [
+      "Candles"
+    ],
+    "sections": [
+      "Launch Candles Collection"
+    ],
+    "archived": true
+  },
+  {
+    "id": "2d090d65-ee32-48c4-aaa2-e464bca96fef",
+    "name": "Courage the Cowardly Dog",
+    "description": "Desk decor model",
+    "price": 399,
+    "images": [
+      "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800&auto=format&fit=crop"
+    ],
+    "video_url": null,
+    "category": "Home Decor",
+    "section": "Trending",
+    "weight": 100,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f812ae81-e5ef-4a44-aaf6-5a84560fe8b3",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-21T09:42:00.826428+00:00",
+    "updated_at": "2026-06-21T09:42:00.826428+00:00",
+    "exchange_available": false,
+    "mrp": 999,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": "The actual product packaging will only contain the main figure",
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Home Decor"
+    ],
+    "sections": [
+      "Trending"
+    ],
+    "archived": false
+  },
+  {
+    "id": "5fee8a25-5840-4d3b-ad60-a987803d8dfa",
+    "name": "Crochet lily bouquet (PINK)",
+    "description": "Tulip Bouquet pink : 2 pink and 1 leaf stick. tulip backed in pink and white sheet",
+    "price": 999,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_5fee8a25_1783152765026_458.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Featured",
+    "weight": 550,
+    "stock": 3,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 3,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T08:58:01.61064+00:00",
+    "updated_at": "2026-05-19T08:58:01.61064+00:00",
+    "exchange_available": false,
+    "mrp": 1199,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "Home Decor",
+      "Personalized Gifts",
+      "Gift Hampers"
+    ],
+    "sections": [
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "412eed3d-ed8a-4a47-b5b6-00f7cb155f92",
+    "name": "I 💕 U - Bouquet",
+    "description": "A heartfelt handmade bouquet created to celebrate love, warmth, and special moments with your loved ones. A timeless gift that stays beautiful forever",
+    "price": 1700,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_412eed3d_1783152760511_223.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Featured",
+    "weight": 500,
+    "stock": 5,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 5,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T09:30:36.80085+00:00",
+    "updated_at": "2026-05-19T09:30:36.80085+00:00",
+    "exchange_available": false,
+    "mrp": 1700,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet"
+    ],
+    "sections": [
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "4de63dc2-c2ed-47b0-864a-1d2199484a21",
+    "name": "Flower basket",
+    "description": "Add a cozy and artistic touch to your home with these decorative flower basket",
+    "price": 2400,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_4de63dc2_1783152763380_652.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "New Arrivals",
+    "weight": 900,
+    "stock": 2,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 6,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T09:28:13.833545+00:00",
+    "updated_at": "2026-05-19T09:28:13.833545+00:00",
+    "exchange_available": false,
+    "mrp": 2499,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "Gift Hampers",
+      "Personalized Gifts",
+      "Home Decor"
+    ],
+    "sections": [
+      "New Arrivals"
+    ],
+    "archived": false
+  },
+  {
+    "id": "4e85da57-2847-43c0-9113-66b33d0dead4",
+    "name": "Resin Rose Jhumka",
+    "description": "Preserved rose petals in Jhumkas",
+    "price": 350,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_4e85da57_1783152763712_378.webp"
+    ],
+    "video_url": null,
+    "category": "Resin Art",
+    "section": "Best Sellers",
+    "weight": 40,
+    "stock": 1,
+    "customisable": false,
+    "custom_questions": null,
+    "features": [
+      "Rosepetals",
+      "Purple Gypsy"
+    ],
+    "delivery_time_min": 4,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T11:35:41.217902+00:00",
+    "updated_at": "2026-05-26T11:35:41.217902+00:00",
+    "exchange_available": false,
+    "mrp": 350,
+    "material": "Gypsy and silver dust",
+    "care_instructions": "Handle with care",
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": "Do handle it with care",
+    "two_way_delivery": true,
+    "size_price_options": [],
+    "color_options": [
+      {
+        "name": "Purple gypsy",
+        "image": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-color-options/1779795263846-ugsrhg.jpeg"
+      }
+    ],
+    "size_charts": [],
+    "categories": [
+      "Resin Art",
+      "For Her"
+    ],
+    "sections": [
+      "Best Sellers",
+      "Trending",
+      "New Arrivals"
+    ],
+    "archived": false
+  },
+  {
+    "id": "54de58db-dec2-42a8-be5e-33c3bc52846d",
+    "name": "Carnation flower candle",
+    "description": "Mini soy wax candle, Sculptural Candle, Aesthetic candle, Home decor, Gift for her, Baby shower",
+    "price": 199,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_54de58db_1783152764029_539.webp"
+    ],
+    "video_url": null,
+    "category": "Candles",
+    "section": "handmade",
+    "weight": 249,
+    "stock": 64,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 7,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f179477b-2cf4-44f5-aaaf-864a1c6b4327",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-01T08:44:40.806297+00:00",
+    "updated_at": "2026-06-04T13:51:14.610599+00:00",
+    "exchange_available": true,
+    "mrp": 398.99,
+    "material": "handmade",
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": true,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Candles"
+    ],
+    "sections": [
+      "handmade"
+    ],
+    "archived": true
+  },
+  {
+    "id": "58005915-f24d-40c1-8472-a3a7ca3fac06",
+    "name": "Resin Rose Ring",
+    "description": "Pink crushed roses preserved in a ring with a golden dust.",
+    "price": 160,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_58005915_1783152764361_519.webp"
+    ],
+    "video_url": null,
+    "category": "Resin Art",
+    "section": "Jewellery",
+    "weight": 20,
+    "stock": 1,
+    "customisable": false,
+    "custom_questions": [],
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T12:57:11.611071+00:00",
+    "updated_at": "2026-05-26T13:37:07.072188+00:00",
+    "exchange_available": false,
+    "mrp": 160,
+    "material": null,
+    "care_instructions": "Do not spray a perfume also don’t use it on water.",
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": true,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Resin Art",
+      "Jewelry",
+      "For Her"
+    ],
+    "sections": [
+      "Jewellery"
+    ],
+    "archived": false
+  },
+  {
+    "id": "3c90e7ab-dc5a-4869-94bd-a0fff83c0ecb",
+    "name": "Resin Nameplate",
+    "description": "A customised Resin Nameplate with golden crystals and golden dust with. A crystal white base.",
+    "price": 3600,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_3c90e7ab_1783152759686_915.webp"
+    ],
+    "video_url": null,
+    "category": "Resin Art",
+    "section": "Best Sellers",
+    "weight": 450,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [],
+    "features": null,
+    "delivery_time_min": 5,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T12:33:54.540747+00:00",
+    "updated_at": "2026-05-26T12:35:25.762306+00:00",
+    "exchange_available": false,
+    "mrp": 3600,
+    "material": "Epoxy Resin, golden crystals, a golden dust, Ganpati Bappa",
+    "care_instructions": "Place carefully while hanging it on the wall.",
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Resin Art",
+      "Home Decor",
+      "Gift Hampers"
+    ],
+    "sections": [
+      "Best Sellers",
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "ca22108b-c7cc-4eaa-862b-73cb2d963de1",
+    "name": "Handcrafted pink bloom hair accessories",
+    "description": "Cherry blossom is a handcrafted resin floral hair pin designed for modern brides who love soft romance and effortless elegance. Featuring cardium-pink resin petals with a crystal beads centre and a gold-tone pin base, this hair accessory is delicately handcrafted to enhance bridal buns and wedding hairstyles without adding weight.\nCreated especially for brides, bridesmaids, and intimate wedding ceremonies, this handmade resin floral hair pin for weddings is feather-light, waterproof.",
+    "price": 550,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_ca22108b_1783152779977_170.webp",
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_ca22108b_1783152780352_812.webp",
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_ca22108b_1783152782957_954.webp",
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_ca22108b_1783152783345_545.webp"
+    ],
+    "video_url": null,
+    "category": "Jewelry",
+    "section": "Hair Accessories",
+    "weight": 5,
+    "stock": 10,
+    "customisable": true,
+    "custom_questions": null,
+    "features": [
+      "*Waterproof & humidity-resistant (safe for Indian weather).*extremely light weight "
+    ],
+    "delivery_time_min": 8,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "5752294a-cf18-46cd-86eb-465ffcbe7bd0",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-10T19:42:32.181106+00:00",
+    "updated_at": "2026-05-12T03:24:33.577527+00:00",
+    "exchange_available": false,
+    "mrp": 649,
+    "material": "Resin, copper .resin pigment",
+    "care_instructions": "Stay away from perfume and keep at zip lock pastic bag",
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Jewelry"
+    ],
+    "sections": [
+      "Hair Accessories"
+    ],
+    "archived": false
+  },
+  {
+    "id": "690dae19-e16b-4d34-bbbf-3fe0de8d479c",
+    "name": "Cigarette case",
+    "description": "A sleek and durable 3D printed cigarette case designed for convenience and protection\r\n\r\nHolds up to 8 cigarettes securely\r\nDedicated lighter slot for easy, all-in-one carrying\r\n\r\nProtects cigarettes from crushing, bending, and damage\r\n\r\nWater-resistant design helps keep contents safe from moisture\r\n\r\nCompact and travel-friendly for everyday use\r\n\r\nMinimal,modern design with a clean finish",
+    "price": 550,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_690dae19_1783152767044_969.webp"
+    ],
+    "video_url": null,
+    "category": "Other",
+    "section": "Best Sellers",
+    "weight": 100,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": [],
+    "features": [
+      "3d printed cigarette case",
+      "Holds 8 cigarettes and 1 jetty lighter"
+    ],
+    "delivery_time_min": 6,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "b1ec8c9d-796a-4c90-a749-dfb9e27d194d",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-27T14:56:05.334164+00:00",
+    "updated_at": "2026-05-27T15:31:33.471216+00:00",
+    "exchange_available": false,
+    "mrp": 1200,
+    "material": "Hard plastic",
+    "care_instructions": null,
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product will only contain the cigarette case",
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Other"
+    ],
+    "sections": [
+      "Best Sellers",
+      "New Arrivals"
+    ],
+    "archived": false
+  },
+  {
+    "id": "44e6a95f-203f-4940-b189-046cfa06652f",
+    "name": "Sunflower and lily bouquet",
+    "description": "Elegant, sustainable, and beautifully handcrafted",
+    "price": 1350,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_44e6a95f_1783152761687_28.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Best Sellers",
+    "weight": 600,
+    "stock": 3,
+    "customisable": true,
+    "custom_questions": [],
+    "features": null,
+    "delivery_time_min": 5,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T09:53:28.630921+00:00",
+    "updated_at": "2026-06-04T04:52:23.615399+00:00",
+    "exchange_available": false,
+    "mrp": 1500,
+    "material": null,
+    "care_instructions": null,
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet"
+    ],
+    "sections": [
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "6182a89d-087b-41ad-9e0b-91154982fdcb",
+    "name": "Spider-man mask",
+    "description": "3D-Printed high quality Spider-Man Brand New Day Mask",
+    "price": 3999,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_6182a89d_1783152765896_774.webp"
+    ],
+    "video_url": null,
+    "category": "For Him",
+    "section": "Trending",
+    "weight": 900,
+    "stock": 2,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "custom size requirement",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 6,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f812ae81-e5ef-4a44-aaf6-5a84560fe8b3",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-18T05:16:34.730589+00:00",
+    "updated_at": "2026-05-18T06:58:01.052076+00:00",
+    "exchange_available": true,
+    "mrp": 5499,
+    "material": "Hard Plastic (similar material used for making bike helmets)",
+    "care_instructions": null,
+    "size_options": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "return_available": false,
+    "return_days": 2,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product packaging will contain only the spider man mask",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "S",
+        "price": 3999
+      },
+      {
+        "label": "M",
+        "price": 3999
+      },
+      {
+        "label": "L",
+        "price": 3999
+      },
+      {
+        "label": "XL",
+        "price": 3999
+      }
+    ],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Him",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Trending",
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "68079754-c075-4cac-ab5e-0f04f031e2bc",
+    "name": "Resin Engagement platter",
+    "description": "White crystal colour engagement platter with two pearls, including a couple name and a date of a couple with a stainless steel golden colour wooden stand.",
+    "price": 3500,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_68079754_1783152766721_786.webp"
+    ],
+    "video_url": null,
+    "category": "Resin Art",
+    "section": "Best Sellers",
+    "weight": 300,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Anything you would like to add in this",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 5,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T11:46:25.603798+00:00",
+    "updated_at": "2026-06-06T05:47:19.509437+00:00",
+    "exchange_available": false,
+    "mrp": 3500,
+    "material": "Epoxy Resin, Pearls, Shells, Gypsy,Golden Stickers",
+    "care_instructions": "Do handle with care as it’s glass appearance .",
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [
+      {
+        "name": "Pastel pink and crystal White",
+        "image": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-color-options/1779795822527-c5b6id.jpeg"
+      }
+    ],
+    "size_charts": [],
+    "categories": [
+      "Resin Art",
+      "For Him",
+      "For Her"
+    ],
+    "sections": [
+      "Best Sellers",
+      "New Arrivals"
+    ],
+    "archived": false
+  },
+  {
+    "id": "75133cbe-7749-4eb4-9253-9122d84be5fa",
+    "name": "Crochet lily bouquet (Orange)",
+    "description": "What It Includes\r\n\r\nOne White Lily\r\nTwo Small Orange Lilies\r\nOne Leaf Stick\r\nPacked in Jute and Light Orange Paper",
+    "price": 899,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_75133cbe_1783152769720_306.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Best Sellers",
+    "weight": 300,
+    "stock": 5,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T09:57:26.341396+00:00",
+    "updated_at": "2026-05-19T09:57:26.341396+00:00",
+    "exchange_available": false,
+    "mrp": 1100,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet"
+    ],
+    "sections": [
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "816c43d0-ab9c-4565-adef-8f91f054361f",
+    "name": "Evil Eye Keychain",
+    "description": "Handmade Crochet Round Evil Eye Keychain",
+    "price": 80,
+    "images": [
+      "https://images.unsplash.com/photo-1615233500042-19e917d5e490?w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1606760227091-3dd850d97f1d?w=800&auto=format&fit=crop"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Forever Flowers",
+    "weight": 50,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 1,
+    "delivery_time_max": 3,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "e84d8c53-7239-4420-bc50-487a4dcf6e0c",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-07T07:12:45.844413+00:00",
+    "updated_at": "2026-06-07T07:17:33.061422+00:00",
+    "exchange_available": true,
+    "mrp": 100,
+    "material": "Cotton Wool, Steel Ring",
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": true,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet"
+    ],
+    "sections": [
+      "Forever Flowers"
+    ],
+    "archived": true
+  },
+  {
+    "id": "718336f6-a4be-43c8-b617-a1e017d57a90",
+    "name": "The Blossom Elixir Ring",
+    "description": "The Blossom Elixir Ring\r\n\r\nDescription:\r\nThis hand-crafted ring features a delicate, blooming flower sculpted with wirework. The petals are painted in a soothing white and soft mint green hue, tipped with vibrant splashes of bright pink. From its core, golden wire stamens rise to hold bright yellow, bead-like tips, capturing the essence of fresh, early spring growth against a contrasting dark base.\r\nPerfect for :everyday wear, bridal, luxury collectors, carnival  ,haldi ceremony.",
+    "price": 549,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_718336f6_1783152768458_360.webp"
+    ],
+    "video_url": null,
+    "category": "Jewelry",
+    "section": "Spiral ring",
+    "weight": 5,
+    "stock": 5,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Which colour do you want for this ring?",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": [
+      "Ultra Light weight."
+    ],
+    "delivery_time_min": 7,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "5752294a-cf18-46cd-86eb-465ffcbe7bd0",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-22T04:12:58.257252+00:00",
+    "updated_at": "2026-05-22T04:12:58.257252+00:00",
+    "exchange_available": false,
+    "mrp": 799,
+    "material": "Resin, copper,resin pigment",
+    "care_instructions": "Stay away from perfume.",
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Jewelry",
+      "Resin Art",
+      "Personalized Gifts",
+      "For Her"
+    ],
+    "sections": [
+      "Spiral ring"
+    ],
+    "archived": false
+  },
+  {
+    "id": "7d00fcbb-a3c6-45bb-87fe-9f9b6e3d712f",
+    "name": "DIY Couple frame",
+    "description": "A5 size frame with 7,8 couple photos with cutouts.",
+    "price": 350,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_7d00fcbb_1783152770380_221.webp"
+    ],
+    "video_url": null,
+    "category": "Paper Crafts",
+    "section": "Trending",
+    "weight": 100,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Photos as per your choice",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 3,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T11:55:14.941873+00:00",
+    "updated_at": "2026-06-06T05:47:31.858211+00:00",
+    "exchange_available": false,
+    "mrp": 350,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": "Handle with care",
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Paper Crafts",
+      "For Him",
+      "For Her"
+    ],
+    "sections": [
+      "Trending",
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "7ede0996-55af-4a1e-b345-38e331923d19",
+    "name": "Forever Flower Lily Bouquet",
+    "description": "Forever Flower Lily Bouquet Includes:\r\nCrochet Lilies\r\nCrochet Open Tulips\r\nLeaf Stick\r\nPink Lavender Flowers",
+    "price": 1200,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_7ede0996_1783152770683_246.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Forever Flowers",
+    "weight": 500,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 3,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "e84d8c53-7239-4420-bc50-487a4dcf6e0c",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-07T07:30:07.213115+00:00",
+    "updated_at": "2026-06-07T07:30:07.213115+00:00",
+    "exchange_available": true,
+    "mrp": 1500,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": true,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "For Him",
+      "For Her",
+      "Other"
+    ],
+    "sections": [
+      "Forever Flowers",
+      "Gift Hampers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "814f1d0c-f82a-4f29-9180-ca0a3687209f",
+    "name": "Pink cutesy bouquet",
+    "description": "flower bouquet packed in beige paper.",
+    "price": 1499.01,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_814f1d0c_1783152771186_280.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Featured",
+    "weight": 550,
+    "stock": 2,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T09:42:17.212197+00:00",
+    "updated_at": "2026-05-19T09:42:17.212197+00:00",
+    "exchange_available": false,
+    "mrp": 1600,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet"
+    ],
+    "sections": [
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "6c26b0c4-01e5-4ca3-9905-114ed888efb5",
+    "name": "Cigarette case",
+    "description": "A sleek and durable 3D printed cigarette case designed for convenience and protection\r\n\r\nHolds up to 8 cigarettes securely\r\nDedicated lighter slot for easy, all-in-one carrying\r\n\r\nProtects cigarettes from crushing, bending, and damage\r\n\r\nWater-resistant design helps keep contents safe from moisture\r\n\r\nCompact and travel-friendly for everyday use\r\n\r\nMinimal,modern design with a clean finish",
+    "price": 550,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_6c26b0c4_1783152767987_331.webp"
+    ],
+    "video_url": null,
+    "category": "Other",
+    "section": "Best Sellers",
+    "weight": 100,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": [],
+    "features": [
+      "3d printed cigarette case",
+      "Holds 8 cigarettes and 1 jetty lighter"
+    ],
+    "delivery_time_min": 6,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "b1ec8c9d-796a-4c90-a749-dfb9e27d194d",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-27T14:55:17.71276+00:00",
+    "updated_at": "2026-05-27T15:31:50.503592+00:00",
+    "exchange_available": false,
+    "mrp": 1200,
+    "material": "Hard plastic",
+    "care_instructions": null,
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product will only contain the cigarette case",
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Other"
+    ],
+    "sections": [
+      "Best Sellers",
+      "New Arrivals"
+    ],
+    "archived": false
+  },
+  {
+    "id": "0dcabec8-a6f2-4d56-9a41-94e00e7f3b9d",
+    "name": "flower candle Box",
+    "description": "Premium handcrafted candlesmade with organic ingredients. Perfect for gifting on special occasions. Each piece is carefully crafted by our expert chocolatiers using traditional methods.",
+    "price": 348.99,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_0dcabec8_1783152748655_790.webp"
+    ],
+    "video_url": null,
+    "category": "Candles",
+    "section": "handmade",
+    "weight": 500,
+    "stock": 25,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Any dietary restrictions?",
+        "required": false
+      },
+      {
+        "question": "Message for the card?",
+        "required": true
+      }
+    ],
+    "features": [
+      "Sugar-free option available",
+      "Organic cocoa beans",
+      "Handmade with love",
+      "Beautiful gift packaging included"
+    ],
+    "delivery_time_min": 2,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f179477b-2cf4-44f5-aaaf-864a1c6b4327",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-01T08:51:29.203802+00:00",
+    "updated_at": "2026-06-04T13:51:03.559942+00:00",
+    "exchange_available": true,
+    "mrp": 499,
+    "material": "Premium milk candle with organic ingredients",
+    "care_instructions": "Store in a cool, dry place away from sunlight. Best consumed within 30 days of opening.",
+    "size_options": [
+      "Pack"
+    ],
+    "return_available": false,
+    "return_days": 4,
+    "cod_available": true,
+    "legal_disclaimer": "Actual product packaging may contain more information. Please read labels carefully before consuming.",
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Candles"
+    ],
+    "sections": [
+      "handmade"
+    ],
+    "archived": true
+  },
+  {
+    "id": "8babb94b-eada-44dc-b378-d45382d9e20e",
+    "name": "Sunflower Bliss Crochet Bouquet",
+    "description": "Bright and cheerful, this handmade crochet bouquet features a beautiful combination of sunflower, daisies, roses, and delicate floral accents arranged in elegant wrapping. Perfect for gifting or décor, this bouquet brings warmth, happiness, and everlasting beauty to every occasion. Crafted with soft yarn and intricate detailing, it is a timeless keepsake made with love.",
+    "price": 1150,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_8babb94b_1783152772240_368.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Featured",
+    "weight": 450,
+    "stock": 3,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 5,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T10:12:20.545098+00:00",
+    "updated_at": "2026-05-19T10:12:20.545098+00:00",
+    "exchange_available": false,
+    "mrp": 1300,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet"
+    ],
+    "sections": [
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "8db75b8d-bf3e-4964-8f4b-849fd22b0251",
+    "name": "Resin Baby detailing frame",
+    "description": "Preserving new born baby’s hairs, using mothers prega news kit, Baby’s umbilical cord, including the details of its Weight,birth time, Blood group, Date of Birth.",
+    "price": 2500,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_8db75b8d_1783152772597_904.webp"
+    ],
+    "video_url": null,
+    "category": "Resin Art",
+    "section": "New Arrivals",
+    "weight": 400,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": null,
+    "features": [
+      "EpoxyResin, Dried flowers ,pearls,silverdust"
+    ],
+    "delivery_time_min": 5,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T12:11:11.075792+00:00",
+    "updated_at": "2026-05-26T12:11:11.075792+00:00",
+    "exchange_available": false,
+    "mrp": 2500,
+    "material": null,
+    "care_instructions": "Place it carefully as it’s glass appearance it may break if it will fall.",
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Resin Art",
+      "For Kids"
+    ],
+    "sections": [
+      "New Arrivals"
+    ],
+    "archived": false
+  },
+  {
+    "id": "926d77ce-afaf-4128-b696-009241b952f5",
+    "name": "Black Venom Spider-man mask",
+    "description": "3D-Printed high quality Black Venom Spider-Man Mask",
+    "price": 3999,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_926d77ce_1783152773393_194.webp"
+    ],
+    "video_url": null,
+    "category": "For Him",
+    "section": "Trending",
+    "weight": 900,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "custom size requirement",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 6,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f812ae81-e5ef-4a44-aaf6-5a84560fe8b3",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-18T05:19:00.371054+00:00",
+    "updated_at": "2026-05-19T06:20:34.862616+00:00",
+    "exchange_available": true,
+    "mrp": 5499,
+    "material": "Hard Plastic (similar material used for making bike helmets)",
+    "care_instructions": null,
+    "size_options": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "return_available": false,
+    "return_days": 2,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product packaging will contain only the spider man mask",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "S",
+        "price": 3999
+      },
+      {
+        "label": "M",
+        "price": 3999
+      },
+      {
+        "label": "L",
+        "price": 3999
+      },
+      {
+        "label": "XL",
+        "price": 3999
+      }
+    ],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Him",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Trending",
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "8819f739-6e33-4498-8790-4ecb98c9cd9f",
+    "name": "Crochet Sunflower Keychain",
+    "description": "Sunflower Keychain",
+    "price": 80,
+    "images": [
+      "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=800&auto=format&fit=crop"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Crochet Keychains",
+    "weight": 50,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 1,
+    "delivery_time_max": 3,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "e84d8c53-7239-4420-bc50-487a4dcf6e0c",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-07T07:17:08.214228+00:00",
+    "updated_at": "2026-06-07T07:17:08.214228+00:00",
+    "exchange_available": true,
+    "mrp": 100,
+    "material": "Cotton Wool Yarn , Steel Ring",
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": true,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "For Him",
+      "For Her",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Crochet Keychains"
+    ],
+    "archived": false
+  },
+  {
+    "id": "ac50090b-cbb3-452c-87e0-c9cdb44dfb0b",
+    "name": "Poolverine mask",
+    "description": "3D-Printed high quality Poolverine mask",
+    "price": 3999,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_ac50090b_1783152776797_187.webp"
+    ],
+    "video_url": null,
+    "category": "For Him",
+    "section": "Trending",
+    "weight": 900,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "custom size requirement",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 6,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f812ae81-e5ef-4a44-aaf6-5a84560fe8b3",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-13T12:31:48.412882+00:00",
+    "updated_at": "2026-06-13T12:38:48.229937+00:00",
+    "exchange_available": false,
+    "mrp": 6599,
+    "material": "Hard Plastic (similar material used for making bike helmets)",
+    "care_instructions": null,
+    "size_options": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "return_available": false,
+    "return_days": 2,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product packaging will contain only the Poolverine mask",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "S",
+        "price": 3999
+      },
+      {
+        "label": "M",
+        "price": 3999
+      },
+      {
+        "label": "L",
+        "price": 3999
+      },
+      {
+        "label": "XL",
+        "price": 3999
+      }
+    ],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Him",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Trending",
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "a319b6c9-50c1-41c9-a2a7-92689c04da34",
+    "name": "Pastel Pink Engagement Platter",
+    "description": "A pastel pink and a crystal white base shade and a shells placements for the couple rings along with the dried gypsy pearls and golden dust including Couple name and qoate.",
+    "price": 3500,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_a319b6c9_1783152774940_419.webp"
+    ],
+    "video_url": null,
+    "category": "Resin Art",
+    "section": "DIY Couple Gifts",
+    "weight": 450,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Mention A couple name date and quote correctly",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 5,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T13:35:42.649838+00:00",
+    "updated_at": "2026-06-06T05:47:56.850658+00:00",
+    "exchange_available": false,
+    "mrp": 3600,
+    "material": null,
+    "care_instructions": "Handle with care away from child’s as it’s glass appearance it may break if falls.",
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Resin Art",
+      "For Her",
+      "Gift Hampers"
+    ],
+    "sections": [
+      "DIY Couple Gifts",
+      "Resin Art"
+    ],
+    "archived": false
+  },
+  {
+    "id": "a39d7f02-4477-48f1-9c62-256121293ae8",
+    "name": "Handmade Crochet Red Rose Bouquet",
+    "description": "What’s included:\r\n\r\n10 handmade crochet roses\r\n\r\n8 Ferrero Rocher Chocolate\r\n\r\nPremium gift wrapping",
+    "price": 2550,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_a39d7f02_1783152775281_619.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Trending",
+    "weight": 701,
+    "stock": 4,
+    "customisable": true,
+    "custom_questions": [],
+    "features": null,
+    "delivery_time_min": 5,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T08:52:55.734664+00:00",
+    "updated_at": "2026-05-19T09:28:49.287833+00:00",
+    "exchange_available": false,
+    "mrp": 2700,
+    "material": null,
+    "care_instructions": null,
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [
+      {
+        "name": "Roses available in different color",
+        "image": ""
+      }
+    ],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "For Her",
+      "For Him",
+      "Other"
+    ],
+    "sections": [
+      "Trending",
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "a710356d-622b-48af-b9e6-4c3a770586bf",
+    "name": "Secret Garden Tiara-Earrings",
+    "description": "These handcrafted hoop earrings feature a whimsical nature-inspired design on a gold-toned wire frame.\r\nDesign: Intricate floral motif.Colors: Bright pink, turquoise, and sunny yellow.\r\nDetails: Enameled petals, delicate green leaves, and white bead accents.\r\nStyle: Perfect for adding a cheerful, artistic pop of color to any casual or festive outfit.",
+    "price": 999,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_a710356d_1783152775650_220.webp"
+    ],
+    "video_url": null,
+    "category": "Jewelry",
+    "section": "Earrings",
+    "weight": 7,
+    "stock": 999999,
+    "customisable": true,
+    "custom_questions": null,
+    "features": [
+      "Ultra Lightweight"
+    ],
+    "delivery_time_min": 6,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "5752294a-cf18-46cd-86eb-465ffcbe7bd0",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-31T05:23:57.165012+00:00",
+    "updated_at": "2026-05-31T05:23:57.165012+00:00",
+    "exchange_available": false,
+    "mrp": 1200,
+    "material": "Resin, copper ,resin pigment",
+    "care_instructions": "Stay away from perfume.",
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Jewelry",
+      "Resin Art"
+    ],
+    "sections": [
+      "Earrings"
+    ],
+    "archived": false
+  },
+  {
+    "id": "ab4b7711-9c3b-4e98-9459-b108a231fa9c",
+    "name": "Large Sunflower bouquet",
+    "description": "Introducing our exquisite Hand-Crocheted Forever Flower Bouquet, a timeless masterpiece crafted with love and care. This stunning arrangement features four distinct blooms:\r\n\r\nA large, lifelike sunflower that will steal your heart,\r\nDelicate lily of valley bunches (2) \r\nA vibrant leaf\r\nAll meticulously crocheted to resemble nature's finest.",
+    "price": 1099,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_ab4b7711_1783152776476_592.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Featured",
+    "weight": 450,
+    "stock": 3,
+    "customisable": false,
+    "custom_questions": [],
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T08:23:07.637012+00:00",
+    "updated_at": "2026-05-19T09:29:04.134285+00:00",
+    "exchange_available": true,
+    "mrp": 1198.99,
+    "material": null,
+    "care_instructions": null,
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "For Her",
+      "For Him",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "b8b33ffb-1f73-4106-81b0-9326a1e710f0",
+    "name": "Cosmic Ganesha",
+    "description": "Experience luxury comfort with our premium Supima cotton t-shirt, crafted for everyday wear with elevated style and durability. Designed with ultra-soft fabric and high-quality artistic printing, this tee blends comfort, minimal aesthetics, and statement streetwear energy.",
+    "price": 1599,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_b8b33ffb_1783152777483_930.webp"
+    ],
+    "video_url": null,
+    "category": "Other",
+    "section": "Supima T-shirts",
+    "weight": 150,
+    "stock": 100,
+    "customisable": false,
+    "custom_questions": null,
+    "features": [
+      "Long-lasting comfort",
+      "Extra softness"
+    ],
+    "delivery_time_min": 2,
+    "delivery_time_max": 4,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "37c07e6f-d508-45e1-bc11-bc9495f032a9",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-20T09:36:12.08697+00:00",
+    "updated_at": "2026-05-20T09:36:12.08697+00:00",
+    "exchange_available": true,
+    "mrp": 1999,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": true,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Other"
+    ],
+    "sections": [
+      "Supima T-shirts"
+    ],
+    "archived": false
+  },
+  {
+    "id": "434d3c2e-d25d-489b-a6c3-bb1043d15489",
+    "name": "Sunshine Petals Crochet Arrangement",
+    "description": "Bright and cheerful, this handmade crochet sunflower basket\r\nalso includes dairy milk(2)\r\n5star(2)",
+    "price": 1699.98,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_434d3c2e_1783152760874_247.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "New Arrivals",
+    "weight": 1500,
+    "stock": 2,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 6,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T10:15:58.488614+00:00",
+    "updated_at": "2026-06-18T07:33:08.090033+00:00",
+    "exchange_available": false,
+    "mrp": 1998.99,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "Gift Hampers"
+    ],
+    "sections": [
+      "New Arrivals"
+    ],
+    "archived": true
+  },
+  {
+    "id": "bb6ed667-55ba-44c3-9386-59c9f59e3805",
+    "name": "Cigarette case",
+    "description": "A sleek and durable 3D printed cigarette case designed for convenience and protection\r\n\r\nHolds up to 8 cigarettes securely\r\nDedicated lighter slot for easy, all-in-one carrying\r\n\r\nProtects cigarettes from crushing, bending, and damage\r\n\r\nWater-resistant design helps keep contents safe from moisture\r\n\r\nCompact and travel-friendly for everyday use\r\n\r\nMinimal,modern design with a clean finish",
+    "price": 550,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_bb6ed667_1783152777817_659.webp"
+    ],
+    "video_url": null,
+    "category": "Other",
+    "section": "Best Sellers",
+    "weight": 100,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": [],
+    "features": [
+      "3d printed cigarette case",
+      "Holds 8 cigarettes and 1 jetty lighter"
+    ],
+    "delivery_time_min": 6,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "b1ec8c9d-796a-4c90-a749-dfb9e27d194d",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-27T14:54:24.081711+00:00",
+    "updated_at": "2026-05-27T15:32:09.071416+00:00",
+    "exchange_available": false,
+    "mrp": 1200,
+    "material": "Hard plastic",
+    "care_instructions": null,
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product will only contain the cigarette case",
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Other"
+    ],
+    "sections": [
+      "Best Sellers",
+      "New Arrivals"
+    ],
+    "archived": false
+  },
+  {
+    "id": "c454581a-d660-4c7f-bad6-e89ea619b521",
+    "name": "Sunflower Tote bag",
+    "description": "A sunflower painted with fabric colours on a muslin fabric tote bag and a final touch of warnish so that the colours do not fade.",
+    "price": 400,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_c454581a_1783152778549_480.webp"
+    ],
+    "video_url": null,
+    "category": "Painting",
+    "section": "Featured",
+    "weight": 300,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Designs according to your choice?",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T13:02:34.38034+00:00",
+    "updated_at": "2026-06-06T05:48:08.588891+00:00",
+    "exchange_available": false,
+    "mrp": 400,
+    "material": "A muslin fabric painted with fabric colours and a final touch of warnish so that the colours do not fade.",
+    "care_instructions": "Do not wash it with hot water or use brush while cleaning.",
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Painting",
+      "For Her"
+    ],
+    "sections": [
+      "Featured",
+      "Trending",
+      "New Arrivals",
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "c56cb701-7d1d-4314-ace1-29df22c68b76",
+    "name": "Handmade Rose Themed Gift Hamper",
+    "description": "Handmade Rose Themed Gift Hamper includes:\r\nRose Flower Pot\r\nRose Potli Bag\r\nWish Card\r\nChocolate",
+    "price": 1500,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_c56cb701_1783152778876_828.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Gift Hampers",
+    "weight": 500,
+    "stock": 999999,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "What message would you like on call?",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 3,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "e84d8c53-7239-4420-bc50-487a4dcf6e0c",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-07T07:26:21.87885+00:00",
+    "updated_at": "2026-06-18T05:16:37.45612+00:00",
+    "exchange_available": false,
+    "mrp": 1700,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "For Her",
+      "Personalized Gifts",
+      "Gift Hampers"
+    ],
+    "sections": [
+      "Gift Hampers"
+    ],
+    "archived": true
+  },
+  {
+    "id": "c192131a-1c27-4fe9-b39a-1479afa1e5db",
+    "name": "Purple bouquet",
+    "description": ".",
+    "price": 1750,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_c192131a_1783152778222_163.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "New Arrivals",
+    "weight": 600,
+    "stock": 4,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 6,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T11:09:28.518022+00:00",
+    "updated_at": "2026-05-19T11:09:28.518022+00:00",
+    "exchange_available": false,
+    "mrp": 1800,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet"
+    ],
+    "sections": [
+      "New Arrivals"
+    ],
+    "archived": false
+  },
+  {
+    "id": "cd6b4030-7110-466d-a989-4733a74ade1f",
+    "name": "Sunflower and Daisy bouquet",
+    "description": "Brighten someone’s day with this adorable crochet flower bouquet",
+    "price": 699,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_cd6b4030_1783152783980_274.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Best Sellers",
+    "weight": 400,
+    "stock": 2,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 3,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T10:05:25.321612+00:00",
+    "updated_at": "2026-05-19T10:05:25.321612+00:00",
+    "exchange_available": false,
+    "mrp": 799,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet"
+    ],
+    "sections": [
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "d40566b3-a559-4f89-b3d7-7216610e5a13",
+    "name": "Secret Garden Tiara-Handharness",
+    "description": "Central Motif: Large, multi-layered flowers painted in striking pink, red, and white enamel.\nCascading Elements: Trailing gold wire chains adorned with small light-blue and green enameled leaves.\nSparkling Accents: Tiny yellow details and small embedded rhinestones that catch the light.\nOccasion Style: A perfect bohemian or festive accessory for mehendi functions, weddings, and traditional celebrations.",
+    "price": 2200,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_d40566b3_1783152785040_493.webp"
+    ],
+    "video_url": null,
+    "category": "Jewelry",
+    "section": "Handharness",
+    "weight": 15,
+    "stock": 999999,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Send a photo of the design & colour that you want.",
+        "required": false,
+        "answerType": "photo"
+      }
+    ],
+    "features": [
+      "Designed as a lightweight, reusable alternative to fresh flower jewelry,"
+    ],
+    "delivery_time_min": 8,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "5752294a-cf18-46cd-86eb-465ffcbe7bd0",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-30T21:28:11.493614+00:00",
+    "updated_at": "2026-06-17T04:29:45.242548+00:00",
+    "exchange_available": false,
+    "mrp": 3500,
+    "material": "Resin, copper ,resin pigment",
+    "care_instructions": "Stay away from perfume.",
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Jewelry",
+      "Resin Art",
+      "For Her"
+    ],
+    "sections": [
+      "Handharness"
+    ],
+    "archived": false
+  },
+  {
+    "id": "440ce4f8-5a5e-488a-b249-ab21a3139e5b",
+    "name": "Toe Bag",
+    "description": "A customised tote bag that reflects Girlhood and a soft glaze for a women.",
+    "price": 400,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_440ce4f8_1783152761307_647.webp"
+    ],
+    "video_url": null,
+    "category": "Painting",
+    "section": "New Arrivals",
+    "weight": 250,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Which design would you prefer to be painted on totebag",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 3,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T12:03:54.307803+00:00",
+    "updated_at": "2026-06-06T05:46:45.402523+00:00",
+    "exchange_available": false,
+    "mrp": 400,
+    "material": "A Muslim fabric Tote bag including fabric colours and a colour fixer spray on it.",
+    "care_instructions": "Do not wash with hot water or use brush while washing.",
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Painting",
+      "For Her",
+      "Other"
+    ],
+    "sections": [
+      "New Arrivals"
+    ],
+    "archived": false
+  },
+  {
+    "id": "e44146ec-f881-4541-a6e4-ce903101ad66",
+    "name": "Red hood mask",
+    "description": "3D-Printed high quality Red hood mask",
+    "price": 3699,
+    "images": [
+      "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=800&auto=format&fit=crop"
+    ],
+    "video_url": null,
+    "category": "For Him",
+    "section": "Trending",
+    "weight": 900,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "custom size requirement",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 6,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f812ae81-e5ef-4a44-aaf6-5a84560fe8b3",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-22T18:32:43.500798+00:00",
+    "updated_at": "2026-06-22T18:35:42.918025+00:00",
+    "exchange_available": false,
+    "mrp": 6599,
+    "material": "Hard Plastic (similar material used for making bike helmets)",
+    "care_instructions": null,
+    "size_options": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "return_available": false,
+    "return_days": 2,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product packaging will contain only the Red hood mask",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "S",
+        "price": 3999
+      },
+      {
+        "label": "M",
+        "price": 3699
+      },
+      {
+        "label": "L",
+        "price": 3999
+      },
+      {
+        "label": "XL",
+        "price": 3999
+      }
+    ],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Him",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Trending",
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "d8ef1d4c-865c-43d8-891f-6f6bedcb7637",
+    "name": "Rose flower pot",
+    "description": "HOME DÉCOR",
+    "price": 299,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_d8ef1d4c_1783152785447_696.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Best Sellers",
+    "weight": 300,
+    "stock": 9,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 3,
+    "delivery_time_max": 4,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T10:17:25.539144+00:00",
+    "updated_at": "2026-05-19T10:17:25.539144+00:00",
+    "exchange_available": false,
+    "mrp": 300,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "Home Decor"
+    ],
+    "sections": [
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "e1bb9e1c-587d-41d4-8a70-b65bfb36a733",
+    "name": "Monster Lamp",
+    "description": "High quality 3d printed monster energy drink lamp",
+    "price": 1299,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_e1bb9e1c_1783152786349_258.webp"
+    ],
+    "video_url": null,
+    "category": "Home Decor",
+    "section": "Trending",
+    "weight": 600,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": [],
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f812ae81-e5ef-4a44-aaf6-5a84560fe8b3",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-10T19:10:11.716521+00:00",
+    "updated_at": "2026-06-10T19:10:34.922471+00:00",
+    "exchange_available": false,
+    "mrp": 3499,
+    "material": "Premium Hard plastic",
+    "care_instructions": null,
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product packaging will only contain the lamp along with the usb cable",
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Home Decor"
+    ],
+    "sections": [
+      "Trending"
+    ],
+    "archived": false
+  },
+  {
+    "id": "e5033c2d-25ec-41e3-9881-8b684ffbdded",
+    "name": "9099 Spider-man mask",
+    "description": "3D-Printed high quality 9099 Spider-Man Mask",
+    "price": 3699,
+    "images": [
+      "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1512909006721-3d6018887383?w=800&auto=format&fit=crop"
+    ],
+    "video_url": null,
+    "category": "For Him",
+    "section": "Trending",
+    "weight": 900,
+    "stock": 1,
+    "customisable": false,
+    "custom_questions": [
+      {
+        "question": "custom size requirement",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f812ae81-e5ef-4a44-aaf6-5a84560fe8b3",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-01T11:19:45.081883+00:00",
+    "updated_at": "2026-06-10T19:12:47.67524+00:00",
+    "exchange_available": false,
+    "mrp": 6999,
+    "material": "Hard Plastic (similar material used for making bike helmets)",
+    "care_instructions": null,
+    "size_options": [
+      "M",
+      "L",
+      "XL"
+    ],
+    "return_available": false,
+    "return_days": 2,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product packaging will contain only the spider man mask",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "M",
+        "price": 3699
+      },
+      {
+        "label": "L",
+        "price": 3699
+      },
+      {
+        "label": "XL",
+        "price": 3699
+      }
+    ],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Him",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Trending",
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "46c2a70a-558f-4d63-9436-3be5471523e4",
+    "name": "Bluebell Blossom Crochet Vase",
+    "description": "A delicate handmade crochet flower arrangement featuring elegant blue blossoms beautifully displayed in a charming crochet vase with floral detailing. Designed to add warmth, color, and timeless beauty to any space, this piece is perfect for home décor, gifting, desk decoration, or special occasions. Carefully crafted with soft yarn and intricate stitches, this everlasting floral arrangement brings a cozy handmade touch that never fades.",
+    "price": 699,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_46c2a70a_1783152762026_623.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Featured",
+    "weight": 300,
+    "stock": 4,
+    "customisable": true,
+    "custom_questions": [],
+    "features": null,
+    "delivery_time_min": 5,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T10:43:47.632253+00:00",
+    "updated_at": "2026-05-19T14:58:28.789485+00:00",
+    "exchange_available": false,
+    "mrp": 799,
+    "material": null,
+    "care_instructions": null,
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "Home Decor"
+    ],
+    "sections": [
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "e956dcbe-6584-495b-a510-de093d417f60",
+    "name": "Kunchi Aurora",
+    "description": "✨ Luxury 100% Pure Cotton Kunchi✨ Handcrafted with Premium fabrics, soft textures, and delicate detailing — designed to bring a timeless, elegant touch to Montessori spaces, kids’ rooms, hampers, and décor. Each piece is uniquely handmade with love and carefully selected prints.",
+    "price": 250,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_e956dcbe_1783152787411_572.webp"
+    ],
+    "video_url": null,
+    "category": "For Kids",
+    "section": "Featured",
+    "weight": 150,
+    "stock": 1,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 2,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "fff5f635-e8fa-4a64-a04d-dfe679dce05d",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-14T16:11:27.749824+00:00",
+    "updated_at": "2026-05-14T16:14:00.930014+00:00",
+    "exchange_available": false,
+    "mrp": 300,
+    "material": null,
+    "care_instructions": null,
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Kids",
+      "Other"
+    ],
+    "sections": [
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "ef9651dd-e2bf-4fb9-8c85-6fbdac00e8b6",
+    "name": "Crochet Evil Eye Keychain",
+    "description": "Crochet Evil Eye Keychain",
+    "price": 80,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_ef9651dd_1783152788093_487.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Crochet Keychains",
+    "weight": 50,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 1,
+    "delivery_time_max": 3,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "e84d8c53-7239-4420-bc50-487a4dcf6e0c",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-07T07:18:35.483892+00:00",
+    "updated_at": "2026-06-18T05:15:18.307506+00:00",
+    "exchange_available": true,
+    "mrp": 100,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": true,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "For Him",
+      "For Her",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Crochet Keychains"
+    ],
+    "archived": true
+  },
+  {
+    "id": "f52b9d79-f3ef-4983-a991-ec55f9390625",
+    "name": "Gift Hamper for Him",
+    "description": "A gift hamper including a Bouquet of Hershey’s chocolates a white t shirt, Resin photo keychain, Scroll in a glass jar,Mini Photo Album,A small greeting, DIY Mini Rose bouquet and a mini gift.",
+    "price": 1600,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_f52b9d79_1783152788424_851.webp"
+    ],
+    "video_url": null,
+    "category": "For Him",
+    "section": "DIY Couple Gifts",
+    "weight": 500,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 6,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T13:44:35.760737+00:00",
+    "updated_at": "2026-05-26T13:44:35.760737+00:00",
+    "exchange_available": false,
+    "mrp": 1600,
+    "material": "Premium chocolate bouquet, a black box paper roses",
+    "care_instructions": "Handle with care",
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Him",
+      "Gift Hampers"
+    ],
+    "sections": [
+      "DIY Couple Gifts"
+    ],
+    "archived": false
+  },
+  {
+    "id": "ffcaf93e-8617-452d-9be0-996160183fc9",
+    "name": "Iced Coffee Candle",
+    "description": "Handmade Soy Wax with Coffee Scent",
+    "price": 399,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_ffcaf93e_1783152790043_437.webp",
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_ffcaf93e_1783152790228_524.webp",
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_ffcaf93e_1783152790442_24.webp",
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_ffcaf93e_1783152790616_760.webp"
+    ],
+    "video_url": null,
+    "category": "Candles",
+    "section": "scented",
+    "weight": 400,
+    "stock": 99,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Any dietary restrictions?",
+        "required": false
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 7,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f179477b-2cf4-44f5-aaaf-864a1c6b4327",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-01T08:42:06.758296+00:00",
+    "updated_at": "2026-06-04T13:51:07.011283+00:00",
+    "exchange_available": true,
+    "mrp": 598.95,
+    "material": "Premium wax with organic ingredients",
+    "care_instructions": "store in cool place",
+    "size_options": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "return_available": true,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": "nothing",
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Candles"
+    ],
+    "sections": [
+      "scented"
+    ],
+    "archived": true
+  },
+  {
+    "id": "397a7450-33bf-4cb8-8d40-51faf36ddb3c",
+    "name": "Pearl magnolia Lunar blossom hair pin(pack of 3 pin)",
+    "description": "This is a three-piece set of handcrafted, vintage-style bridal hair accessories. Each piece is built on a gold-toned U-shaped hairpin, allowing them to be easily tucked into updos, buns, or braids. They feature central ivory or off-white flowers made from translucent, pearlescent petals that mimic the look of mother-of-pearl or resin. The flowers are accented with intricate, twisted gold wirework configured into delicate leaves, sprigs of clear glass bugle beads, and smaller teardrop-shaped pearlescent buds.",
+    "price": 849,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_397a7450_1783152759106_888.webp"
+    ],
+    "video_url": null,
+    "category": "Jewelry",
+    "section": "Hair Accessories",
+    "weight": 10,
+    "stock": 3,
+    "customisable": false,
+    "custom_questions": null,
+    "features": [
+      "Ultra Light weight"
+    ],
+    "delivery_time_min": 6,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "5752294a-cf18-46cd-86eb-465ffcbe7bd0",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-17T10:49:43.875229+00:00",
+    "updated_at": "2026-05-17T10:49:43.875229+00:00",
+    "exchange_available": false,
+    "mrp": 1299,
+    "material": "Resin, copper ,resin pigment",
+    "care_instructions": "Stay away from perfume and keep at ziplock pocket",
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Jewelry",
+      "Resin Art"
+    ],
+    "sections": [
+      "Hair Accessories"
+    ],
+    "archived": false
+  },
+  {
+    "id": "4ac8b2fe-e68a-4079-bab4-0ccb29fb24c6",
+    "name": "Kunchi Ocean",
+    "description": "✨ Luxury 100% Pure Cotton Kunchi✨ Handcrafted with Premium fabrics, soft textures, and delicate detailing — designed to bring a timeless, elegant touch to Montessori spaces, kids’ rooms, hampers, and décor. Each piece is uniquely handmade with love and carefully selected prints.",
+    "price": 250,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_4ac8b2fe_1783152762367_693.webp"
+    ],
+    "video_url": null,
+    "category": "For Kids",
+    "section": "Featured",
+    "weight": 150,
+    "stock": 1,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 2,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "fff5f635-e8fa-4a64-a04d-dfe679dce05d",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-14T16:16:47.459332+00:00",
+    "updated_at": "2026-05-14T16:16:47.459332+00:00",
+    "exchange_available": false,
+    "mrp": 300,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Kids",
+      "Other"
+    ],
+    "sections": [
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "a2b1be86-df00-4571-86d8-0439d6e4508e",
+    "name": "Cigarette case",
+    "description": "A sleek and durable 3D printed cigarette case designed for convenience and protection\r\n\r\nHolds up to 8 cigarettes securely\r\nDedicated lighter slot for easy, all-in-one carrying\r\n\r\nProtects cigarettes from crushing, bending, and damage\r\n\r\nWater-resistant design helps keep contents safe from moisture\r\n\r\nCompact and travel-friendly for everyday use\r\n\r\nMinimal,modern design with a clean finish",
+    "price": 700,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_a2b1be86_1783152774548_244.webp"
+    ],
+    "video_url": null,
+    "category": "Other",
+    "section": "New Arrivals",
+    "weight": 150,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": null,
+    "features": [
+      "3d printed cigarette case",
+      "Holds 10 king size cigarettes"
+    ],
+    "delivery_time_min": 6,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "b1ec8c9d-796a-4c90-a749-dfb9e27d194d",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-27T15:35:33.817716+00:00",
+    "updated_at": "2026-05-27T15:35:33.817716+00:00",
+    "exchange_available": false,
+    "mrp": 1200,
+    "material": "Hard plastic",
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product will only contain the cigarette case",
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Other"
+    ],
+    "sections": [
+      "New Arrivals"
+    ],
+    "archived": false
+  },
+  {
+    "id": "4b951008-caec-4729-81e2-e91e270bf2b6",
+    "name": "Crochet tulip bouquet (pink)",
+    "description": "Handcrafted with care, this crochet flower bouquet brings everlasting charm to any space. A perfect blend of elegance and creativity, ideal for gifting or home décor",
+    "price": 2499,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_4b951008_1783152763049_420.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Trending",
+    "weight": 600,
+    "stock": 5,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 4,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T08:15:02.45627+00:00",
+    "updated_at": "2026-05-19T08:15:02.45627+00:00",
+    "exchange_available": true,
+    "mrp": 2650.01,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet"
+    ],
+    "sections": [
+      "Trending"
+    ],
+    "archived": false
+  },
+  {
+    "id": "0af221a1-389a-487f-8e14-7d5f3305169e",
+    "name": "Secret Garden Tiara- Mangtikka",
+    "description": "Design: A layered flower pendant with bright pink outer petals and mint-green inner petals.\r\nAccents: Gold-trimmed edges with yellow stamens in the center.Hanging Details: Dangling yellow beads and teardrop-shaped green leaves at the bottom.\r\nChain: A delicate string of small white pearls . Perfect For:\r\n\r\nBridal Haldi\r\n\r\nMehendi\r\n\r\nSangeet\r\n\r\nReception (pastels or fusion weddings)\r\n\r\nPre-Wedding Photoshoot\r\n\r\nBridesmaids & Sister-of-Bride Gifts",
+    "price": 499,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_0af221a1_1783152746990_282.webp"
+    ],
+    "video_url": null,
+    "category": "Jewelry",
+    "section": "Mangtikka",
+    "weight": 8,
+    "stock": 999999,
+    "customisable": true,
+    "custom_questions": null,
+    "features": [
+      "Lightweight"
+    ],
+    "delivery_time_min": 6,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "5752294a-cf18-46cd-86eb-465ffcbe7bd0",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-31T08:27:18.372926+00:00",
+    "updated_at": "2026-05-31T08:27:18.372926+00:00",
+    "exchange_available": false,
+    "mrp": 699,
+    "material": "Resin, copper ,resin pigment",
+    "care_instructions": "Stay away from perfume.",
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Jewelry",
+      "Resin Art",
+      "For Her"
+    ],
+    "sections": [
+      "Mangtikka"
+    ],
+    "archived": false
+  },
+  {
+    "id": "38856e99-1ced-446f-a5b3-cc9b90720c73",
+    "name": "Cyber-sacred artwork",
+    "description": "Step into futuristic mysticism with this premium acid wash Supima t-shirt featuring an intricate cyber-sacred artwork inspired by technology, energy circuits, and spiritual symbolism. Designed for those who connect with art, music, and consciousness-driven fashion, this piece blends futuristic aesthetics with minimal luxury streetwear.",
+    "price": 1799,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_38856e99_1783152758759_828.webp"
+    ],
+    "video_url": null,
+    "category": "Other",
+    "section": "Uni-sex Oversized T-shirt",
+    "weight": 150,
+    "stock": 100,
+    "customisable": false,
+    "custom_questions": [],
+    "features": null,
+    "delivery_time_min": 2,
+    "delivery_time_max": 4,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "37c07e6f-d508-45e1-bc11-bc9495f032a9",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-20T10:08:48.433339+00:00",
+    "updated_at": "2026-05-23T06:57:30.064513+00:00",
+    "exchange_available": false,
+    "mrp": 1999,
+    "material": null,
+    "care_instructions": null,
+    "size_options": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "2XL"
+    ],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "S",
+        "price": 1799
+      },
+      {
+        "label": "M",
+        "price": 1799
+      },
+      {
+        "label": "L",
+        "price": 1799
+      },
+      {
+        "label": "XL",
+        "price": 1799
+      },
+      {
+        "label": "2XL",
+        "price": 1799
+      }
+    ],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Other"
+    ],
+    "sections": [
+      "Uni-sex Oversized T-shirt"
+    ],
+    "archived": false
+  },
+  {
+    "id": "8ffb3a74-20a7-49ae-b759-3bdabbf2c1ad",
+    "name": "Name Garland",
+    "description": "description",
+    "price": 500,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_8ffb3a74_1783152773009_887.webp"
+    ],
+    "video_url": null,
+    "category": "Personalized Gifts",
+    "section": "handmade",
+    "weight": 100,
+    "stock": 95,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "enter the name of fabric based on the fabric chart",
+        "required": true,
+        "answerType": "text"
+      },
+      {
+        "question": "name of the baby",
+        "required": true,
+        "answerType": "text"
+      },
+      {
+        "question": "theme description (pastel , boho , etc )",
+        "required": false,
+        "answerType": "text"
+      },
+      {
+        "question": "any reference image",
+        "required": false,
+        "answerType": "photo"
+      }
+    ],
+    "features": [
+      "handmade",
+      "hand-woven",
+      "soft"
+    ],
+    "delivery_time_min": 7,
+    "delivery_time_max": 9,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f179477b-2cf4-44f5-aaaf-864a1c6b4327",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-09T05:27:24.469739+00:00",
+    "updated_at": "2026-05-18T07:51:52.950106+00:00",
+    "exchange_available": false,
+    "mrp": 699.99,
+    "material": null,
+    "care_instructions": null,
+    "size_options": [
+      "3 Letter",
+      "4 Letter",
+      "5 Letter",
+      "6 Letter",
+      "7 letter"
+    ],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "3 Letter",
+        "price": 500
+      },
+      {
+        "label": "4 Letter",
+        "price": 530
+      },
+      {
+        "label": "5 Letter",
+        "price": 560
+      },
+      {
+        "label": "6 Letter",
+        "price": 590
+      },
+      {
+        "label": "7 letter",
+        "price": 619.99
+      }
+    ],
+    "color_options": [],
+    "size_charts": [
+      {
+        "url": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-size-charts/1778304880407-g3sad8.jpg",
+        "label": "fabric chart"
+      }
+    ],
+    "categories": [
+      "Personalized Gifts",
+      "For Kids"
+    ],
+    "sections": [
+      "handmade"
+    ],
+    "archived": true
+  },
+  {
+    "id": "9642689c-8374-4ead-8ba3-d12abbeb7b39",
+    "name": "Resin rose locket",
+    "description": "Crushed rose petals minimal locket.",
+    "price": 160,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_9642689c_1783152774215_909.webp"
+    ],
+    "video_url": null,
+    "category": "Resin Art",
+    "section": "Best Sellers",
+    "weight": 30,
+    "stock": 1,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T12:19:46.524771+00:00",
+    "updated_at": "2026-05-26T12:19:46.524771+00:00",
+    "exchange_available": false,
+    "mrp": 160,
+    "material": null,
+    "care_instructions": "Do not spray a perfume or use it in water.",
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": true,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Resin Art",
+      "Jewelry",
+      "For Her"
+    ],
+    "sections": [
+      "Best Sellers",
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "b23059d1-747b-420a-a043-1f2f5dfedaff",
+    "name": "Kunchi Ocean",
+    "description": "✨ Luxury 100% Pure Cotton Kunchi✨ Handcrafted with Premium fabrics, soft textures, and delicate detailing — designed to bring a timeless, elegant touch to Montessori spaces, kids’ rooms, hampers, and décor. Each piece is uniquely handmade with love and carefully selected prints.",
+    "price": 250,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_b23059d1_1783152777125_943.webp"
+    ],
+    "video_url": null,
+    "category": "For Kids",
+    "section": "Featured",
+    "weight": 150,
+    "stock": 1,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 2,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "fff5f635-e8fa-4a64-a04d-dfe679dce05d",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-14T16:18:07.388285+00:00",
+    "updated_at": "2026-05-14T16:18:07.388285+00:00",
+    "exchange_available": false,
+    "mrp": 300,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Kids",
+      "Other"
+    ],
+    "sections": [
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "aa0a6ac1-11c2-41ea-b5a4-711e20ceeb31",
+    "name": "Cosmic Vision UniSex Opticwash T-shirt",
+    "description": "Explore the fusion of cosmic symbolism and futuristic streetwear with the Opticwash Cosmic Vision Tee. Featuring a detailed monochrome graphic inspired by meditation, alien aesthetics, sacred geometry, and cyber elements, this oversized tee is made for bold self-expression.",
+    "price": 1799,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_aa0a6ac1_1783152776142_193.webp"
+    ],
+    "video_url": null,
+    "category": "Other",
+    "section": "Uni-sex Oversized T-shirt",
+    "weight": 150,
+    "stock": 99,
+    "customisable": false,
+    "custom_questions": [],
+    "features": null,
+    "delivery_time_min": 2,
+    "delivery_time_max": 4,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "37c07e6f-d508-45e1-bc11-bc9495f032a9",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-20T09:15:25.455959+00:00",
+    "updated_at": "2026-05-23T06:41:43.46144+00:00",
+    "exchange_available": false,
+    "mrp": 1999,
+    "material": null,
+    "care_instructions": null,
+    "size_options": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "2XL"
+    ],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "S",
+        "price": 1799
+      },
+      {
+        "label": "M",
+        "price": 1799
+      },
+      {
+        "label": "L",
+        "price": 1799
+      },
+      {
+        "label": "XL",
+        "price": 1799
+      },
+      {
+        "label": "2XL",
+        "price": 1799
+      }
+    ],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Other"
+    ],
+    "sections": [
+      "Uni-sex Oversized T-shirt"
+    ],
+    "archived": false
+  },
+  {
+    "id": "358e510e-3691-492f-99a7-fdd523f70a5c",
+    "name": "Candle",
+    "description": "Gdjb",
+    "price": 40,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_358e510e_1783152756941_999.webp"
+    ],
+    "video_url": null,
+    "category": "Embroidery",
+    "section": "handmade",
+    "weight": 13,
+    "stock": 100,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 56,
+    "delivery_time_max": 86,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f179477b-2cf4-44f5-aaaf-864a1c6b4327",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-20T07:13:26.156435+00:00",
+    "updated_at": "2026-06-06T14:22:33.480376+00:00",
+    "exchange_available": true,
+    "mrp": 67,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": true,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Embroidery"
+    ],
+    "sections": [
+      "handmade"
+    ],
+    "archived": true
+  },
+  {
+    "id": "c7556343-00c0-4931-8218-79b8d1bf0830",
+    "name": "SpaceAlien UniSex Opticwash T-shirt",
+    "description": "Step into futuristic streetwear with the Opticwash Unisex T-Shirt — crafted for those who love bold visuals and premium comfort. Featuring a high-quality alien-inspired graphic print with cosmic detailing, this tee blends minimal aesthetics with a modern oversized fit.",
+    "price": 1599,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_c7556343_1783152779334_794.webp"
+    ],
+    "video_url": null,
+    "category": "Other",
+    "section": "Uni-sex Oversized T-shirt",
+    "weight": 2,
+    "stock": 96,
+    "customisable": false,
+    "custom_questions": [],
+    "features": [
+      "Fade-resistant graphic design print",
+      "Premium washed cotton fabric"
+    ],
+    "delivery_time_min": 2,
+    "delivery_time_max": 4,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "37c07e6f-d508-45e1-bc11-bc9495f032a9",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-20T07:51:51.654811+00:00",
+    "updated_at": "2026-05-23T06:44:41.291242+00:00",
+    "exchange_available": false,
+    "mrp": 1999,
+    "material": null,
+    "care_instructions": null,
+    "size_options": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "2XL"
+    ],
+    "return_available": false,
+    "return_days": 6,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "S",
+        "price": 1599
+      },
+      {
+        "label": "M",
+        "price": 1599
+      },
+      {
+        "label": "L",
+        "price": 1599
+      },
+      {
+        "label": "XL",
+        "price": 1599
+      },
+      {
+        "label": "2XL",
+        "price": 1599
+      }
+    ],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Other"
+    ],
+    "sections": [
+      "Uni-sex Oversized T-shirt"
+    ],
+    "archived": false
+  },
+  {
+    "id": "e5d2ebe6-5254-474b-9b81-94089838f1ba",
+    "name": "Bougainvillea flower hair accessories",
+    "description": "It features an elegant pink bougainvillea flower bloom alongside detailed green leaves, meticulously structured onto a gold-toned U-shaped metal pin.This structure allows it to slide into hair buns, chignons, or half-up hairstyles effortlessly while providing a secure hold.Inspired by traditional Asian hair ornaments like the Japanese Kanzashi or Chinese Hanfu accessories, this accessory blends vintage oriental charm with a whimsical, modern aesthetic. It is perfect for weddings, festivals, or adding a unique floral accent to any formal styling.",
+    "price": 450,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_e5d2ebe6_1783152787082_257.webp"
+    ],
+    "video_url": null,
+    "category": "Jewelry",
+    "section": "Hair Accessories",
+    "weight": 5,
+    "stock": 1,
+    "customisable": false,
+    "custom_questions": [],
+    "features": [
+      "Ultra light weight"
+    ],
+    "delivery_time_min": 6,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "5752294a-cf18-46cd-86eb-465ffcbe7bd0",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-17T10:17:47.728617+00:00",
+    "updated_at": "2026-05-19T18:14:24.600859+00:00",
+    "exchange_available": false,
+    "mrp": 750,
+    "material": "Resin, copper ,resin pigment",
+    "care_instructions": "Stay away from perfume.",
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Jewelry",
+      "Resin Art"
+    ],
+    "sections": [
+      "Hair Accessories"
+    ],
+    "archived": false
+  },
+  {
+    "id": "088dc348-8484-4af7-93f1-861a65775e51",
+    "name": "Artisan Chocolate Gift Box",
+    "description": "Premium handcrafted chocolates made with organic ingredients. Perfect for gifting on special occasions. Each piece is carefully crafted by our expert chocolatiers using traditional methods.",
+    "price": 98.99,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_088dc348_1783152745263_96.webp"
+    ],
+    "video_url": null,
+    "category": "Sweets",
+    "section": "handmade",
+    "weight": 500,
+    "stock": 15,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Any dietary restrictions?",
+        "required": false
+      },
+      {
+        "question": "Message for the card?",
+        "required": true
+      }
+    ],
+    "features": [
+      "Sugar-free option available",
+      "Organic cocoa beans",
+      "Handmade with love",
+      "Beautiful gift packaging included"
+    ],
+    "delivery_time_min": 2,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f179477b-2cf4-44f5-aaaf-864a1c6b4327",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-02T08:37:46.716215+00:00",
+    "updated_at": "2026-05-29T13:36:45.880406+00:00",
+    "exchange_available": false,
+    "mrp": 158.99,
+    "material": "Premium milk chocolate with organic ingredients",
+    "care_instructions": "Store in a cool, dry place away from sunlight. Best consumed within 30 days of opening.",
+    "size_options": [
+      "Pack"
+    ],
+    "return_available": false,
+    "return_days": 0,
+    "cod_available": true,
+    "legal_disclaimer": "Actual product packaging may contain more information. Please read labels carefully before consuming.",
+    "two_way_delivery": true,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Sweets"
+    ],
+    "sections": [
+      "handmade"
+    ],
+    "archived": true
+  },
+  {
+    "id": "e360c3e7-0134-4e14-a3ee-29b381b85999",
+    "name": "Artisan Chocolate Gift Box",
+    "description": "Premium handcrafted chocolates made with organic ingredients. Perfect for gifting on special occasions. Each piece is carefully crafted by our expert chocolatiers using traditional methods.",
+    "price": 899,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_e360c3e7_1783152786690_905.webp"
+    ],
+    "video_url": null,
+    "category": "Sweets",
+    "section": "handmade",
+    "weight": 500,
+    "stock": 24,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Any dietary restrictions?",
+        "required": false,
+        "answerType": "text"
+      },
+      {
+        "question": "Message for the card?",
+        "required": true,
+        "answerType": "text"
+      }
+    ],
+    "features": [
+      "Sugar-free option available",
+      "Organic cocoa beans",
+      "Handmade with love",
+      "Beautiful gift packaging included"
+    ],
+    "delivery_time_min": 2,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f179477b-2cf4-44f5-aaaf-864a1c6b4327",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-22T13:34:16.038691+00:00",
+    "updated_at": "2026-05-22T13:34:28.772641+00:00",
+    "exchange_available": false,
+    "mrp": 1099,
+    "material": "Premium milk chocolate with organic ingredients",
+    "care_instructions": "Store in a cool, dry place away from sunlight. Best consumed within 30 days of opening.",
+    "size_options": [
+      "Pack",
+      "small",
+      "medium"
+    ],
+    "return_available": false,
+    "return_days": 0,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product packaging may contain more information. Please read labels carefully before consuming.",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "Pack",
+        "price": 899
+      },
+      {
+        "label": "small",
+        "price": 499
+      },
+      {
+        "label": "medium",
+        "price": 699
+      }
+    ],
+    "color_options": [
+      {
+        "name": "Classic",
+        "image": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-color-options/1777716570277-yli20w.png"
+      },
+      {
+        "name": "rose gold",
+        "image": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-color-options/1777716608486-04v2p.webp"
+      }
+    ],
+    "size_charts": [],
+    "categories": [
+      "Sweets"
+    ],
+    "sections": [
+      "handmade"
+    ],
+    "archived": true
+  },
+  {
+    "id": "e9f7382a-e6cb-44fa-bf71-d5c738850023",
+    "name": "Resin keychain",
+    "description": "11:11 customised keychain with A galaxy theme and golden crystals and pearls decorated along.",
+    "price": 300,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_e9f7382a_1783152787758_703.webp"
+    ],
+    "video_url": null,
+    "category": "Resin Art",
+    "section": "Trending",
+    "weight": 70,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "You can also mention a name of your partner",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T12:52:45.339192+00:00",
+    "updated_at": "2026-06-06T05:48:26.675256+00:00",
+    "exchange_available": false,
+    "mrp": 300,
+    "material": "Epoxy resin, Pearls, golden And silver dust",
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [
+      {
+        "name": "Pastel pink",
+        "image": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-color-options/1779799791329-bahe5l.jpeg"
+      },
+      {
+        "name": "Pastel Violet",
+        "image": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-color-options/1779799808106-0yyaiu.jpeg"
+      },
+      {
+        "name": "Strawberry shade",
+        "image": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-color-options/1779799880604-mrwmn5.jpeg"
+      }
+    ],
+    "size_charts": [],
+    "categories": [
+      "Resin Art",
+      "For Her",
+      "For Him",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Trending"
+    ],
+    "archived": false
+  },
+  {
+    "id": "fc9d3c85-683b-4753-a621-ac16432df080",
+    "name": "Sunday Linen Luxury Candle",
+    "description": "A soft and comforting fragrance inspired by freshly laundered linens and quiet moments of rest. Blending calming lavender with warm sandalwood, Sunday Linen creates a clean, serene atmosphere designed for slow mornings, peaceful evenings, and everyday rituals. \nHand-poured in small batches using 100% natural eco-friendly soy wax. \n\nFragrance Notes: \nTop: Fresh Linen, \nHeart: Lavender, \nBase: Sandalwood. \n\nMaterials: 100% Eco-Friendly Natural Soy Wax Blend • Premium Fragrance Oils • Stearic Acid • Approved Colorants • Lead-Free Cotton Wick • Glass",
+    "price": 499,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_fc9d3c85_1783152789384_559.webp"
+    ],
+    "video_url": null,
+    "category": "Candles",
+    "section": "Launch Candles Collection",
+    "weight": 80,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": [],
+    "features": [
+      "Lead-free cotton wick, eco-friendly soy wax, Premium fragrance oils"
+    ],
+    "delivery_time_min": 2,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "0e276292-a59e-4d85-9340-635a7a96540e",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-29T14:56:09.254181+00:00",
+    "updated_at": "2026-06-07T14:15:22.366471+00:00",
+    "exchange_available": true,
+    "mrp": 555,
+    "material": "Natural Soy wax; Cotton and Lead free wick",
+    "care_instructions": "Trim wick to 5 mm before each burn.\r\nAllow wax to melt evenly across the surface.\r\nDo not burn for more than 4 hours at a time.\r\nNever leave a burning candle unattended.",
+    "size_options": [
+      "80g"
+    ],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": "Due to the handcrafted nature of our candles, slight variations in color, texture, and appearance may occur. These variations do not affect product performance or quality.",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "80g",
+        "price": 499
+      }
+    ],
+    "color_options": [
+      {
+        "name": "White",
+        "image": ""
+      }
+    ],
+    "size_charts": [],
+    "categories": [
+      "Candles"
+    ],
+    "sections": [
+      "Launch Candles Collection"
+    ],
+    "archived": true
+  },
+  {
+    "id": "1b4b5fa6-dbe5-418d-96e2-22986921a223",
+    "name": "Rose Devotion Luxury Candle",
+    "description": "A romantic fragrance inspired by devotion, softness, and timeless elegance. Rose Devotion opens with velvety rose petals, unfolds into warm sandalwood, and settles into a delicate veil of incense. Both comforting and captivating, it creates an atmosphere of intimacy, warmth, and quiet luxury. Hand-poured in small batches using 100% natural, eco-friendly soy wax. Fragrance Notes: Top: Incense, Heart: Sandalwood, Base: Rose, Materials: 100% Eco-Friendly Natural Soy Wax Blend • Premium Fragrance Oils • Stearic Acid • Approved Colorants •",
+    "price": 535,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_1b4b5fa6_1783152755017_727.webp"
+    ],
+    "video_url": null,
+    "category": "Candles",
+    "section": "Launch Candles Collection",
+    "weight": 80,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": [],
+    "features": [
+      "Lead-free cotton wick, eco-friendly soy wax, Premium fragrance oils"
+    ],
+    "delivery_time_min": 2,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "0e276292-a59e-4d85-9340-635a7a96540e",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-29T15:18:15.972287+00:00",
+    "updated_at": "2026-06-07T14:15:18.2837+00:00",
+    "exchange_available": false,
+    "mrp": 599,
+    "material": "Natural Soy wax; Cotton and Lead free wick",
+    "care_instructions": "Trim wick to 5 mm before each burn.\r\nAllow wax to melt evenly across the surface.\r\nDo not burn for more than 4 hours at a time.\r\nNever leave a burning candle unattended.",
+    "size_options": [
+      "80g"
+    ],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": "Due to the handcrafted nature of our candles, slight variations in color, texture, and appearance may occur. These variations do not affect product performance or quality.",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "80g",
+        "price": 535
+      }
+    ],
+    "color_options": [
+      {
+        "name": "Pink",
+        "image": ""
+      }
+    ],
+    "size_charts": [],
+    "categories": [
+      "Candles",
+      "Gift Hampers"
+    ],
+    "sections": [
+      "Launch Candles Collection"
+    ],
+    "archived": true
+  },
+  {
+    "id": "602903da-dcbc-47d9-9bd3-c72b51fe3b11",
+    "name": "Crochet Rose",
+    "description": "Forever rose, handmade with love. No fading, no plucking—just beauty that stays.",
+    "price": 220,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_602903da_1783152765368_422.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Forever Flowers",
+    "weight": 20,
+    "stock": 20,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Would you like to add a message card? If yes, mention the text.",
+        "required": false,
+        "answerType": "text"
+      },
+      {
+        "question": "Do you have any customization requests? (color, size, bouquet, etc.)",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": [
+      "Handmade",
+      "Longlasting"
+    ],
+    "delivery_time_min": 3,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "e84d8c53-7239-4420-bc50-487a4dcf6e0c",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-17T18:43:45.304911+00:00",
+    "updated_at": "2026-05-17T18:43:45.304911+00:00",
+    "exchange_available": true,
+    "mrp": 300,
+    "material": "CottonYarn,woodenstick",
+    "care_instructions": null,
+    "size_options": [
+      "20 grams"
+    ],
+    "return_available": true,
+    "return_days": 4,
+    "cod_available": true,
+    "legal_disclaimer": "All products are handmade, so slight variations in color, size, and design may occur, making each piece unique. Product colors may vary slightly due to lighting and screen settings.",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "20 grams",
+        "price": 300
+      }
+    ],
+    "color_options": [
+      {
+        "name": "Pink",
+        "image": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-color-options/1779040108869-zhxoh5.png"
+      },
+      {
+        "name": "Yellow",
+        "image": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-color-options/1779040095847-fnvpis.png"
+      },
+      {
+        "name": "Red",
+        "image": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-color-options/1779039717481-yoj2bs.png"
+      }
+    ],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "For Her",
+      "For Him",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Forever Flowers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "65b4de10-4189-4ec3-b43f-268ba10efd5d",
+    "name": "Artisan Chocolate Gift Box",
+    "description": "Premium handcrafted chocolates made with organic ingredients. Perfect for gifting on special occasions. Each piece is carefully crafted by our expert chocolatiers using traditional methods.",
+    "price": 899,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_65b4de10_1783152766258_692.webp"
+    ],
+    "video_url": null,
+    "category": "Sweets",
+    "section": "handmade",
+    "weight": 500,
+    "stock": 24,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Any dietary restrictions?",
+        "required": false,
+        "answerType": "text"
+      },
+      {
+        "question": "Message for the card?",
+        "required": true,
+        "answerType": "text"
+      }
+    ],
+    "features": [
+      "Sugar-free option available",
+      "Organic cocoa beans",
+      "Handmade with love",
+      "Beautiful gift packaging included"
+    ],
+    "delivery_time_min": 2,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f179477b-2cf4-44f5-aaaf-864a1c6b4327",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-02T10:10:25.663414+00:00",
+    "updated_at": "2026-06-04T13:51:00.366339+00:00",
+    "exchange_available": false,
+    "mrp": 1099,
+    "material": "Premium milk chocolate with organic ingredients",
+    "care_instructions": "Store in a cool, dry place away from sunlight. Best consumed within 30 days of opening.",
+    "size_options": [
+      "Pack",
+      "small",
+      "medium"
+    ],
+    "return_available": false,
+    "return_days": 0,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product packaging may contain more information. Please read labels carefully before consuming.",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "Pack",
+        "price": 899
+      },
+      {
+        "label": "small",
+        "price": 499
+      },
+      {
+        "label": "medium",
+        "price": 699
+      }
+    ],
+    "color_options": [
+      {
+        "name": "Classic",
+        "image": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-color-options/1777716570277-yli20w.png"
+      },
+      {
+        "name": "rose gold",
+        "image": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-color-options/1777716608486-04v2p.webp"
+      }
+    ],
+    "size_charts": [],
+    "categories": [
+      "Sweets"
+    ],
+    "sections": [
+      "handmade"
+    ],
+    "archived": true
+  },
+  {
+    "id": "81996351-4b66-40f6-aec5-0a4aecc58a72",
+    "name": "Amazing Spider-man mask",
+    "description": "3D-Printed high quality Amazing Spider-Man Mask",
+    "price": 3999,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_81996351_1783152771508_571.webp"
+    ],
+    "video_url": null,
+    "category": "For Him",
+    "section": "Trending",
+    "weight": 900,
+    "stock": 1,
+    "customisable": false,
+    "custom_questions": [
+      {
+        "question": "custom size requirement",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 4,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f812ae81-e5ef-4a44-aaf6-5a84560fe8b3",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-25T13:01:53.966856+00:00",
+    "updated_at": "2026-05-26T09:14:19.64896+00:00",
+    "exchange_available": false,
+    "mrp": 5499,
+    "material": "Hard Plastic (similar material used for making bike helmets)",
+    "care_instructions": null,
+    "size_options": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "return_available": false,
+    "return_days": 2,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product packaging will contain only the spider man mask",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "S",
+        "price": 3999
+      },
+      {
+        "label": "M",
+        "price": 3999
+      },
+      {
+        "label": "L",
+        "price": 3999
+      },
+      {
+        "label": "XL",
+        "price": 3999
+      }
+    ],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Him",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Trending",
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "17c7abf1-8e94-4f2d-8b63-6f3e1d09d154",
+    "name": "Kunchi Ocean",
+    "description": "✨ Luxury 100% Pure Cotton Kunchi✨ Handcrafted with Premium fabrics, soft textures, and delicate detailing — designed to bring a timeless, elegant touch to Montessori spaces, kids’ rooms, hampers, and décor. Each piece is uniquely handmade with love and carefully selected prints.",
+    "price": 250,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_17c7abf1_1783152754683_93.webp"
+    ],
+    "video_url": null,
+    "category": "For Kids",
+    "section": "Featured",
+    "weight": 150,
+    "stock": 1,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 2,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "fff5f635-e8fa-4a64-a04d-dfe679dce05d",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-14T16:28:03.757816+00:00",
+    "updated_at": "2026-05-14T16:29:07.431724+00:00",
+    "exchange_available": false,
+    "mrp": 300,
+    "material": null,
+    "care_instructions": null,
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Kids",
+      "Other"
+    ],
+    "sections": [
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "14326a70-d982-4ccf-be45-0c78d75e5c4d",
+    "name": "Ultimate wolverine mask",
+    "description": "3D-Printed high quality Ultimate wolverine mask",
+    "price": 3999,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_14326a70_1783152753183_517.webp"
+    ],
+    "video_url": null,
+    "category": "For Him",
+    "section": "Trending",
+    "weight": 900,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "custom size requirement",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 6,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f812ae81-e5ef-4a44-aaf6-5a84560fe8b3",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-13T12:28:39.382559+00:00",
+    "updated_at": "2026-06-13T12:38:12.22672+00:00",
+    "exchange_available": false,
+    "mrp": 6599,
+    "material": "Hard Plastic (similar material used for making bike helmets)",
+    "care_instructions": null,
+    "size_options": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "return_available": false,
+    "return_days": 2,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product packaging will contain only the Ultimate wolverine mask",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "S",
+        "price": 3999
+      },
+      {
+        "label": "M",
+        "price": 3999
+      },
+      {
+        "label": "L",
+        "price": 3999
+      },
+      {
+        "label": "XL",
+        "price": 3999
+      }
+    ],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Him",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Trending",
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "583ee8d9-0413-488d-8bc7-94aa86570535",
+    "name": "Resin Couple Coaster",
+    "description": "4 inches Resin coaster also can be customised.Including Wooden stand and a message card.",
+    "price": 550,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_583ee8d9_1783152764701_425.webp"
+    ],
+    "video_url": null,
+    "category": "Resin Art",
+    "section": "Best Sellers",
+    "weight": 150,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Would You like to add a quote",
+        "required": true,
+        "answerType": "text"
+      }
+    ],
+    "features": [
+      "Customised"
+    ],
+    "delivery_time_min": 4,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "c3b6aef6-88f0-4dbc-8654-a25a748eddfa",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-26T11:25:33.434927+00:00",
+    "updated_at": "2026-06-06T05:47:05.040164+00:00",
+    "exchange_available": false,
+    "mrp": 550,
+    "material": "Epoxy Resin",
+    "care_instructions": "Carry with care as it’s glass appearance if it will fall it may break!",
+    "size_options": [
+      "4 inches mold",
+      "6 inches"
+    ],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": "Handle with Care",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "4 inches mold",
+        "price": 550
+      },
+      {
+        "label": "6 inches",
+        "price": 1100
+      }
+    ],
+    "color_options": [
+      {
+        "name": "Pastel pink and crystal white shade",
+        "image": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-color-options/1779794620058-vth4oq.jpeg"
+      }
+    ],
+    "size_charts": [],
+    "categories": [
+      "Resin Art",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Best Sellers",
+      "Trending"
+    ],
+    "archived": false
+  },
+  {
+    "id": "6b416e0f-a720-4bb6-ac01-2c5b019571da",
+    "name": "Pedora Smile Complete Oral Care Mini Kit for Kids (4–12 Years)",
+    "description": "Make brushing fun and rewarding with the Pedora Smile Complete Oral Care Mini Kit for kids aged 4–12 years. This attractive gift box includes a microbristles toothbrush, bubble gum toothpaste, 2-minute sand timer, cold pack, reward stationery, and exclusive Captain Pedora keychain. Perfect for birthday return gifts, school kits, dentist rewards, customized gifting, and bulk orders. Designed to build healthy oral hygiene habits while keeping children engaged, motivated, and excited about daily brushing routines and self-care.",
+    "price": 999,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_6b416e0f_1783152767398_897.webp"
+    ],
+    "video_url": null,
+    "category": "For Him",
+    "section": "Pedora Smiles Kids Oral health Care Kit",
+    "weight": 450,
+    "stock": 999999,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 2,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "5234e5c0-7798-4696-83d7-59ef0bb3dc0a",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-14T18:19:09.796412+00:00",
+    "updated_at": "2026-06-14T18:19:09.796412+00:00",
+    "exchange_available": false,
+    "mrp": 1999,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Him",
+      "For Kids",
+      "For Her",
+      "Personalized Gifts",
+      "Gift Hampers",
+      "Other"
+    ],
+    "sections": [
+      "Pedora Smiles Kids Oral health Care Kit"
+    ],
+    "archived": false
+  },
+  {
+    "id": "0f20c9e2-bea8-4e11-a92f-9f2fc8aa16a0",
+    "name": "Sunflower Themed Gift Hampers for Her",
+    "description": "Sunflower Themed Gift hampers for Her with personalised message\nSunflower Pot\nSunflower Sling Bag\nWish Card\nChocolate",
+    "price": 1500,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_0f20c9e2_1783152750071_424.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Gift Hampers",
+    "weight": 500,
+    "stock": 999999,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Whatmessagewouldyoulikeoncards",
+        "required": true,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 3,
+    "delivery_time_max": 8,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "e84d8c53-7239-4420-bc50-487a4dcf6e0c",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-07T07:22:08.487754+00:00",
+    "updated_at": "2026-06-18T07:32:09.123629+00:00",
+    "exchange_available": true,
+    "mrp": 1700,
+    "material": null,
+    "care_instructions": null,
+    "size_options": [],
+    "return_available": true,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "For Her",
+      "Personalized Gifts",
+      "Gift Hampers"
+    ],
+    "sections": [
+      "Gift Hampers"
+    ],
+    "archived": true
+  },
+  {
+    "id": "12e8054f-329b-4dbd-8905-2132ec49876c",
+    "name": "Trina spiral ring",
+    "description": "vibrant mix of flowers around your finger and detailed leaves, this ring will remind you of spring and all things colorful.",
+    "price": 1600,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_12e8054f_1783152750436_682.webp",
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_12e8054f_1783152750641_594.webp"
+    ],
+    "video_url": null,
+    "category": "Jewelry",
+    "section": "Spiral ring",
+    "weight": 7,
+    "stock": 5,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Send some pictures of product that like you want",
+        "required": true,
+        "answerType": "photo"
+      }
+    ],
+    "features": [
+      "Ultra light weight"
+    ],
+    "delivery_time_min": 6,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "5752294a-cf18-46cd-86eb-465ffcbe7bd0",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-13T05:57:44.168889+00:00",
+    "updated_at": "2026-05-26T06:31:21.737173+00:00",
+    "exchange_available": false,
+    "mrp": 2000,
+    "material": "Resin, copper , resin pigment",
+    "care_instructions": "Stay away from perfume",
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [
+      {
+        "name": "gold",
+        "image": ""
+      }
+    ],
+    "size_charts": [],
+    "categories": [
+      "Jewelry",
+      "Resin Art"
+    ],
+    "sections": [
+      "Spiral ring"
+    ],
+    "archived": false
+  },
+  {
+    "id": "7ae3965d-e4f5-4d49-ac17-73e8140382dc",
+    "name": "Deadpool mask",
+    "description": "3D-Printed high quality Deadpool mask",
+    "price": 3499,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_7ae3965d_1783152770052_62.webp"
+    ],
+    "video_url": null,
+    "category": "For Him",
+    "section": "Trending",
+    "weight": 900,
+    "stock": 1,
+    "customisable": false,
+    "custom_questions": [
+      {
+        "question": "custom size requirement",
+        "required": false,
+        "answerType": "text"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 6,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "f812ae81-e5ef-4a44-aaf6-5a84560fe8b3",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-06-13T12:29:30.588351+00:00",
+    "updated_at": "2026-06-21T09:42:14.071565+00:00",
+    "exchange_available": false,
+    "mrp": 6599,
+    "material": "Hard Plastic (similar material used for making bike helmets)",
+    "care_instructions": null,
+    "size_options": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "return_available": false,
+    "return_days": 2,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product packaging will contain only the Deadpool mask",
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "S",
+        "price": 3499
+      },
+      {
+        "label": "M",
+        "price": 3499
+      },
+      {
+        "label": "L",
+        "price": 3499
+      },
+      {
+        "label": "XL",
+        "price": 3499
+      }
+    ],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "For Him",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Trending",
+      "Best Sellers"
+    ],
+    "archived": true
+  },
+  {
+    "id": "94503ac5-1ac5-44af-a916-2b7b0aea395d",
+    "name": "Secret Garden Tiara-Necklace",
+    "description": "This handcrafted masterpiece captures the essence of a wild, blooming garden. The necklace features stylized flowers with hand-applied enamel or resin finishes in a stunning array of tropical colors. Its asymmetrical vine-like frame gracefully follows the neckline, interspersed with delicate green leaves and shimmering white pearl beads. Perfectly suited for a modern bride seeking a bold, artistic statement piece for a carnival-themed event or a traditional pre-wedding ceremony.",
+    "price": 3999,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_94503ac5_1783152773747_90.webp"
+    ],
+    "video_url": null,
+    "category": "Jewelry",
+    "section": "Neckpiece",
+    "weight": 25,
+    "stock": 999999,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Send a photo of the design & colour you want.",
+        "required": true,
+        "answerType": "photo"
+      },
+      {
+        "question": "Let me know if you are looking to find specific items online, and I can help you search for them!",
+        "required": false,
+        "answerType": "photo"
+      }
+    ],
+    "features": [
+      "Designed as a lightweight, reusable alternative to fresh flower jewelry"
+    ],
+    "delivery_time_min": 8,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "5752294a-cf18-46cd-86eb-465ffcbe7bd0",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-30T21:13:07.725336+00:00",
+    "updated_at": "2026-05-30T21:35:37.079688+00:00",
+    "exchange_available": false,
+    "mrp": 7599,
+    "material": "Resin, copper ,resin pigment",
+    "care_instructions": "Stay away from perfume .",
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Jewelry",
+      "Resin Art",
+      "For Her",
+      "Personalized Gifts"
+    ],
+    "sections": [
+      "Neckpiece"
+    ],
+    "archived": false
+  },
+  {
+    "id": "d34b92ac-36b8-4d8c-bd35-cd0b88a6446d",
+    "name": "✨ Name Garland ✨",
+    "description": "Luxury Handmade Name Garlands 🌸✨\n\nBeautifully handcrafted using soft pure cotton fabrics, our personalized name garlands are made to add warmth and charm to your little one’s space 🤍\n\nEach garland is fully customizable with your choice of colours, patterns, and details—making every piece unique and specially made for your baby 💕",
+    "price": 500,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_d34b92ac_1783152784304_161.webp"
+    ],
+    "video_url": null,
+    "category": "For Kids",
+    "section": "Featured",
+    "weight": 200,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Children's Name",
+        "required": true,
+        "answerType": "text"
+      },
+      {
+        "question": "Colour Patterns - Number per letter",
+        "required": true,
+        "answerType": "text"
+      },
+      {
+        "question": "any reference image",
+        "required": false,
+        "answerType": "photo"
+      }
+    ],
+    "features": null,
+    "delivery_time_min": 3,
+    "delivery_time_max": 7,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "fff5f635-e8fa-4a64-a04d-dfe679dce05d",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-11T18:33:23.132318+00:00",
+    "updated_at": "2026-06-17T04:29:15.961907+00:00",
+    "exchange_available": false,
+    "mrp": 1500,
+    "material": "100% Organic Cotton",
+    "care_instructions": "Soft, lightweight, washable, and safe for nursery decor 🧸🌼\nPerfect for baby rooms, Name reveals, gifts, and precious Keepsake memories ✨",
+    "size_options": [
+      "3 Letters",
+      "4 Letters",
+      "5 Letters",
+      "6 Letters",
+      "7 Letters",
+      "8 Letters"
+    ],
+    "return_available": false,
+    "return_days": 0,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [
+      {
+        "label": "3 Letters",
+        "price": 500
+      },
+      {
+        "label": "4 Letters",
+        "price": 530
+      },
+      {
+        "label": "5 Letters",
+        "price": 560
+      },
+      {
+        "label": "6 Letters",
+        "price": 590
+      },
+      {
+        "label": "7 Letters",
+        "price": 620
+      },
+      {
+        "label": "8 Letters",
+        "price": 650
+      }
+    ],
+    "color_options": [],
+    "size_charts": [
+      {
+        "url": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-size-charts/1779042884214-kht6fa.jpg",
+        "label": "Pink and Purple's"
+      },
+      {
+        "url": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-size-charts/1779042921127-qlbfg.jpg",
+        "label": "Green and Blue's"
+      },
+      {
+        "url": "https://umnizxayjwnknetaspxg.supabase.co/storage/v1/object/public/uploads/product-size-charts/1779042958372-ygd6j.jpg",
+        "label": "Yellow Grey and Brown's"
+      }
+    ],
+    "categories": [
+      "For Kids",
+      "Personalized Gifts",
+      "Home Decor",
+      "Other"
+    ],
+    "sections": [
+      "Featured"
+    ],
+    "archived": false
+  },
+  {
+    "id": "dc51474f-b58c-4a97-94cf-4fceacb3557c",
+    "name": "Peach blossom hair pin (pack of 3)",
+    "description": "Artisanal Craftsmanship: Meticulously shaped with gold-tone wire and finished with glossy dip resin.\nElegant Design: Features blooming pink and coral ombre petals with shimmering translucent green leaves.\nDelicate Details: Anchored by a central pearl bead cluster and surrounded by intricate gold wire loop accents.\nSecure Hold: Mounted on traditional U-shaped metal hair forks that slide smoothly into buns, twists, and updos.\nVersatile Styling: Wear them clustered together for a dramatic statement or spaced out across an intricate braid",
+    "price": 849,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_dc51474f_1783152786039_938.webp"
+    ],
+    "video_url": null,
+    "category": "Resin Art",
+    "section": "Hair Accessories",
+    "weight": 20,
+    "stock": 1,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Which colours do u want for flowers",
+        "required": true,
+        "answerType": "text"
+      }
+    ],
+    "features": [
+      "Extremely light weight"
+    ],
+    "delivery_time_min": 6,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "5752294a-cf18-46cd-86eb-465ffcbe7bd0",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-15T17:13:11.412314+00:00",
+    "updated_at": "2026-05-17T10:05:17.049299+00:00",
+    "exchange_available": false,
+    "mrp": 1299,
+    "material": "Resin, copper ,resin pigment",
+    "care_instructions": "Stay away from perfume and keep at zip lock pocket.",
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Resin Art",
+      "Jewelry"
+    ],
+    "sections": [
+      "Hair Accessories"
+    ],
+    "archived": false
+  },
+  {
+    "id": "247e6014-e79e-452d-b8e2-16d89c3d2be0",
+    "name": "Kanzashi flower pink purple metalic hair pin( pack of 4).",
+    "description": "These handmade floral hair pins are designed to add a delicate, romantic touch to special occasion hairstyles.Craftsmanship: Made using wire-wrapping and dip resin techniques to create translucent, glass-like flower petals. Aesthetics: Features gradient shades of vibrant pink and soft white with gold-toned wire borders and shimmering rhinestone stamen centers. Design: Mounted on flexible, dual-prong gold u-pins that slide easily into buns, updos, or braided hairstyles. Versatility: Perfect for bridal wear, weddings, festivals. Colours:metalic pink-purple touch",
+    "price": 749,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_247e6014_1783152756025_230.webp"
+    ],
+    "video_url": null,
+    "category": "Resin Art",
+    "section": "Hair Accessories",
+    "weight": 7,
+    "stock": 4,
+    "customisable": true,
+    "custom_questions": [
+      {
+        "question": "Name the colour which you want for flowers .",
+        "required": true,
+        "answerType": "text"
+      }
+    ],
+    "features": [
+      "Ultra Light weight"
+    ],
+    "delivery_time_min": 6,
+    "delivery_time_max": 6,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "5752294a-cf18-46cd-86eb-465ffcbe7bd0",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-16T05:06:03.387891+00:00",
+    "updated_at": "2026-05-17T10:06:08.865411+00:00",
+    "exchange_available": false,
+    "mrp": 1200,
+    "material": "Resin, copper,resin pigment",
+    "care_instructions": "Stay away from perfume & zipper bag.",
+    "size_options": [],
+    "return_available": false,
+    "return_days": 0,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Resin Art",
+      "Jewelry"
+    ],
+    "sections": [
+      "Hair Accessories"
+    ],
+    "archived": false
+  },
+  {
+    "id": "87575858-28bf-45fb-be1d-0dc17863a781",
+    "name": "Handmade Crochet Pink Tulip Bouquet",
+    "description": "A forever bloom for every occasion.",
+    "price": 999,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_87575858_1783152771909_549.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Best Sellers",
+    "weight": 450,
+    "stock": 3,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 3,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T09:36:42.363041+00:00",
+    "updated_at": "2026-05-19T09:36:42.363041+00:00",
+    "exchange_available": true,
+    "mrp": 1000,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": true,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet"
+    ],
+    "sections": [
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "c94974a1-4c36-416d-9cc5-782573f3317b",
+    "name": "Sunflower bouquet",
+    "description": "Single sunflower bouquet packed in brown paper",
+    "price": 249.99,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_c94974a1_1783152779663_968.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Best Sellers",
+    "weight": 200,
+    "stock": 10,
+    "customisable": false,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 3,
+    "delivery_time_max": 5,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T10:39:43.455773+00:00",
+    "updated_at": "2026-05-19T10:39:43.455773+00:00",
+    "exchange_available": true,
+    "mrp": 299,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet"
+    ],
+    "sections": [
+      "Best Sellers"
+    ],
+    "archived": false
+  },
+  {
+    "id": "fa8f2945-d605-4f7b-8345-4b4f639fb49d",
+    "name": "Cigarette case",
+    "description": "A sleek and durable 3D printed cigarette case designed for convenience and protection\r\n\r\nHolds up to 8 cigarettes securely\r\nDedicated lighter slot for easy, all-in-one carrying\r\n\r\nProtects cigarettes from crushing, bending, and damage\r\n\r\nWater-resistant design helps keep contents safe from moisture\r\n\r\nCompact and travel-friendly for everyday use\r\n\r\nMinimal,modern design with a clean finish",
+    "price": 550,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_fa8f2945_1783152788746_558.webp"
+    ],
+    "video_url": null,
+    "category": "Other",
+    "section": "Best Sellers",
+    "weight": 100,
+    "stock": 999999,
+    "customisable": false,
+    "custom_questions": [],
+    "features": [
+      "3d printed cigarette case"
+    ],
+    "delivery_time_min": 6,
+    "delivery_time_max": 10,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "b1ec8c9d-796a-4c90-a749-dfb9e27d194d",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-27T14:50:27.068537+00:00",
+    "updated_at": "2026-05-27T15:32:30.446577+00:00",
+    "exchange_available": false,
+    "mrp": 1200,
+    "material": "Hard plastic",
+    "care_instructions": null,
+    "size_options": [],
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": "Actual product will only contain the cigarette case",
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Other"
+    ],
+    "sections": [
+      "Best Sellers",
+      "New Arrivals"
+    ],
+    "archived": false
+  },
+  {
+    "id": "fcba2642-1638-4c39-8352-89701eb00262",
+    "name": "Evil eye bag charm",
+    "description": ".",
+    "price": 170,
+    "images": [
+      "https://hempwoejqsozszwgkbjp.supabase.co/storage/v1/object/public/uploads/products/exact_fcba2642_1783152789727_960.webp"
+    ],
+    "video_url": null,
+    "category": "Crochet",
+    "section": "Featured",
+    "weight": 100,
+    "stock": 8,
+    "customisable": true,
+    "custom_questions": null,
+    "features": null,
+    "delivery_time_min": 2,
+    "delivery_time_max": 3,
+    "delivery_time_unit": "days",
+    "instant_delivery": false,
+    "seller_id": "3226b96c-1e63-4198-aee8-55e4cd1fcf11",
+    "status": "approved",
+    "approved_at": null,
+    "rejected_at": null,
+    "rejection_reason": null,
+    "approved_by": null,
+    "rejected_by": null,
+    "created_at": "2026-05-19T10:56:36.260858+00:00",
+    "updated_at": "2026-06-18T05:16:17.380742+00:00",
+    "exchange_available": false,
+    "mrp": 250,
+    "material": null,
+    "care_instructions": null,
+    "size_options": null,
+    "return_available": false,
+    "return_days": 7,
+    "cod_available": false,
+    "legal_disclaimer": null,
+    "two_way_delivery": false,
+    "size_price_options": [],
+    "color_options": [],
+    "size_charts": [],
+    "categories": [
+      "Crochet",
+      "For Her",
+      "Gift Hampers"
+    ],
+    "sections": [
+      "Featured"
+    ],
+    "archived": true
+  }
+]

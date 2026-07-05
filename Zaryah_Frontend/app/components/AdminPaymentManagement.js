@@ -145,6 +145,12 @@ export const AdminPaymentManagement = () => {
                   <h3 className="text-lg font-bold text-gray-900">Order #{order.id}</h3>
                   <p className="text-sm text-gray-600">Buyer: {order.buyer?.name || 'N/A'}</p>
                   <p className="text-sm text-gray-600">Amount: ₹{order.total_amount}</p>
+                  <p className="text-sm text-gray-600 font-medium">Payment Method: <span className="uppercase text-xs bg-gray-150 px-2 py-0.5 rounded font-bold text-gray-800">{order.payment_method}</span></p>
+                  {order.payment_id && (
+                    <p className="text-sm text-primary-700 font-semibold mt-1">
+                      UTR / Payment Ref: <span className="font-mono bg-primary-50 text-primary-800 px-2 py-0.5 rounded border border-primary-100">{order.payment_id}</span>
+                    </p>
+                  )}
                   <p className="text-sm text-gray-600">Date: {new Date(order.created_at).toLocaleString()}</p>
                 </div>
                 
@@ -171,8 +177,8 @@ export const AdminPaymentManagement = () => {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="Enter Razorpay Payment ID (pay_xxxxx)"
-                      defaultValue={order.razorpay_payment_id || ''}
+                      placeholder="Enter UPI Ref / UTR / Payment ID"
+                      defaultValue={order.payment_id || order.razorpay_payment_id || ''}
                       id={`payment-id-${order.id}`}
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     />
@@ -185,14 +191,14 @@ export const AdminPaymentManagement = () => {
                       className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                     >
                       <CheckCircle className="w-4 h-4" />
-                      {processingOrder === order.id ? 'Processing...' : 'Verify'}
+                      {processingOrder === order.id ? 'Processing...' : 'Verify & Approve'}
                     </button>
                     <button
                       onClick={() => {
                         const input = document.getElementById(`payment-id-${order.id}`)
-                        handleRefund(order.id, input.value || order.razorpay_payment_id)
+                        handleRefund(order.id, input.value || order.payment_id || order.razorpay_payment_id)
                       }}
-                      disabled={processingOrder === order.id || !order.razorpay_payment_id}
+                      disabled={processingOrder === order.id || !(order.payment_id || order.razorpay_payment_id)}
                       className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
                     >
                       <XCircle className="w-4 h-4" />
@@ -201,7 +207,7 @@ export const AdminPaymentManagement = () => {
                   </div>
                   <p className="text-xs text-gray-500">
                     <AlertCircle className="w-3 h-3 inline mr-1" />
-                    Check Razorpay Dashboard for Payment ID if payment was completed
+                    Verify the UTR ref matches your bank account/payout receipt before clicking Verify.
                   </p>
                 </div>
               )}

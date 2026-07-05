@@ -156,7 +156,7 @@ export async function GET(request) {
       .from('withdrawal_requests')
       .select('*')
       .eq('seller_id', user.id)
-      .order('requested_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(20)
 
     if (withdrawalsError) {

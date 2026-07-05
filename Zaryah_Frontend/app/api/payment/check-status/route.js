@@ -1,55 +1,70 @@
-// Check payment status from Razorpay
+// Check payment status from PhonePe using SDK
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
-import Razorpay from 'razorpay'
+import { StandardCheckoutClient, Env } from '@phonepe-pg/pg-sdk-node'
 
-const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-})
+let phonepeClient = null
+function getPhonePeClient() {
+  if (!phonepeClient) {
+    const env = process.env.PHONEPE_ENV === 'PRODUCTION' ? Env.PRODUCTION : Env.SANDBOX
+    phonepeClient = StandardCheckoutClient.getInstance(
+      process.env.PHONEPE_CLIENT_ID,
+      process.env.PHONEPE_CLIENT_SECRET,
+      parseInt(process.env.PHONEPE_CLIENT_VERSION || '1'),
+      env
+    )
+  }
+  return phonepeClient
+}
 
 export async function POST(request) {
   try {
     await requireAuth(request)
     
-    const { razorpayOrderId } = await request.json()
+    const { merchantTransactionId, merchantOrderId } = await request.json()
+    const orderId = merchantOrderId || merchantTransactionId
 
-    if (!razorpayOrderId) {
+    if (!orderId) {
       return NextResponse.json({ error: 'Order ID required' }, { status: 400 })
     }
 
-    // Fetch order details from Razorpay
-    const order = await razorpay.orders.fetch(razorpayOrderId)
-    
-    // Fetch payments for this order
-    const payments = await razorpay.orders.fetchPayments(razorpayOrderId)
+    // Fetch status using SDK
+    const client = getPhonePeClient()
+    const statusResult = await client.getOrderStatus(orderId)
 
-    const latestPayment = payments.items?.[0]
+    const paymentState = statusResult?.state || 'UNKNOWN'
+    const isSuccess = paymentState === 'COMPLETED'
+
+    // Map PhonePe states to frontend-compatible format
+    let mappedStatus = 'created'
+    if (paymentState === 'COMPLETED') mappedStatus = 'captured'
+    else if (paymentState === 'FAILED') mappedStatus = 'failed'
+    else if (paymentState === 'PENDING') mappedStatus = 'created'
 
     return NextResponse.json({
       success: true,
       order: {
-        id: order.id,
-        status: order.status, // created, attempted, paid
-        amount: order.amount,
-        amount_paid: order.amount_paid,
-        amount_due: order.amount_due
+        id: orderId,
+        status: isSuccess ? 'paid' : paymentState.toLowerCase(),
+        amount: statusResult?.amount || 0,
+        amount_paid: isSuccess ? (statusResult?.amount || 0) : 0,
+        amount_due: isSuccess ? 0 : (statusResult?.amount || 0)
       },
-      payment: latestPayment ? {
-        id: latestPayment.id,
-        status: latestPayment.status, // created, authorized, captured, failed
-        method: latestPayment.method,
-        amount: latestPayment.amount,
-        captured: latestPayment.captured,
-        error_code: latestPayment.error_code,
-        error_description: latestPayment.error_description
-      } : null
+      payment: {
+        id: statusResult?.transactionId || orderId,
+        status: mappedStatus,
+        method: statusResult?.paymentInstrument?.type || 'UNKNOWN',
+        amount: statusResult?.amount || 0,
+        captured: isSuccess,
+        error_code: isSuccess ? null : statusResult?.code,
+        error_description: isSuccess ? null : statusResult?.message
+      }
     })
 
   } catch (error) {
     console.error('Payment status check error:', error)
     return NextResponse.json({ 
-      error: error.error?.description || error.message 
+      error: error.message || 'Failed to check payment status'
     }, { status: 500 })
   }
 }

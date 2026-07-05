@@ -27,10 +27,6 @@ export async function GET(request) {
           name,
           email
         ),
-        sellers:seller_id (
-          id,
-          business_name
-        ),
         orders:order_reference_id (
           id,
           status,
@@ -50,23 +46,20 @@ export async function GET(request) {
       .from('buyers')
       .select('id')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     const { data: sellerCheck } = await supabase
       .from('sellers')
       .select('id')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     // Admin sees all tickets
     if (user.user_type === 'Admin') {
       // No filter - admin sees everything
-    } else if (buyerCheck) {
-      // Buyer sees their own tickets
+    } else {
+      // Both buyers and sellers see their own tickets (filtered by user_id)
       query = query.eq('user_id', user.id)
-    } else if (sellerCheck) {
-      // Seller sees tickets related to their products/orders
-      query = query.or(`seller_id.eq.${user.id},user_id.eq.${user.id}`)
     }
 
     const { data: tickets, error } = await query
@@ -151,10 +144,8 @@ export async function POST(request) {
     // Step 6: Prepare ticket data
     console.log('Step 6: Preparing ticket data...')
     const ticketData = {
-      ticket_id: ticketId,
       user_id: user.id,
       subject,
-      description: message,
       priority: priority || 'medium',
       category: category || 'other',
       status: 'open'
@@ -162,41 +153,13 @@ export async function POST(request) {
 
     // Add optional related IDs only if provided
     if (related_order_id) {
-      console.log('Step 6a: Fetching seller from order:', related_order_id)
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .select('seller_id')
-        .eq('id', related_order_id)
-        .maybeSingle()
-      
-      if (orderError) {
-        console.error('❌ Error fetching order:', orderError.message)
-      } else if (order) {
-        ticketData.seller_id = order.seller_id
-        ticketData.order_reference_id = related_order_id
-        console.log('✅ Added order reference and seller_id:', order.seller_id)
-      } else {
-        console.warn('⚠️ Order not found:', related_order_id)
-      }
+      ticketData.order_reference_id = related_order_id
+      console.log('✅ Added order reference:', related_order_id)
     }
 
     if (related_product_id) {
-      console.log('Step 6b: Fetching seller from product:', related_product_id)
-      const { data: product, error: productError } = await supabase
-        .from('products')
-        .select('seller_id')
-        .eq('id', related_product_id)
-        .maybeSingle()
-      
-      if (productError) {
-        console.error('❌ Error fetching product:', productError.message)
-      } else if (product) {
-        ticketData.seller_id = product.seller_id
-        ticketData.product_reference_id = related_product_id
-        console.log('✅ Added product reference and seller_id:', product.seller_id)
-      } else {
-        console.warn('⚠️ Product not found:', related_product_id)
-      }
+      ticketData.product_reference_id = related_product_id
+      console.log('✅ Added product reference:', related_product_id)
     }
 
     console.log('✅ Final ticket data:', JSON.stringify(ticketData, null, 2))

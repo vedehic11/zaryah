@@ -131,6 +131,7 @@ export async function GET(request) {
         .from('orders')
         .select('seller_id, created_at')
         .in('seller_id', sellerIds)
+        .limit(500)
 
       if (ordersError) {
         console.error('Error fetching seller orders:', ordersError)
@@ -286,7 +287,11 @@ export async function GET(request) {
     })
 
     console.log('=== GET /api/products SUCCESS ===')
-    return NextResponse.json(productsWithRatings)
+    return NextResponse.json(productsWithRatings, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      }
+    })
   } catch (error) {
     console.error('=== GET /api/products ERROR ===')
     console.error('Error fetching products:', error)

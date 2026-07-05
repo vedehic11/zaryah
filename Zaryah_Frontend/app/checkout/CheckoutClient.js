@@ -340,210 +340,57 @@ export default function CheckoutClient() {
       })
 
       if (paymentMethod === 'online') {
-        console.log('Step 4: Initiating online payment...')
+        console.log('Step 4: Creating pending order in database...')
 
-        // Check if Razorpay is configured
-        if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
-          console.error('Razorpay not configured')
-          toast.error('Online payment is not available. Please use Cash on Delivery.')
-          setIsProcessing(false)
-          return
+        // Create order first
+        const responseData = await apiService.request('/orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            ...orderData,
+            paymentStatus: 'pending'
+          })
+        })
+
+        if (!responseData || !responseData.order) {
+          throw new Error('Failed to create order record. Please try again.')
         }
 
-        // Initialize Razorpay payment (send amount in paise)
+        const { order } = responseData
+        console.log('Pending Order created:', order.id)
+
+        // Save order details to sessionStorage for the callback page
+        try {
+          sessionStorage.setItem('zaryah-pendingOrder', JSON.stringify({
+            orderId: order.id
+          }))
+        } catch (e) {
+          console.error('Failed to save pending order to sessionStorage', e)
+        }
+
+        // Call backend to create PhonePe payment and get redirect URL
         const paymentData = await apiService.request('/payment/create-order', {
           method: 'POST',
-          body: JSON.stringify({ amount: total * 100 }) // Send in paise
+          body: JSON.stringify({
+            amount: Math.round(total * 100),
+            orderId: order.id
+          })
         })
 
-        console.log('Step 5: Payment order created:', paymentData)
-        const { order_id: razorpayOrderId } = paymentData
+        console.log('PhonePe payment initiated:', paymentData)
 
-        const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: total * 100, // Amount in paise for Razorpay
-          currency: 'INR',
-          name: 'Zaryah',
-          description: 'Order Payment',
-          order_id: razorpayOrderId,
-          handler: async function (response) {
-            console.log('✅ Razorpay payment successful:', response)
-
-            // Show immediate success feedback
-            toast.loading('Verifying payment...', { id: 'payment-verify', duration: 10000 })
-
-            try {
-              const createdOrderResponse = await apiService.request('/orders', {
-                method: 'POST',
-                body: JSON.stringify({
-                  ...orderData,
-                  paymentId: response.razorpay_payment_id,
-                })
-              })
-
-              console.log('Step 3: Order created successfully after payment:', createdOrderResponse)
-
-              if (!createdOrderResponse || !createdOrderResponse.order) {
-                throw new Error('Invalid response from server')
-              }
-
-              const { order } = createdOrderResponse
-              console.log('Order ID:', order.id)
-
-              // Verify payment with 8 second timeout
-              const verificationPromise = apiService.request('/payment/verify', {
-                method: 'POST',
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  order_id: order.id
-                })
-              })
-
-              const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Verification timeout')), 8000)
-              )
-
-              const verificationResult = await Promise.race([verificationPromise, timeoutPromise])
-
-              console.log('✅ Payment verified successfully:', verificationResult)
-              toast.success('Payment successful! Redirecting...', { id: 'payment-verify' })
-              setIsProcessing(false)
-              if (!buyNowMode) clearCart()
-
-              // Small delay before redirect to show success message
-              setTimeout(() => navigateAfterOrder(), 1000)
-            } catch (error) {
-              console.error('❌ Payment verification failed:', error)
-              setIsProcessing(false)
-
-              if (error.message === 'Verification timeout') {
-                // Check actual payment status from Razorpay before assuming anything
-                toast.loading('Checking payment status...', { id: 'payment-verify' })
-
-                try {
-                  const statusCheck = await apiService.request('/payment/check-status', {
-                    method: 'POST',
-                    body: JSON.stringify({ razorpayOrderId })
-                  })
-
-                  if (statusCheck.payment?.status === 'captured' || statusCheck.payment?.status === 'authorized') {
-                    // Payment succeeded, retry verification
-                    toast.loading('Payment confirmed! Finalizing order...', { id: 'payment-verify' })
-
-                    const createdOrderResponse = await apiService.request('/orders', {
-                      method: 'POST',
-                      body: JSON.stringify({
-                        ...orderData,
-                        paymentId: statusCheck.payment.id,
-                      })
-                    })
-
-                    if (!createdOrderResponse || !createdOrderResponse.order) {
-                      throw new Error('Invalid response from server')
-                    }
-
-                    const { order } = createdOrderResponse
-
-                    await apiService.request('/payment/verify', {
-                      method: 'POST',
-                      body: JSON.stringify({
-                        razorpay_order_id: razorpayOrderId,
-                        razorpay_payment_id: statusCheck.payment.id,
-                        razorpay_signature: response.razorpay_signature,
-                        order_id: order.id
-                      })
-                    })
-
-                    toast.success('Payment successful!', { id: 'payment-verify' })
-                    if (!buyNowMode) clearCart()
-                    setTimeout(() => navigateAfterOrder(), 1000)
-                  } else if (statusCheck.payment?.status === 'failed') {
-                    // Payment actually failed
-                    toast.error(`Payment failed: ${statusCheck.payment.error_description || 'Unknown error'}`,
-                      {
-                        id: 'payment-verify',
-                        duration: 5000
-                      }
-                    )
-                  } else {
-                    // Still processing or uncertain
-                    toast.loading('Payment is being processed. Check your orders in a moment.',
-                      {
-                        id: 'payment-verify',
-                        duration: 5000
-                      }
-                    )
-                    setTimeout(() => navigateAfterOrder(), 3000)
-                  }
-                } catch (statusError) {
-                  console.error('Status check failed:', statusError)
-                  toast.loading('Unable to confirm status. Please check your orders.',
-                    {
-                      id: 'payment-verify',
-                      duration: 5000
-                    }
-                  )
-                  setTimeout(() => navigateAfterOrder(), 3000)
-                }
-              } else {
-                // Actual verification error
-                toast.error('Verification failed. Check your orders or contact support.',
-                  {
-                    id: 'payment-verify',
-                    duration: 6000
-                  }
-                )
-                setTimeout(() => navigateAfterOrder(), 3000)
-              }
-            }
-          },
-          prefill: {
-            name: user.name,
-            email: user.email,
-            contact: selectedAddress.phone
-          },
-          theme: {
-            color: '#B8860B'
-          },
-          modal: {
-            ondismiss: function () {
-              console.log('⚠️ Payment modal dismissed by user')
-              setIsProcessing(false)
-              toast.error('Payment cancelled')
-            },
-            confirm_close: true
-          }
+        if (!paymentData?.redirectUrl) {
+          throw new Error('Unable to initiate PhonePe payment. Please try again.')
         }
 
-        console.log('Step 6: Opening Razorpay modal...')
-        const razorpay = new window.Razorpay(options)
+        // Clear cart on checkout (buyer can retrieve/retry failed orders from Order History)
+        try {
+          if (!buyNowMode) await clearCart()
+        } catch (cartError) {
+          console.error('Cart clear error (non-critical):', cartError)
+        }
 
-        // Handle payment failure
-        razorpay.on('payment.failed', async function (response) {
-          console.error('❌ Payment failed:', response.error)
-          setIsProcessing(false)
-
-          // Update order status to failed
-          try {
-            await apiService.request(`/orders/${order.id}`, {
-              method: 'PATCH',
-              body: JSON.stringify({
-                payment_status: 'failed',
-                notes: `Payment failed: ${response.error.description}`
-              })
-            })
-          } catch (error) {
-            console.error('Failed to update order status:', error)
-          }
-
-          toast.error(`Payment failed: ${response.error.description}`)
-        })
-
-        razorpay.open()
-
-        // Don't set isProcessing to false here as payment modal is open
+        toast.loading('Redirecting to PhonePe...', { duration: 5000 })
+        window.location.href = paymentData.redirectUrl
         return
       } else {
         const responseData = await apiService.request('/orders', {
@@ -916,18 +763,12 @@ export default function CheckoutClient() {
               <div className="space-y-3">
                 <div
                   onClick={() => {
-                    if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
-                      toast.error('Online payment is not available at the moment. Please use Cash on Delivery.')
-                      return
-                    }
                     setPaymentMethod('online')
                   }}
                   className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    !process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
-                      ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
-                      : paymentMethod === 'online'
-                        ? 'border-primary-600 bg-primary-50'
-                        : 'border-gray-200 hover:border-primary-300'
+                    paymentMethod === 'online'
+                      ? 'border-primary-600 bg-primary-50'
+                      : 'border-gray-200 hover:border-primary-300'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -936,9 +777,6 @@ export default function CheckoutClient() {
                       <div>
                         <p className="font-semibold text-charcoal-900 flex items-center gap-2">
                           Online Payment
-                          {!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID && (
-                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">Coming Soon</span>
-                          )}
                         </p>
                         <p className="text-sm text-charcoal-600">
                           Credit/Debit Card, UPI, Netbanking

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import { createShipment } from '../lib/shiprocket.js'
+import shiprocketModule from '../lib/shiprocket.js'
+const { createShipment } = shiprocketModule
 import * as path from 'path'
 
 const ORDER_ID = process.env.ORDER_ID || '84b89675-4ecc-49e5-bd48-24015b57e4ad'

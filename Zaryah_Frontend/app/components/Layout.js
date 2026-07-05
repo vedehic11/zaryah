@@ -162,6 +162,7 @@ export const Layout = ({ children, dynamicNavItems = [] }) => {
       return getContextualProducts(data || [])
     } catch (error) {
       console.error('Error loading products:', error)
+      setProductsLoaded(true)
       return []
     }
   }

@@ -15,7 +15,8 @@ import {
   AlertCircle,
   Star,
   MessageSquare,
-  Package
+  Package,
+  QrCode
 } from 'lucide-react'
 import { apiService } from '../services/api'
 import { useRouter } from 'next/navigation'
@@ -44,6 +45,7 @@ export const AdminDashboardPage = () => {
   const [activeTab, setActiveTab] = useState('sellers') // sellers, withdrawals, earnings, support
   const [withdrawals, setWithdrawals] = useState([])
   const [earnings, setEarnings] = useState(null)
+  const [selectedUpiQr, setSelectedUpiQr] = useState(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -332,11 +334,24 @@ export const AdminDashboardPage = () => {
                         </div>
                         <div>
                           <p className="text-xs text-gray-500">UPI ID</p>
-                          <p className="font-mono text-sm">{withdrawal.upi_id || 'Not set'}</p>
+                          <p className="font-mono text-sm">{withdrawal.upi_id || withdrawal.sellers?.upi_id || 'Not set'}</p>
+                          {(withdrawal.upi_id || withdrawal.sellers?.upi_id) && (
+                            <button
+                              onClick={() => setSelectedUpiQr({
+                                upi_id: withdrawal.upi_id || withdrawal.sellers?.upi_id,
+                                name: withdrawal.sellers?.account_holder_name || withdrawal.sellers?.business_name || 'Seller',
+                                amount: withdrawal.amount
+                              })}
+                              className="text-xs text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1 mt-1 font-semibold"
+                            >
+                              <QrCode className="w-3.5 h-3.5" />
+                              <span>Click to View QR</span>
+                            </button>
+                          )}
                         </div>
                         <div>
                           <p className="text-xs text-gray-500">Requested</p>
-                          <p className="text-sm">{new Date(withdrawal.requested_at).toLocaleDateString()}</p>
+                          <p className="text-sm">{new Date(withdrawal.created_at).toLocaleDateString()}</p>
                         </div>
                       </div>
 
@@ -542,6 +557,40 @@ export const AdminDashboardPage = () => {
           )}
         </div>
       </div>
+
+      {/* UPI QR Code Modal */}
+      {selectedUpiQr && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl relative">
+            <button
+              onClick={() => setSelectedUpiQr(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1"
+            >
+              <XCircle className="w-6 h-6" />
+            </button>
+            <div className="flex justify-center mb-3 text-primary-600">
+              <QrCode className="w-10 h-10" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Pay via UPI QR</h3>
+            <p className="text-sm font-semibold text-gray-800">{selectedUpiQr.name}</p>
+            <p className="text-xs font-mono text-gray-500 mb-4">{selectedUpiQr.upi_id}</p>
+            <div className="flex justify-center bg-gray-50 p-4 rounded-xl border border-gray-200 mb-4">
+              <img
+                src={`/api/qr?size=220&data=${encodeURIComponent(`upi://pay?pa=${selectedUpiQr.upi_id}&pn=${encodeURIComponent(selectedUpiQr.name)}&am=${selectedUpiQr.amount}&cu=INR`)}`}
+                alt="UPI QR Code"
+                className="w-48 h-48 rounded-lg"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mb-4">Scan with Google Pay, PhonePe, Paytm, or BHIM UPI app to pay ₹{selectedUpiQr.amount}</p>
+            <button
+              onClick={() => setSelectedUpiQr(null)}
+              className="w-full bg-gray-900 text-white py-2.5 rounded-xl font-semibold hover:bg-gray-800 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

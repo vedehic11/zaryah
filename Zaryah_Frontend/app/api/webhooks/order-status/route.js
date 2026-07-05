@@ -62,17 +62,25 @@ export async function POST(request) {
     if (status === 'delivered' && !order.wallet_credited) {
       // Move funds from pending to available
       try {
-        const { data: result, error: walletError } = await supabase
-          .rpc('move_pending_to_available', {
-            p_seller_id: order.seller_id,
-            p_order_id: order.id,
-            p_amount: order.seller_amount
-          })
+        const { data: wallet } = await supabase
+          .from('wallets')
+          .select('pending_balance, available_balance')
+          .eq('seller_id', order.seller_id)
+          .maybeSingle()
 
-        if (walletError) {
-          console.error('Wallet update error:', walletError)
-          throw walletError
-        }
+        const currentPending = parseFloat(wallet?.pending_balance || 0)
+        const currentAvailable = parseFloat(wallet?.available_balance || 0)
+        const sellerEarnings = parseFloat(order.seller_amount || 0)
+        const newAvailable = currentAvailable + sellerEarnings
+        const newPending = Math.max(0, currentPending - sellerEarnings)
+
+        await supabase
+          .from('wallets')
+          .update({
+            available_balance: newAvailable,
+            pending_balance: newPending
+          })
+          .eq('seller_id', order.seller_id)
 
         // Mark order as wallet credited
         await supabase

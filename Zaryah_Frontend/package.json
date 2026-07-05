@@ -17,6 +17,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.0.18",
+    "@phonepe-pg/pg-sdk-node": "^2.0.6",
     "@supabase/supabase-js": "^2.86.0",
     "@vercel/analytics": "^2.0.1",
     "autoprefixer": "10.4.15",

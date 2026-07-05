@@ -868,34 +868,42 @@ export async function PUT(request, context) {
           
           console.log(`✅ Order delivered - ₹${sellerEarnings} moving from pending to available`)
           
-          const { error: releaseError } = await supabase
-            .rpc('move_pending_to_available', {
-              p_seller_id: order.seller_id,
-              p_order_id: id,
-              p_amount: sellerEarnings
+          const { data: wallet } = await supabase
+            .from('wallets')
+            .select('pending_balance, available_balance')
+            .eq('seller_id', order.seller_id)
+            .maybeSingle()
+
+          const currentPending = parseFloat(wallet?.pending_balance || 0)
+          const currentAvailable = parseFloat(wallet?.available_balance || 0)
+          const newAvailable = currentAvailable + sellerEarnings
+          const newPending = Math.max(0, currentPending - sellerEarnings)
+
+          await supabase
+            .from('wallets')
+            .update({
+              available_balance: newAvailable,
+              pending_balance: newPending
+            })
+            .eq('seller_id', order.seller_id)
+
+          await supabase
+            .from('orders')
+            .update({ wallet_credited: true })
+            .eq('id', id)
+
+          await supabase
+            .from('transactions')
+            .insert({
+              seller_id: order.seller_id,
+              order_id: id,
+              amount: sellerEarnings,
+              type: 'credit_available',
+              status: 'completed',
+              description: `Order delivered - Funds released to available balance`
             })
 
-          if (releaseError) {
-            console.error('Wallet fund release failed:', releaseError)
-          } else {
-            await supabase
-              .from('orders')
-              .update({ wallet_credited: true })
-              .eq('id', id)
-
-            await supabase
-              .from('transactions')
-              .insert({
-                seller_id: order.seller_id,
-                order_id: id,
-                amount: sellerEarnings,
-                type: 'credit_available',
-                status: 'completed',
-                description: `Order delivered - Funds released to available balance`
-              })
-
-            console.log('✅ Wallet updated: ₹' + sellerEarnings + ' released to available balance')
-          }
+          console.log('✅ Wallet updated: ₹' + sellerEarnings + ' released to available balance')
           
           // Note: admin_earnings already recorded in payment/verify - no duplicate insertion needed
         }

@@ -29,7 +29,7 @@ export function BuyerSupportPage() {
     fetchTickets()
     fetchUnreadCounts()
     // Poll for unread counts every 30 seconds
-    const interval = setInterval(fetchUnreadCounts, 30000)
+    const interval = setInterval(fetchUnreadCounts, 120000)
     return () => clearInterval(interval)
   }, [])
 

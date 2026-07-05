@@ -156,24 +156,47 @@ export async function requireAuth(request) {
  */
 export async function getUserBySupabaseAuthId(supabaseAuthId) {
   console.log('Looking up user by supabase_auth_id:', supabaseAuthId)
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('users')
     .select('*')
     .eq('supabase_auth_id', supabaseAuthId)
-    .single()
+    .maybeSingle()
 
-  if (error) {
-    console.error('Error fetching user by supabase_auth_id:', error)
-    return null
+  if (data) {
+    console.log('Found user by supabase_auth_id:', { id: data.id, email: data.email, user_type: data.user_type })
+    return data
   }
-  
-  if (!data) {
-    console.error('No user found with supabase_auth_id:', supabaseAuthId)
-    return null
+
+  // Fallback: If project was migrated, lookup user by email from Supabase Auth and re-link
+  try {
+    const { data: authUserData, error: authErr } = await supabaseAdmin.auth.admin.getUserById(supabaseAuthId)
+    const email = authUserData?.user?.email
+
+    if (email) {
+      console.log('Attempting email re-link for:', email)
+      const { data: userByEmail } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle()
+
+      if (userByEmail) {
+        await supabase
+          .from('users')
+          .update({ supabase_auth_id: supabaseAuthId })
+          .eq('id', userByEmail.id)
+
+        userByEmail.supabase_auth_id = supabaseAuthId
+        console.log('✅ Successfully re-linked existing user profile to new Auth ID:', email)
+        return userByEmail
+      }
+    }
+  } catch (e) {
+    console.error('Error re-linking user by email:', e.message)
   }
-  
-  console.log('Found user:', { id: data.id, email: data.email, user_type: data.user_type })
-  return data
+
+  console.error('No user found with supabase_auth_id:', supabaseAuthId)
+  return null
 }
 
 /**

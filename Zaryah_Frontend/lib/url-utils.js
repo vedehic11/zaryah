@@ -59,6 +59,14 @@ export const SVG_PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cD
 export const optimizeImageUrl = (url, width = 600, quality = 80) => {
   if (!url || typeof url !== 'string') return SVG_PLACEHOLDER
 
+  // Rewrite any old/legacy Supabase domain to the current active Supabase domain
+  const currentSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://hempwoejqsozszwgkbjp.supabase.co'
+  const currentHost = currentSupabaseUrl.replace(/^https?:\/\//i, '').replace(/\/$/, '')
+
+  if (url.includes('.supabase.co/storage/v1/object/public/')) {
+    url = url.replace(/[\w-]+\.supabase\.co/gi, currentHost)
+  }
+
   // Relative path or local asset
   if (url.startsWith('/') || url.startsWith('data:') || url.startsWith('blob:')) {
     if (url.includes('placeholder.jpg') || url.includes('placeholder-product.png')) {

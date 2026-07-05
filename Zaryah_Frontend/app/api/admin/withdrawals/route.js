@@ -2,13 +2,7 @@
 import { NextResponse } from 'next/server'
 import { requireRole } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import Razorpay from 'razorpay'
 
-// Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-})
 
 // GET /api/admin/withdrawals - Get all withdrawal requests
 export async function GET(request) {
@@ -21,7 +15,7 @@ export async function GET(request) {
     let query = supabase
       .from('withdrawal_requests')
       .select('*')
-      .order('requested_at', { ascending: false })
+      .order('created_at', { ascending: false })
 
     if (status) {
       query = query.eq('status', status)
@@ -40,7 +34,7 @@ export async function GET(request) {
         if (withdrawal.seller_id) {
           const { data: seller } = await supabase
             .from('sellers')
-            .select('id, business_name, full_name, primary_mobile')
+            .select('id, business_name, full_name, primary_mobile, upi_id, account_holder_name')
             .eq('id', withdrawal.seller_id)
             .single()
           

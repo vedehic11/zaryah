@@ -96,12 +96,12 @@ export const HomePage = () => {
     try {
       const approved = await apiService.getApprovedProducts()
       setProducts(approved || [])
-      setProductsLoaded(true)
     } catch (e) {
       console.error('Error fetching products:', e)
       setError(e.message || 'Failed to load products')
       setProducts([])
     } finally {
+      setProductsLoaded(true)
       setProductsLoading(false)
     }
   }

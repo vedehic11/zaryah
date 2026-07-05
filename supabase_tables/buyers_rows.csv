@@ -1,0 +1,24 @@
+id,city,address,state,pincode,phone,created_at,updated_at
+0ceb3887-86d4-4cfc-abd4-1709a3bbde21,Nashik,Ambad,Maharashtra,422010,9284289656,2026-05-27 15:27:04.550163+00,2026-05-27 15:27:04.550163+00
+195ff1d9-6b80-4f12-a61a-d15d0acf158c,Pune,"123 MG Road, Near Park, Landmark XYZ",Maharashtra,411001,9876543210,2026-05-29 15:26:54.972301+00,2026-05-29 15:26:54.972301+00
+304114ce-2c31-4f58-9593-2164492079f1,Goa,Av st joseph,Goa,598764,8105496396,2026-05-08 19:12:09.715969+00,2026-05-08 19:12:09.715969+00
+306c7f3a-107a-47a6-b1a8-222fe4c45eae,Mumbai,"A-103 , Hill-View Society , JP Road , Gillbert Hill , Andheri (West) , Mumbai - 400053, Maharashtra India",Maharashtra,400053,8788360359,2026-05-01 08:46:30.253313+00,2026-05-01 08:46:30.253313+00
+41635113-fd4c-4bc4-a93d-50a1e53654af,Mumbai,"Unique gardens, Miraroad east","Maharashtra ",401107,9220659873,2026-06-06 02:23:11.278378+00,2026-06-06 02:23:11.278378+00
+48baad54-4000-4b6f-85ec-761631c82ac9,Mumbai,Nashik,Maharashtra,400001,9420693371,2026-06-06 02:24:06.305535+00,2026-06-06 02:24:06.305535+00
+4d0d4614-52d5-4912-8a8f-179c233aec1c,Pune,"Sakha niwas bungalow near comfort zone ","Maharashtra ",422010,8767435412,2026-05-19 06:19:12.401338+00,2026-05-19 06:19:12.401338+00
+511676f0-ab7c-491b-aa79-b7268cfd6782,Kolkata,"Beside Bholanath pharmacy opp maya apartment(boral,majerpara rd)white colour 3rd floor building,700154",West Bengal,700154,9476012563,2026-06-01 11:48:26.103212+00,2026-06-01 11:48:26.103212+00
+77445bae-af8c-4e45-a616-a1272767f920,Mumbai,Mumbai,Maharashtra,400058,7894561235,2026-06-18 11:54:00.109898+00,2026-06-18 11:54:00.109898+00
+7eb656f7-4d6b-4ea0-a26d-15c3df4ccf63,Mumbai Suburban,"Dhanjiwadi, Rani Sati Marg, Malad(East)",Maharashtra,400097,8850094107,2026-06-09 12:06:03.115823+00,2026-06-09 12:06:03.115823+00
+88f3e731-3c4f-4a4e-bd3f-8b5e04d17a2f,Bengaluru,83 Da Costa Square. Thomas Town,Karnataka,560084,7411034271,2026-06-22 18:47:45.564252+00,2026-06-22 18:47:45.564252+00
+96e89a84-b482-4128-8c92-54d6abf5dcbb,Mumbai,"123, Main Street, Mumbai",,400001,9876543210,2026-06-15 05:49:21.041159+00,2026-06-15 05:49:21.041159+00
+a7032d5d-af2b-4e1e-9227-207bc4c9ee29,Delhi,Delhi,Delhi,401101,7894561230,2026-06-07 10:19:09.940413+00,2026-06-07 10:19:09.940413+00
+b3e2db7f-cb40-429d-b6b1-4df1c050c4bd,Ahmedabad,"5, 2nd Floor, Aneri Apartment, opp Sarathi Bunglow 3, B/h Drive In Cinema, Memnagar, Ahmedabad ",GUJARAT,380052,9327330381,2026-06-01 22:11:03.380126+00,2026-06-01 22:11:03.380126+00
+be0cffd9-a483-4abf-a9af-afb912589981,Jamshedpur,"Ehsaan tower 1/1 first floor mango cheapapul ",Jharkhand,831020,7061981196,2026-06-15 08:33:05.123076+00,2026-06-15 08:33:05.123076+00
+d1b134fd-3e57-4fc2-9e3f-f7744b98682c,Sangamner,"SMBT Dental College, Ghulewadi",Maharashtra,422605,8149672807,2026-05-25 13:07:57.131248+00,2026-05-25 13:31:02.054032+00
+d3fbfb61-197c-40b8-834e-b87e7deaa306,Ahmedabad,"House no-1, Utsav Bunglows, nr. Saidham Chowk.
+Suyojan/ Sola Bhagwat rd.",Gujarat,380060,9265337437,2026-06-15 06:13:47.340814+00,2026-06-15 06:13:47.340814+00
+ed45f081-840f-4fc9-9e5b-b70ce6a3c7b8,Delhi,"New kardumpuri gali nambar 4 gosiya masjid House nambar 207 ",DL,110094,8860378750,2026-06-03 18:36:37.819175+00,2026-06-03 18:36:37.819175+00
+ed562be9-1028-43ae-a7a7-8f849e9c0487,burhanpur,ss,Madhya Pradesh,450331,7304936889,2026-06-15 18:01:23.677078+00,2026-06-15 18:01:23.677078+00
+f80c2f05-0e10-47be-9683-2a761591d56c,Mumbai,"A-103 , Hill-View Society , JP Road , Gillbert Hill , Andheri (West) , Mumbai - 400053, Maharashtra India",Maharashtra,400053,7822855390,2026-05-01 08:11:59.109339+00,2026-05-01 08:11:59.109339+00
+f8436188-1d6b-4ec2-a7df-a8bbf913ebae,"Vadodara ","29 chandan Tenement near Mahesh nagar waghodia dabhoi ring road ","Gujarat ",390025,7984895644,2026-06-21 10:52:20.427308+00,2026-06-21 10:52:20.427308+00
+ffafbbe4-7132-4d99-9daa-2c1bd8c25072,Mumbai,Mumbai,Maharashtra,400058,7894561235,2026-06-18 11:55:44.822338+00,2026-06-18 11:55:44.822338+00

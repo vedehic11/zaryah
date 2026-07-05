@@ -53,6 +53,7 @@ export async function POST(request) {
       .update({
         payment_status: 'paid',
         status: 'pending', // Reset to pending so seller can confirm it
+        payment_id: razorpayPaymentId || order.payment_id || `manual_${Date.now()}`,
         razorpay_payment_id: razorpayPaymentId || order.razorpay_payment_id || `manual_${Date.now()}`
       })
       .eq('id', orderId)

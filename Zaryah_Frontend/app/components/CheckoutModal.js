@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   X, MapPin, Plus, CreditCard, Wallet, Building, 
-  Truck, Package, AlertCircle, CheckCircle, IndianRupee 
+  Truck, Package, AlertCircle, CheckCircle, IndianRupee,
+  QrCode, Lock, Info, Copy
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useAddress } from '../contexts/AddressContext'
@@ -38,10 +39,14 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
   const [step, setStep] = useState(1) // 1: Address, 2: Payment
   const [loading, setLoading] = useState(false)
   const [showAddAddress, setShowAddAddress] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState('razorpay') // razorpay, cod
+  const [paymentMethod, setPaymentMethod] = useState('online') // online, cod
   const [orderDetails, setOrderDetails] = useState(null)
   const [calculatingDelivery, setCalculatingDelivery] = useState(false)
   const [dynamicDeliveryCharge, setDynamicDeliveryCharge] = useState(null)
+  const [showUpiQrModal, setShowUpiQrModal] = useState(false)
+  const [pendingUpiOrderData, setPendingUpiOrderData] = useState(null)
+  const [utr, setUtr] = useState('')
+  const [utrError, setUtrError] = useState('')
 
   const [newAddress, setNewAddress] = useState({
     fullName: user?.name || '',
@@ -214,8 +219,8 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
         onSuccess?.(order)
         onClose()
       } else {
-        // Razorpay payment
-        await initiateRazorpayPayment(orderData)
+        // PhonePe payment
+        await initiatePhonePePayment(orderData)
       }
 
     } catch (error) {
@@ -226,83 +231,50 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
     }
   }
 
-  const initiateRazorpayPayment = async (orderData) => {
+  const initiatePhonePePayment = async (orderData) => {
     try {
-      // Create Razorpay order
-      const paymentOrder = await apiService.createPaymentOrder({
-        amount: total * 100
+      // Create pending order record in database first
+      const order = await apiService.createOrder({
+        ...orderData,
+        paymentStatus: 'pending'
       })
 
-      // Load Razorpay SDK
-      if (!window.Razorpay) {
-        toast.error('Payment system not loaded. Please refresh and try again.')
-        return
+      if (!order || !order.id) {
+        throw new Error('Failed to create order record. Please try again.')
       }
 
-      const options = {
-        key: paymentOrder.key_id,
-        amount: paymentOrder.amount,
-        currency: paymentOrder.currency || 'INR',
-        order_id: paymentOrder.order_id,
-        name: 'Zaryah',
-        description: 'Order Payment',
-        image: '/assets/image.png?v=20260501',
-        prefill: {
-          name: user.name,
-          email: user.email,
-          contact: selectedAddress.phone
-        },
-        theme: {
-          color: '#FF6B6B'
-        },
-        handler: async function (response) {
-          // Payment successful
-          try {
-            const createdOrder = await apiService.createOrder({
-              ...orderData,
-              paymentId: response.razorpay_payment_id,
-            })
+      console.log('Pending Order created in checkout modal:', order.id)
 
-            setOrderDetails(createdOrder)
-
-            await apiService.verifyPayment({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              order_id: createdOrder.id
-            })
-
-            await clearCart()
-            toast.success('Payment successful! Order confirmed.')
-            onSuccess?.(createdOrder)
-            onClose()
-
-          } catch (verifyError) {
-            toast.error('Payment verification failed')
-            console.error(verifyError)
-          }
-        },
-        modal: {
-          ondismiss: function() {
-            toast.error('Payment cancelled')
-            setLoading(false)
-          }
-        }
+      // Save order context to sessionStorage for the callback page
+      try {
+        sessionStorage.setItem('zaryah-pendingOrder', JSON.stringify({
+          orderId: order.id
+        }))
+      } catch (e) {
+        console.error('Failed to save pending order to sessionStorage', e)
       }
 
-      const rzp = new window.Razorpay(options)
-      rzp.on('payment.failed', function (response) {
-        toast.error('Payment failed. Please try again.')
-        console.error('Payment failed:', response.error)
-        setLoading(false)
+      // Call backend to create PhonePe payment and get redirect URL
+      const paymentData = await apiService.request('/payment/create-order', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: Math.round(totalPrice * 100),
+          orderId: order.id
+        })
       })
 
-      rzp.open()
+      if (!paymentData?.redirectUrl) {
+        throw new Error('Unable to initiate PhonePe payment. Please try again.')
+      }
 
+      // Clear cart
+      await clearCart()
+
+      toast.loading('Redirecting to PhonePe...', { duration: 5000 })
+      window.location.href = paymentData.redirectUrl
     } catch (error) {
-      toast.error('Failed to initiate payment')
-      console.error(error)
-      setLoading(false)
+      console.error('PhonePe payment error:', error)
+      toast.error(error.message || 'Payment initiation failed')
     }
   }
 
@@ -310,8 +282,6 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
 
   return (
     <>
-      {/* Load Razorpay SDK */}
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
 
       <AnimatePresence>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
@@ -488,22 +458,22 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
 
                       {/* Payment Methods */}
                       <div
-                        onClick={() => setPaymentMethod('razorpay')}
+                        onClick={() => setPaymentMethod('online')}
                         className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                          paymentMethod === 'razorpay'
+                          paymentMethod === 'online' || paymentMethod === 'razorpay'
                             ? 'border-primary-500 bg-primary-50'
                             : 'border-gray-200 hover:border-primary-300'
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <Wallet className="w-6 h-6 text-primary-600" />
+                            <CreditCard className="w-6 h-6 text-primary-600" />
                             <div>
-                              <p className="font-semibold">Online Payment</p>
-                              <p className="text-sm text-gray-600">UPI, Card, Net Banking</p>
+                              <p className="font-semibold">Online Payment (PhonePe)</p>
+                              <p className="text-sm text-gray-600">PhonePe, Google Pay, Cards, Net Banking</p>
                             </div>
                           </div>
-                          {paymentMethod === 'razorpay' && <CheckCircle className="w-5 h-5 text-primary-600" />}
+                          {(paymentMethod === 'online' || paymentMethod === 'razorpay') && <CheckCircle className="w-5 h-5 text-primary-600" />}
                         </div>
                       </div>
 
@@ -683,6 +653,8 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
           </motion.div>
         </div>
       </AnimatePresence>
+
+    
     </>
   )
 }

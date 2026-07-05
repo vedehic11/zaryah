@@ -113,7 +113,7 @@ export async function GET(request) {
     }
     // Admin can see all orders (no filter)
 
-    // Hide unpaid online orders for sellers only - buyers can see all their orders
+    // Hide unpaid online orders for sellers only - buyers can see all their orders to retry payment
     if (isSeller) {
       query = query.or('payment_method.eq.cod,payment_status.eq.paid')
     }
@@ -144,7 +144,7 @@ export async function GET(request) {
           !['delivered', 'cancelled'].includes(order.status) &&
           !['delivered', 'cancelled', 'rto_delivered'].includes((order.shipment_status || '').toLowerCase())
         )
-        .slice(0, 10)
+        .slice(0, 3)
 
       if (reconcilableOrders.length > 0) {
         await Promise.all(reconcilableOrders.map(async (order) => {
@@ -188,7 +188,7 @@ export async function GET(request) {
           !order?.awb_code &&
           !['delivered', 'cancelled'].includes(order.status)
         )
-        .slice(0, 10)
+        .slice(0, 3)
 
       if (shipmentOnlyOrders.length > 0) {
         await Promise.all(shipmentOnlyOrders.map(async (order) => {
@@ -448,7 +448,7 @@ export async function POST(request) {
         address: address,
         payment_method: paymentMethod || 'cod',
         payment_id: paymentId || null,
-        payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
+        payment_status: body.paymentStatus || 'pending',
         status: 'pending',
         delivery_fee: deliveryFee || 0,
         gift_packaging_fee: giftPackagingTotal, // Gift packaging fees (100% to seller)

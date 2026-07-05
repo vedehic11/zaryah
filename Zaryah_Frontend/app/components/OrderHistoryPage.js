@@ -50,9 +50,15 @@ export const OrderHistoryPage = () => {
     if (!user) return
     
     let isMounted = true
+    let lastFetchAt = 0
     setLoading(true)
     
-    const fetchOrders = async () => {
+    const fetchOrders = async (reason = 'manual') => {
+      // Debounce: skip if fetched within the last 10 seconds (unless initial load)
+      const now = Date.now()
+      if (reason !== 'initial' && now - lastFetchAt < 10000) return
+      lastFetchAt = now
+
       try {
         const data = await apiService.getOrdersForBuyer(user.id)
         
@@ -75,67 +81,70 @@ export const OrderHistoryPage = () => {
           }))
 
           // Live reconciliation: pull latest tracking status for active shipments
-          const ordersNeedingLiveSync = transformedOrders
-            .filter(order =>
-              order?.id &&
-              order?.awb_code &&
-              !['delivered', 'cancelled'].includes(order.status)
-            )
-            .slice(0, 6)
-
-          if (ordersNeedingLiveSync.length > 0) {
-            const trackingResults = await Promise.allSettled(
-              ordersNeedingLiveSync.map(order =>
-                apiService.request(`/orders/${order.id}/tracking`, { method: 'GET', silentErrors: true })
+          // Only do this on initial load or manual refresh, not on every poll
+          if (reason === 'initial' || reason === 'manual') {
+            const ordersNeedingLiveSync = transformedOrders
+              .filter(order =>
+                order?.id &&
+                order?.awb_code &&
+                !['delivered', 'cancelled'].includes(order.status)
               )
-            )
+              .slice(0, 3) // Reduced from 6 to 3 to save bandwidth
 
-            const liveStatusByOrderId = new Map()
+            if (ordersNeedingLiveSync.length > 0) {
+              const trackingResults = await Promise.allSettled(
+                ordersNeedingLiveSync.map(order =>
+                  apiService.request(`/orders/${order.id}/tracking`, { method: 'GET', silentErrors: true })
+                )
+              )
 
-            trackingResults.forEach((result, index) => {
-              if (result.status !== 'fulfilled') return
+              const liveStatusByOrderId = new Map()
 
-              const order = ordersNeedingLiveSync[index]
-              const payload = result.value || {}
-              const mappedStatus = payload?.shipment?.mapped_status
-              const currentShipmentStatus = payload?.shipment?.current_status
+              trackingResults.forEach((result, index) => {
+                if (result.status !== 'fulfilled') return
 
-              if (mappedStatus || currentShipmentStatus) {
-                liveStatusByOrderId.set(order.id, {
-                  status: mappedStatus || order.status,
-                  shipment_status: currentShipmentStatus || order.shipment_status
-                })
-              }
-            })
+                const order = ordersNeedingLiveSync[index]
+                const payload = result.value || {}
+                const mappedStatus = payload?.shipment?.mapped_status
+                const currentShipmentStatus = payload?.shipment?.current_status
 
-            if (liveStatusByOrderId.size > 0) {
-              transformedOrders = transformedOrders.map(order => {
-                const live = liveStatusByOrderId.get(order.id)
-                if (!live) return order
-
-                // Don't let tracking sync regress two-way delivery intermediate statuses
-                const twoWayIntermediateStatuses = ['pickup_dispatched', 'received_by_seller', 'ready']
-                const isTwoWay = Boolean(order.two_way_delivery || order.twoWayDelivery)
-                if (isTwoWay && twoWayIntermediateStatuses.includes(order.status)) {
-                  return {
-                    ...order,
-                    shipment_status: live.shipment_status || order.shipment_status
-                  }
-                }
-
-                if (!isTwoWay && order.status === 'ready' && live.status === 'confirmed') {
-                  return {
-                    ...order,
-                    shipment_status: live.shipment_status || order.shipment_status
-                  }
-                }
-
-                return {
-                  ...order,
-                  status: live.status,
-                  shipment_status: live.shipment_status
+                if (mappedStatus || currentShipmentStatus) {
+                  liveStatusByOrderId.set(order.id, {
+                    status: mappedStatus || order.status,
+                    shipment_status: currentShipmentStatus || order.shipment_status
+                  })
                 }
               })
+
+              if (liveStatusByOrderId.size > 0) {
+                transformedOrders = transformedOrders.map(order => {
+                  const live = liveStatusByOrderId.get(order.id)
+                  if (!live) return order
+
+                  // Don't let tracking sync regress two-way delivery intermediate statuses
+                  const twoWayIntermediateStatuses = ['pickup_dispatched', 'received_by_seller', 'ready']
+                  const isTwoWay = Boolean(order.two_way_delivery || order.twoWayDelivery)
+                  if (isTwoWay && twoWayIntermediateStatuses.includes(order.status)) {
+                    return {
+                      ...order,
+                      shipment_status: live.shipment_status || order.shipment_status
+                    }
+                  }
+
+                  if (!isTwoWay && order.status === 'ready' && live.status === 'confirmed') {
+                    return {
+                      ...order,
+                      shipment_status: live.shipment_status || order.shipment_status
+                    }
+                  }
+
+                  return {
+                    ...order,
+                    status: live.status,
+                    shipment_status: live.shipment_status
+                  }
+                })
+              }
             }
           }
 
@@ -153,28 +162,24 @@ export const OrderHistoryPage = () => {
       }
     }
     
-    fetchOrders()
+    fetchOrders('initial')
 
-    const intervalId = setInterval(fetchOrders, 20000)
+    // Poll every 2 minutes instead of 20 seconds (6x less bandwidth)
+    const intervalId = setInterval(() => fetchOrders('poll'), 120000)
 
+    // Only refetch on visibility change (tab switch), not on every focus event
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchOrders()
+        fetchOrders('visibility')
       }
     }
 
-    const handleWindowFocus = () => {
-      fetchOrders()
-    }
-
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleWindowFocus)
     
     return () => {
       isMounted = false
       clearInterval(intervalId)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleWindowFocus)
     }
   }, [user])
 
@@ -338,6 +343,34 @@ export const OrderHistoryPage = () => {
     }
   }
 
+  const handleRetryPayment = async (order) => {
+    const loadingToast = toast.loading('Initiating payment retry...', { id: 'retry-payment' })
+    try {
+      // Save order context for callback
+      sessionStorage.setItem('zaryah-pendingOrder', JSON.stringify({
+        orderId: order.id
+      }))
+
+      const paymentData = await apiService.request('/payment/create-order', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: Math.round(parseFloat(order.total_amount || 0) * 100),
+          orderId: order.id
+        })
+      })
+
+      if (!paymentData?.redirectUrl) {
+        throw new Error('No redirect URL returned')
+      }
+
+      toast.success('Redirecting to PhonePe...', { id: 'retry-payment' })
+      window.location.href = paymentData.redirectUrl
+    } catch (err) {
+      console.error('Failed to retry payment:', err)
+      toast.error('Unable to start payment. Please try again later.', { id: 'retry-payment' })
+    }
+  }
+
   // Calculate order breakdown
   const calculateOrderBreakdown = (order) => {
     const products = order.products || []
@@ -363,7 +396,7 @@ export const OrderHistoryPage = () => {
 
   // Get display status - show payment_failed instead of pending for unpaid online orders
   const getDisplayStatus = (order) => {
-    if (order.payment_method === 'online' && order.payment_status === 'pending') {
+    if (order.payment_method === 'online' && (order.payment_status === 'pending' || order.payment_status === 'failed')) {
       return 'payment_failed'
     }
     return order.status
@@ -527,6 +560,17 @@ export const OrderHistoryPage = () => {
                             className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                             {cancellingOrderIds.has(order.id) ? 'Cancelling...' : 'Cancel Order'}
+                          </button>
+                        )}
+                        {getDisplayStatus(order) === 'payment_failed' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRetryPayment(order)
+                            }}
+                            className="px-3 py-1.5 bg-primary-600 text-white text-xs font-semibold rounded-lg hover:bg-primary-700 transition-colors"
+                          >
+                            Try Again
                           </button>
                         )}
                       {getRefundBadge(order)}
@@ -909,6 +953,16 @@ export const OrderHistoryPage = () => {
                           <Phone className="w-4 h-4" />
                           <span>Contact Seller</span>
                         </button>
+
+                        {getDisplayStatus(order) === 'payment_failed' && (
+                          <button
+                            onClick={() => handleRetryPayment(order)}
+                            className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                            <span>Try Again</span>
+                          </button>
+                        )}
 
                         {canBuyerCancelOrder(order) && (
                           <button

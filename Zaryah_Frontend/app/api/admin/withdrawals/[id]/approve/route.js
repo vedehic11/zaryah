@@ -80,27 +80,20 @@ export async function POST(request, { params }) {
           throw new Error(`Transaction creation failed: ${txError.message}`)
         }
 
-        // Call the database function to process withdrawal
-        const { data: result, error: processError } = await supabase
-          .rpc('process_withdrawal', {
-            p_withdrawal_id: id,
-            p_transaction_id: transaction.id,
-            p_razorpay_payout_id: null
-          })
-
-        if (processError) {
-          throw new Error(`Withdrawal processing failed: ${processError.message}`)
-        }
-
+        // Update withdrawal_requests record directly
         const { error: metaUpdateError } = await supabase
           .from('withdrawal_requests')
           .update({
-            manual_transaction_id: normalizedManualTransactionId
+            status: 'approved',
+            processed_at: new Date().toISOString(),
+            processed_by: user.id,
+            manual_transaction_id: normalizedManualTransactionId,
+            transaction_id: transaction ? transaction.id : null
           })
           .eq('id', id)
 
         if (metaUpdateError) {
-          throw new Error(`Unable to save manual transaction ID: ${metaUpdateError.message}`)
+          throw new Error(`Unable to update withdrawal request: ${metaUpdateError.message}`)
         }
 
         return NextResponse.json({

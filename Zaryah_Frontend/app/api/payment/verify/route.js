@@ -1,11 +1,24 @@
-// POST /api/payment/verify - Verify Razorpay payment signature and credit seller wallets
+// POST /api/payment/verify - Verify PhonePe payment using SDK and credit seller wallets
 import { NextResponse } from 'next/server'
 import { requireAuth, getUserBySupabaseAuthId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import crypto from 'crypto'
+import { StandardCheckoutClient, Env } from '@phonepe-pg/pg-sdk-node'
 import { sendSellerOrderNotificationIfNeeded } from '@/lib/order-notifications'
 
-// Commission: 2.5% from seller + Platform fee (₹10 or ₹20) from buyer
+let phonepeClient = null
+function getPhonePeClient() {
+  if (!phonepeClient) {
+    const env = process.env.PHONEPE_ENV === 'PRODUCTION' ? Env.PRODUCTION : Env.SANDBOX
+    phonepeClient = StandardCheckoutClient.getInstance(
+      process.env.PHONEPE_CLIENT_ID,
+      process.env.PHONEPE_CLIENT_SECRET,
+      parseInt(process.env.PHONEPE_CLIENT_VERSION || '1'),
+      env
+    )
+  }
+  return phonepeClient
+}
+
 const SELLER_COMMISSION_RATE = 2.5
 
 export async function POST(request) {
@@ -18,31 +31,37 @@ export async function POST(request) {
     }
 
     const body = await request.json()
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id } = body
+    const { merchantTransactionId, merchantOrderId, order_id } = body
+    const orderId = merchantOrderId || merchantTransactionId
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return NextResponse.json({ error: 'Missing payment verification data' }, { status: 400 })
+    if (!orderId) {
+      return NextResponse.json({ error: 'Missing merchantOrderId' }, { status: 400 })
     }
 
-    console.log('Verifying payment:', { razorpay_order_id, razorpay_payment_id, order_id })
+    console.log('Verifying PhonePe payment:', { merchantOrderId: orderId, order_id })
 
-    // Verify signature
-    const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest('hex')
+    // Check payment status using SDK
+    const client = getPhonePeClient()
+    const statusResult = await client.getOrderStatus(orderId)
 
-    const isValid = expectedSignature === razorpay_signature
+    console.log('PhonePe status response:', JSON.stringify(statusResult, null, 2))
 
-    if (!isValid) {
-      console.error('Invalid payment signature')
+    const paymentState = statusResult?.state || statusResult?.code
+    const isPaymentSuccess = paymentState === 'COMPLETED'
+
+    if (!isPaymentSuccess) {
+      console.error('PhonePe payment not successful. State:', paymentState)
       return NextResponse.json({ 
         success: false,
-        error: 'Invalid payment signature' 
+        error: 'Payment not completed',
+        state: paymentState,
+        message: 'Payment verification failed'
       }, { status: 400 })
     }
 
-    console.log('✅ Payment signature verified')
+    const phonePeTransactionId = statusResult?.transactionId || orderId
+
+    console.log('✅ PhonePe payment verified. Transaction ID:', phonePeTransactionId)
 
     // Payment verified! Now process wallet credits
     if (order_id) {
@@ -51,13 +70,14 @@ export async function POST(request) {
         .from('orders')
         .update({
           payment_status: 'paid',
-          razorpay_payment_id: razorpay_payment_id
+          status: 'confirmed',
+          payment_id: orderId
         })
         .eq('id', order_id)
 
       console.log(`Order ${order_id} marked as paid`)
 
-      // Get order details with order items to calculate product subtotal
+      // Get order details with order items
       const { data: order } = await supabase
         .from('orders')
         .select(`
@@ -88,12 +108,12 @@ export async function POST(request) {
             return NextResponse.json({
               success: true,
               message: 'Payment already verified',
-              payment_id: razorpay_payment_id,
+              payment_id: phonePeTransactionId,
               idempotent: true
             })
           }
 
-        // Use seller_amount from order (includes 97.5% of products + 100% gift packaging fees)
+        // Use seller_amount from order
         const sellerAmount = parseFloat(order.seller_amount || 0)
         const productSubtotal = (order.order_items || []).reduce((sum, item) => 
           sum + (parseFloat(item.price) * item.quantity), 0
@@ -101,7 +121,7 @@ export async function POST(request) {
         const giftPackagingFee = parseFloat(order.gift_packaging_fee || 0)
         const sellerCommission = parseFloat((productSubtotal * (SELLER_COMMISSION_RATE / 100)).toFixed(2))
         const buyerPlatformFee = parseFloat(order.platform_fee || 0)
-        const deliveryMarkup = parseFloat(order.delivery_fee || 0) > 0 ? 10 : 0 // Markup only when delivery fee is charged
+        const deliveryMarkup = parseFloat(order.delivery_fee || 0) > 0 ? 10 : 0
         const totalAdminEarnings = sellerCommission + buyerPlatformFee + deliveryMarkup
         
         console.log('💰 SELLER EARNINGS CALCULATED (from payment verification):')
@@ -131,7 +151,6 @@ export async function POST(request) {
             })
           console.log('  Wallet created with pending balance:', sellerAmount)
         } else {
-          // Update existing wallet - add to pending balance
           const currentPending = parseFloat(existingWallet.pending_balance || 0)
           await supabase
             .from('wallets')
@@ -155,16 +174,16 @@ export async function POST(request) {
             description: `Payment verified - Pending delivery confirmation`
           })
 
-        // Record admin commission (recorded once at payment verification)
+        // Record admin commission
         const { error: commissionError } = await supabase
           .from('admin_earnings')
           .insert({
             order_id: order_id,
             seller_id: order.seller_id,
             order_amount: productSubtotal,
-            commission_rate: SELLER_COMMISSION_RATE, // 2.5% from seller only
-            commission_amount: sellerCommission, // Only seller commission (2.5%)
-            delivery_fee: deliveryMarkup, // Only the ₹10 markup, not full delivery fee
+            commission_rate: SELLER_COMMISSION_RATE,
+            commission_amount: sellerCommission,
+            delivery_fee: deliveryMarkup,
             status: 'earned',
             earned_at: new Date().toISOString()
           })
@@ -172,7 +191,7 @@ export async function POST(request) {
         if (commissionError) {
           console.error('Commission record error:', commissionError)
         } else {
-          console.log(`💰 Admin earnings recorded: ₹${totalAdminEarnings} (₹${sellerCommission} seller commission + ₹${buyerPlatformFee} platform fee + ₹${deliveryMarkup} delivery markup)`)
+          console.log(`💰 Admin earnings recorded: ₹${totalAdminEarnings}`)
         }
 
         const notificationResult = await sendSellerOrderNotificationIfNeeded({
@@ -196,7 +215,7 @@ export async function POST(request) {
     return NextResponse.json({ 
       success: true,
       message: 'Payment verified successfully',
-      payment_id: razorpay_payment_id
+      payment_id: phonePeTransactionId
     })
 
   } catch (error) {

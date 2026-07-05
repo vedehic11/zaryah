@@ -272,6 +272,23 @@ export const AuthProvider = ({ children }) => {
         userData.supabase_auth_id = authUser.id // Update local copy
       }
 
+      // If not found via browser client (e.g. due to RLS), call server API /api/auth/me
+      if (!userData && authUser) {
+        try {
+          console.log('Attempting server API lookup via /api/auth/me...')
+          const res = await fetch(`/api/auth/me?email=${encodeURIComponent(authUser.email || '')}&authId=${encodeURIComponent(authUser.id || '')}`)
+          if (res.ok) {
+            const apiRes = await res.json()
+            if (apiRes?.user) {
+              userData = apiRes.user
+              console.log('User found via /api/auth/me server API:', userData.email)
+            }
+          }
+        } catch (apiErr) {
+          console.error('Error fetching /api/auth/me:', apiErr)
+        }
+      }
+
       // If user still doesn't exist after registration, just set loading to false
       // The user state was already set from the API response
       if (!userData && isAfterRegistration) {
@@ -455,7 +472,7 @@ export const AuthProvider = ({ children }) => {
             // ignore storage errors
           }
 
-          toast.info('No account found. Please complete registration.')
+          toast('No account found. Please complete registration.', { icon: 'ℹ️' })
 
           // Redirect to registration page with email prefilled to complete account creation
           try {

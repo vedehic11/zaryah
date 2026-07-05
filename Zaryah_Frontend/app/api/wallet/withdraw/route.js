@@ -101,13 +101,13 @@ export async function POST(request) {
     const duplicateWindowStart = new Date(Date.now() - (2 * 60 * 1000)).toISOString()
     const { data: recentSimilarRequest } = await supabase
       .from('withdrawal_requests')
-      .select('id, status, requested_at')
+      .select('id, status, created_at')
       .eq('seller_id', user.id)
       .eq('amount', withdrawalAmount)
       .eq('bank_account_number', bankAccountNumber)
       .eq('ifsc_code', bankIfscCode)
-      .gte('requested_at', duplicateWindowStart)
-      .order('requested_at', { ascending: false })
+      .gte('created_at', duplicateWindowStart)
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
@@ -182,7 +182,7 @@ export async function GET(request) {
       .from('withdrawal_requests')
       .select('*')
       .eq('seller_id', user.id)
-      .order('requested_at', { ascending: false })
+      .order('created_at', { ascending: false })
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
