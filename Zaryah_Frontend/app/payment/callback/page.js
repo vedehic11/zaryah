@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { CheckCircle, XCircle, Clock, Loader } from 'lucide-react'
 import { apiService } from '../../services/api'
 import toast from 'react-hot-toast'
 
-export default function PaymentCallbackPage() {
+function PaymentCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [status, setStatus] = useState('verifying') // verifying | success | failed | pending
@@ -198,5 +198,23 @@ export default function PaymentCallbackPage() {
         </motion.div>
       </div>
     </div>
+  )
+}
+
+export default function PaymentCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-primary-50 flex items-center justify-center py-8">
+        <div className="max-w-md w-full px-4 text-center">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center">
+            <Loader className="w-16 h-16 text-primary-600 animate-spin mb-6" />
+            <h1 className="text-2xl font-bold text-charcoal-900 mb-3">Verifying Payment...</h1>
+            <p className="text-charcoal-600">Please wait while we establish a secure connection...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <PaymentCallbackContent />
+    </Suspense>
   )
 }
