@@ -60,11 +60,14 @@ export async function POST(request) {
       totalWeight = 0.7
     }
 
-    // If multiple sellers, use first seller's pincode
+    // Allow forcing pickup pincode via body for debugging (pickupPincode or debugPickupPincode)
+    const forcedPickup = body?.pickupPincode || body?.debugPickupPincode
+
+    // If multiple sellers, use first seller's pincode (or forced pickup if provided)
     // In production, you might want to split shipments per seller
-    const pickupPincode = sellerPincodes.size > 0 
-      ? Array.from(sellerPincodes)[0] 
-      : '400001' // Default Mumbai pincode
+    const pickupPincode = forcedPickup
+      ? forcedPickup
+      : (sellerPincodes.size > 0 ? Array.from(sellerPincodes)[0] : '400001')
 
     if (sellerPincodes.size > 1) {
       console.warn('Multiple sellers in cart - using first seller pincode:', pickupPincode)
