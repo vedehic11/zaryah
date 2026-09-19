@@ -156,11 +156,25 @@ export async function requireAuth(request) {
  */
 export async function getUserBySupabaseAuthId(supabaseAuthId) {
   console.log('Looking up user by supabase_auth_id:', supabaseAuthId)
-  let { data, error } = await supabase
+  // Build query then execute using whatever helper the supabase client/mocks provide
+  const query = supabase
     .from('users')
     .select('*')
     .eq('supabase_auth_id', supabaseAuthId)
-    .maybeSingle()
+
+  let data, error
+  if (typeof query.maybeSingle === 'function') {
+    ;({ data, error } = await query.maybeSingle())
+  } else if (typeof query.single === 'function') {
+    ;({ data, error } = await query.single())
+  } else if (typeof query.limit === 'function') {
+    ;({ data, error } = await query.limit(1))
+    if (Array.isArray(data)) data = data[0] || null
+  } else {
+    // Last resort: attempt to execute and hope for the best
+    ;({ data, error } = await query)
+    if (Array.isArray(data)) data = data[0] || null
+  }
 
   if (data) {
     console.log('Found user by supabase_auth_id:', { id: data.id, email: data.email, user_type: data.user_type })
