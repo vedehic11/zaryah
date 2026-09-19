@@ -65,17 +65,32 @@ export async function POST(request) {
       totalWeight = 0.7
     }
 
-    // Allow forcing pickup pincode via body for debugging (pickupPincode or debugPickupPincode)
-    const forcedPickup = body?.pickupPincode || body?.debugPickupPincode
-
-    // If multiple sellers, use first seller's pincode (or forced pickup if provided)
+    // If multiple sellers, use first seller's pincode
     // In production, you might want to split shipments per seller
-    const pickupPincode = forcedPickup
-      ? forcedPickup
-      : (sellerPincodes.size > 0 ? Array.from(sellerPincodes)[0] : '400001')
+    const pickupPincode = sellerPincodes.size > 0
+      ? Array.from(sellerPincodes)[0]
+      : '400001' // Default Mumbai pincode
 
     if (sellerPincodes.size > 1) {
       console.warn('Multiple sellers in cart - using first seller pincode:', pickupPincode)
+    }
+
+    // Same-pincode local-rate override (useful for hyperlocal cheap rates)
+    const samePincodeRateRaw = process.env.LOCAL_SAME_PINCODE_RATE
+    const samePincodeRate = samePincodeRateRaw ? Number(samePincodeRateRaw) : NaN
+    if (pickupPincode && deliveryPincode && pickupPincode === deliveryPincode && Number.isFinite(samePincodeRate)) {
+      // Return the configured flat local rate (no additional markup/buffer applied)
+      return NextResponse.json({
+        success: true,
+        deliveryCharge: samePincodeRate,
+        weight: totalWeight,
+        pickupPincode,
+        deliveryPincode,
+        debug: {
+          note: 'LOCAL_SAME_PINCODE_RATE applied',
+          configuredRate: samePincodeRate
+        }
+      })
     }
 
     // Get shipping rates from Shiprocket
