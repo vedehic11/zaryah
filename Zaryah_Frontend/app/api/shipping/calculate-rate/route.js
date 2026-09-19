@@ -39,11 +39,15 @@ export async function POST(request) {
 
       // Get seller pincode for this product
       if (item.seller_id) {
-        const { data: seller } = await supabase
-          .from('users')
-          .select('pincode, city, state, address')
+        // Seller records are stored in the `sellers` table (not `users`).
+        // Query `sellers` so we can reliably resolve pickup pincodes.
+        const { data: seller, error: sellerError } = await supabase
+          .from('sellers')
+          .select('pincode')
           .eq('id', item.seller_id)
           .single()
+
+        console.log('🔍 Seller lookup result for', item.seller_id, { seller, sellerError })
 
         if (seller?.pincode) {
           sellerPincodes.add(seller.pincode)
@@ -67,6 +71,8 @@ export async function POST(request) {
     }
 
     // Get shipping rates from Shiprocket
+    console.log('🚚 Shipping calc inputs:', { pickupPincode, deliveryPincode, weight: totalWeight, sellerPincodes: Array.from(sellerPincodes) })
+
     if (returnAllOptions) {
       // Return all available courier options
       const couriers = await calculateShippingRates({
