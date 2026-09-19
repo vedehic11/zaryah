@@ -313,6 +313,14 @@ export default function MobileProductDetail({ product, similarProducts = [] }) {
         cartItemId: `buyNow_${Date.now()}`
       }
 
+      // Include seller and weight metadata so Checkout can compute shipping correctly
+      buyNowItem.seller_id = product?.seller?.id || product?.seller_id || null
+      buyNowItem.sellerId = buyNowItem.seller_id
+      buyNowItem.weight = product?.weight || product?.grams || product?.weight_in_grams || null
+      buyNowItem.two_way_delivery = isTwoWayDelivery
+      buyNowItem.codAvailable = product?.cod_available !== false
+      buyNowItem.sellerAllowCod = product?.seller?.allow_cod !== false
+
       if (typeof window !== 'undefined') {
         try {
           sessionStorage.setItem('zaryah-buyNowItem', JSON.stringify(buyNowItem))

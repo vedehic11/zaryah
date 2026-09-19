@@ -181,6 +181,14 @@ export const CartProvider = ({ children }) => {
           instant_delivery: item.products?.instant_delivery,
           two_way_delivery: item.products?.two_way_delivery,
           quantity: item.quantity,
+          // Include seller id on each item so downstream code (shipping calc)
+          // can determine pickup pincode per item. The cart-level seller_id
+          // is available as `cart.seller_id` from the backend.
+          seller_id: cart.seller_id || null,
+          sellerId: cart.seller_id || null,
+          // Include product weight if available. Accept multiple possible
+          // fields used in older exports (weight, grams, weight_in_grams).
+          weight: item.products?.weight || item.products?.grams || item.products?.weight_in_grams || null,
           giftPackaging: item.gift_packaging || false,
           customizations: item.customizations || [],
           cartItemId: item.id,

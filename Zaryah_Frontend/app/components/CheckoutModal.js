@@ -88,11 +88,24 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
 
       setCalculatingDelivery(true)
       try {
+        // compute aggregated total weight (kg) and send it to backend
+        const totalWeight = cart.reduce((sum, item) => {
+          const raw = item.product?.weight || item.weight || item.product?.weight || 700
+          // reuse same conversion as backend: grams -> kg when numeric or string
+          let w = null
+          if (typeof raw === 'number') w = raw / 1000
+          else if (typeof raw === 'string' && raw.toLowerCase().includes('g')) w = parseFloat(raw) / 1000
+          else if (typeof raw === 'string' && raw.toLowerCase().includes('kg')) w = parseFloat(raw)
+          else w = Number(raw) ? Number(raw) / 1000 : 0.7
+          return sum + (w * (item.quantity || 1))
+        }, 0)
+
         const response = await fetch('/api/shipping/calculate-rate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             deliveryPincode: selectedAddress.pincode,
+            totalWeight,
             cartItems: cart.map(item => ({
               product_id: item.product?.id || item.productId,
               seller_id: item.product?.seller_id || item.sellerId,

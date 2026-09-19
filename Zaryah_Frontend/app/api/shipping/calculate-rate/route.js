@@ -29,7 +29,7 @@ export async function POST(request) {
       }, { status: 400 })
     }
 
-    // Calculate total weight from cart items
+    // Calculate total weight from cart items (override with body.totalWeight when provided)
     let totalWeight = 0
     const sellerPincodes = new Set()
 
@@ -39,16 +39,25 @@ export async function POST(request) {
 
       // Get seller pincode for this product
       if (item.seller_id) {
-        const { data: seller } = await supabase
-          .from('users')
-          .select('pincode, city, state, address')
+        // Seller records are stored in the `sellers` table (not `users`).
+        // Query `sellers` so we can reliably resolve pickup pincodes.
+        const { data: seller, error: sellerError } = await supabase
+          .from('sellers')
+          .select('pincode')
           .eq('id', item.seller_id)
           .single()
+
+        console.log('🔍 Seller lookup result for', item.seller_id, { seller, sellerError })
 
         if (seller?.pincode) {
           sellerPincodes.add(seller.pincode)
         }
       }
+    }
+
+    // If frontend provided a precomputed totalWeight (in kg), prefer it
+    if (body && body.totalWeight && typeof body.totalWeight === 'number' && body.totalWeight > 0) {
+      totalWeight = body.totalWeight
     }
 
     // Default to 0.7 kg if no weight specified
@@ -58,15 +67,35 @@ export async function POST(request) {
 
     // If multiple sellers, use first seller's pincode
     // In production, you might want to split shipments per seller
-    const pickupPincode = sellerPincodes.size > 0 
-      ? Array.from(sellerPincodes)[0] 
+    const pickupPincode = sellerPincodes.size > 0
+      ? Array.from(sellerPincodes)[0]
       : '400001' // Default Mumbai pincode
 
     if (sellerPincodes.size > 1) {
       console.warn('Multiple sellers in cart - using first seller pincode:', pickupPincode)
     }
 
+    // Same-pincode local-rate override (useful for hyperlocal cheap rates)
+    const samePincodeRateRaw = process.env.LOCAL_SAME_PINCODE_RATE
+    const samePincodeRate = samePincodeRateRaw ? Number(samePincodeRateRaw) : NaN
+    if (pickupPincode && deliveryPincode && pickupPincode === deliveryPincode && Number.isFinite(samePincodeRate)) {
+      // Return the configured flat local rate (no additional markup/buffer applied)
+      return NextResponse.json({
+        success: true,
+        deliveryCharge: samePincodeRate,
+        weight: totalWeight,
+        pickupPincode,
+        deliveryPincode,
+        debug: {
+          note: 'LOCAL_SAME_PINCODE_RATE applied',
+          configuredRate: samePincodeRate
+        }
+      })
+    }
+
     // Get shipping rates from Shiprocket
+    console.log('🚚 Shipping calc inputs:', { pickupPincode, deliveryPincode, weight: totalWeight, sellerPincodes: Array.from(sellerPincodes) })
+
     if (returnAllOptions) {
       // Return all available courier options
       const couriers = await calculateShippingRates({

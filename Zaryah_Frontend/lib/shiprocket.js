@@ -414,6 +414,13 @@ export async function calculateShippingRates({
 
   const result = await response.json()
 
+  // Log full serviceability response to help debug unexpected rates
+  try {
+    console.log('🔎 Shiprocket serviceability response:', JSON.stringify(result))
+  } catch (e) {
+    console.log('🔎 Shiprocket serviceability response (unserializable)')
+  }
+
   if (!result.data || !result.data.available_courier_companies) {
     throw new Error('No courier services available for this route')
   }
