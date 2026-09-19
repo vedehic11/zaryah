@@ -29,7 +29,7 @@ export async function POST(request) {
       }, { status: 400 })
     }
 
-    // Calculate total weight from cart items
+    // Calculate total weight from cart items (override with body.totalWeight when provided)
     let totalWeight = 0
     const sellerPincodes = new Set()
 
@@ -53,6 +53,11 @@ export async function POST(request) {
           sellerPincodes.add(seller.pincode)
         }
       }
+    }
+
+    // If frontend provided a precomputed totalWeight (in kg), prefer it
+    if (body && body.totalWeight && typeof body.totalWeight === 'number' && body.totalWeight > 0) {
+      totalWeight = body.totalWeight
     }
 
     // Default to 0.7 kg if no weight specified

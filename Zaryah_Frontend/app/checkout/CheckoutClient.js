@@ -207,17 +207,25 @@ export default function CheckoutClient() {
       debugLog('🚚 Calculating delivery charge for pincode:', selectedAddress.pincode)
 
       try {
-        const response = await fetch('/api/shipping/calculate-rate', {
+            // compute aggregated total weight (kg) to avoid multiplicative bugs
+            const totalWeight = displayedItems.reduce((sum, item) => {
+              const itemWeightKg = normalizeWeightToKg(item.weight, 0.7)
+              return sum + (itemWeightKg * (item.quantity || 1))
+            }, 0)
+
+            const response = await fetch('/api/shipping/calculate-rate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             deliveryPincode: selectedAddress.pincode,
-            cartItems: displayedItems.map(item => ({
-              product_id: item.id || item._id,
-              seller_id: item.sellerId || item.seller_id,
-              weight: item.weight || 700,
-              quantity: item.quantity
-            })),
+                // send aggregated totalWeight (kg) to the server to avoid accidental multiplication
+                totalWeight,
+                cartItems: displayedItems.map(item => ({
+                  product_id: item.id || item._id,
+                  seller_id: item.sellerId || item.seller_id,
+                  weight: item.weight || 700,
+                  quantity: item.quantity
+                })),
             twoWayDelivery: hasTwoWayDelivery,
             codAmount: paymentMethod === 'cod' ? (displayedItems.reduce((s, i) => s + ((i.unitPrice || i.price) * i.quantity), 0)) : 0
           })
