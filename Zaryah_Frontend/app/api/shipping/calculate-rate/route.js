@@ -23,7 +23,8 @@ export async function POST(request) {
     }
 
     // Validate delivery pincode
-    if (!deliveryPincode || deliveryPincode.length !== 6) {
+    const cleanDeliveryPincode = String(deliveryPincode || '').trim()
+    if (!cleanDeliveryPincode || cleanDeliveryPincode.length !== 6 || !/^\d{6}$/.test(cleanDeliveryPincode)) {
       return NextResponse.json({ 
         error: 'Invalid delivery pincode' 
       }, { status: 400 })
@@ -38,19 +39,22 @@ export async function POST(request) {
       totalWeight += itemWeightKg * (item.quantity || 1)
 
       // Get seller pincode for this product
-      if (item.seller_id) {
+      if (item.seller_id && typeof item.seller_id === 'string' && item.seller_id.trim() !== '') {
         // Seller records are stored in the `sellers` table (not `users`).
         // Query `sellers` so we can reliably resolve pickup pincodes.
-        const { data: seller, error: sellerError } = await supabase
+        const sellerQuery = supabase
           .from('sellers')
           .select('pincode')
-          .eq('id', item.seller_id)
-          .single()
+          .eq('id', item.seller_id.trim())
+
+        const { data: seller, error: sellerError } = typeof sellerQuery.maybeSingle === 'function'
+          ? await sellerQuery.maybeSingle()
+          : await sellerQuery.single()
 
         console.log('🔍 Seller lookup result for', item.seller_id, { seller, sellerError })
 
         if (seller?.pincode) {
-          sellerPincodes.add(seller.pincode)
+          sellerPincodes.add(String(seller.pincode).trim())
         }
       }
     }
@@ -78,14 +82,15 @@ export async function POST(request) {
     // Same-pincode local-rate override (useful for hyperlocal cheap rates)
     const samePincodeRateRaw = process.env.LOCAL_SAME_PINCODE_RATE
     const samePincodeRate = samePincodeRateRaw ? Number(samePincodeRateRaw) : NaN
-    if (pickupPincode && deliveryPincode && pickupPincode === deliveryPincode && Number.isFinite(samePincodeRate)) {
+    if (pickupPincode && cleanDeliveryPincode && pickupPincode === cleanDeliveryPincode && Number.isFinite(samePincodeRate)) {
       // Return the configured flat local rate (no additional markup/buffer applied)
       return NextResponse.json({
         success: true,
         deliveryCharge: samePincodeRate,
         weight: totalWeight,
         pickupPincode,
-        deliveryPincode,
+        deliveryPincode: cleanDeliveryPincode,
+        fallback: false,
         debug: {
           note: 'LOCAL_SAME_PINCODE_RATE applied',
           configuredRate: samePincodeRate
@@ -94,13 +99,13 @@ export async function POST(request) {
     }
 
     // Get shipping rates from Shiprocket
-    console.log('🚚 Shipping calc inputs:', { pickupPincode, deliveryPincode, weight: totalWeight, sellerPincodes: Array.from(sellerPincodes) })
+    console.log('🚚 Shipping calc inputs:', { pickupPincode, deliveryPincode: cleanDeliveryPincode, weight: totalWeight, sellerPincodes: Array.from(sellerPincodes) })
 
     if (returnAllOptions) {
       // Return all available courier options
       const couriers = await calculateShippingRates({
         pickupPincode,
-        deliveryPincode,
+        deliveryPincode: cleanDeliveryPincode,
         weight: totalWeight,
         codAmount
       })
@@ -108,16 +113,17 @@ export async function POST(request) {
       return NextResponse.json({
         success: true,
         pickupPincode,
-        deliveryPincode,
+        deliveryPincode: cleanDeliveryPincode,
         weight: totalWeight,
         couriers,
-        cheapest: couriers[0]?.total_charge || 50
+        cheapest: couriers[0]?.total_charge || 50,
+        fallback: false
       })
     } else {
       // Return only cheapest option
       const outboundDetails = await getCheapestShippingRateDetails({
         pickupPincode,
-        deliveryPincode,
+        deliveryPincode: cleanDeliveryPincode,
         weight: totalWeight,
         codAmount
       })
@@ -129,7 +135,9 @@ export async function POST(request) {
           deliveryCharge: outboundCharge,
           weight: totalWeight,
           pickupPincode,
-          deliveryPincode,
+          deliveryPincode: cleanDeliveryPincode,
+          fallback: Boolean(outboundDetails.fallback),
+          error: outboundDetails.error || undefined,
           ...(includeDebug
             ? {
                 debug: {
@@ -137,12 +145,13 @@ export async function POST(request) {
                   markup: outboundDetails.markup,
                   buffer: outboundDetails.buffer,
                   fallback: outboundDetails.fallback,
+                  error: outboundDetails.error || null,
                   courier: outboundDetails.courier || null,
-                    env: {
-                      SHIPROCKET_RATE_MARKUP: process.env.SHIPROCKET_RATE_MARKUP || null,
-                      SHIPROCKET_BUFFER_PERCENT: process.env.SHIPROCKET_BUFFER_PERCENT || null,
-                      SHIPROCKET_BUFFER_FLAT: process.env.SHIPROCKET_BUFFER_FLAT || null
-                    }
+                  env: {
+                    SHIPROCKET_RATE_MARKUP: process.env.SHIPROCKET_RATE_MARKUP || null,
+                    SHIPROCKET_BUFFER_PERCENT: process.env.SHIPROCKET_BUFFER_PERCENT || null,
+                    SHIPROCKET_BUFFER_FLAT: process.env.SHIPROCKET_BUFFER_FLAT || null
+                  }
                 }
               }
             : {})
@@ -150,7 +159,7 @@ export async function POST(request) {
       }
 
       const inboundDetails = await getCheapestShippingRateDetails({
-        pickupPincode: deliveryPincode,
+        pickupPincode: cleanDeliveryPincode,
         deliveryPincode: pickupPincode,
         weight: totalWeight,
         codAmount: 0
@@ -164,7 +173,9 @@ export async function POST(request) {
         inboundCharge,
         weight: totalWeight,
         pickupPincode,
-        deliveryPincode,
+        deliveryPincode: cleanDeliveryPincode,
+        fallback: Boolean(outboundDetails.fallback || inboundDetails.fallback),
+        error: outboundDetails.error || inboundDetails.error || undefined,
         ...(includeDebug
           ? {
               debug: {
@@ -172,13 +183,15 @@ export async function POST(request) {
                   baseRate: outboundDetails.baseRate,
                   markup: outboundDetails.markup,
                   buffer: outboundDetails.buffer,
-                  fallback: outboundDetails.fallback
+                  fallback: outboundDetails.fallback,
+                  error: outboundDetails.error || null
                 },
                 inbound: {
                   baseRate: inboundDetails.baseRate,
                   markup: inboundDetails.markup,
                   buffer: inboundDetails.buffer,
-                  fallback: inboundDetails.fallback
+                  fallback: inboundDetails.fallback,
+                  error: inboundDetails.error || null
                 }
               }
             }

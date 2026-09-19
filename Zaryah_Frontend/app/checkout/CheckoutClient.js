@@ -7,6 +7,7 @@ import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useAddress } from '../contexts/AddressContext'
 import { getCurrentOrigin, getSellerUrl } from '@/lib/url-utils'
+import { normalizeWeightToKg } from '@/lib/weight'
 import { apiService } from '../services/api'
 import {
   MapPin, Phone, User, CreditCard, Wallet, Package,
@@ -35,7 +36,7 @@ export default function CheckoutClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, isLoading: authLoading } = useAuth()
-  const { cart, clearCart, updateQuantity, removeFromCart } = useCart()
+  const { cart, clearCart, updateQuantity, removeFromCart, cartLoaded } = useCart()
   const [buyNowMode, setBuyNowMode] = useState(false)
   const [buyNowItem, setBuyNowItem] = useState(null)
   const { addresses = [], addAddress, loadUserAddresses } = useAddress()
@@ -203,6 +204,13 @@ export default function CheckoutClient() {
         return
       }
 
+      // Don't fire until cart is fully loaded — otherwise seller_id will be missing
+      // and pickup pincode will fall back to 400001 instead of the real seller pincode.
+      if (!buyNowMode && !cartLoaded) {
+        debugLog('🚚 Skipping rate calc — cart not yet loaded')
+        return
+      }
+
       setCalculatingDelivery(true)
       debugLog('🚚 Calculating delivery charge for pincode:', selectedAddress.pincode)
 
@@ -213,9 +221,13 @@ export default function CheckoutClient() {
               return sum + (itemWeightKg * (item.quantity || 1))
             }, 0)
 
+            const headers = { 'Content-Type': 'application/json' }
+            // Request server to include debug details when not in production
+            if (!isProd) headers['x-shiprocket-debug'] = '1'
+
             const response = await fetch('/api/shipping/calculate-rate', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
             deliveryPincode: selectedAddress.pincode,
                 // send aggregated totalWeight (kg) to the server to avoid accidental multiplication
@@ -227,14 +239,31 @@ export default function CheckoutClient() {
                   quantity: item.quantity
                 })),
             twoWayDelivery: hasTwoWayDelivery,
-            codAmount: paymentMethod === 'cod' ? (displayedItems.reduce((s, i) => s + ((i.unitPrice || i.price) * i.quantity), 0)) : 0
+            codAmount: paymentMethod === 'cod' ? (displayedItems.reduce((s, i) => s + ((i.unitPrice || i.price) * i.quantity), 0)) : 0,
+            debug: !isProd
           })
         })
 
-        const data = await parseJsonResponse(response)
+        // Read raw text so we can log HTML/errors as well as JSON
+        const rawText = await response.text()
+        debugLog('🚚 Shipping API response status:', response.status)
+        debugLog('🚚 Shipping API raw response body:', rawText)
+
+        let data
+        try {
+          data = rawText && rawText.trim() ? JSON.parse(rawText) : null
+        } catch (err) {
+          debugError('❌ Failed to parse shipping API JSON response:', err)
+          toast.error('Could not calculate delivery charge, using standard rate', { id: 'shipping-rate-error' })
+          setDynamicDeliveryCharge(null)
+          setTwoWayCharges({ inbound: null, outbound: null })
+          setCalculatingDelivery(false)
+          return
+        }
+
         debugLog('🚚 Delivery charge response:', data)
 
-        if (data.success && data.deliveryCharge !== undefined) {
+        if (data && data.success && data.deliveryCharge !== undefined) {
           setDynamicDeliveryCharge(data.deliveryCharge)
           setTwoWayCharges({
             inbound: typeof data.inboundCharge === 'number' ? data.inboundCharge : null,
@@ -243,14 +272,18 @@ export default function CheckoutClient() {
           debugLog('✅ Dynamic delivery charge set:', data.deliveryCharge)
           if (data.fallback) {
             debugWarn('⚠️ Using fallback delivery charge:', data.error)
-            toast.error(`Using standard delivery rate: ${data.error}`, { duration: 3000 })
+            toast.error(data.error ? `Using standard delivery rate: ${data.error}` : 'Using standard delivery rate', { id: 'shipping-rate-error', duration: 4000 })
+          } else {
+            toast.dismiss('shipping-rate-error')
           }
         } else {
           debugError('❌ Failed to get delivery charge:', data)
+          toast.error(data?.error || 'Could not calculate delivery charge, using standard rate', { id: 'shipping-rate-error' })
+          setDynamicDeliveryCharge(null)
         }
       } catch (error) {
         debugError('❌ Error calculating delivery charge:', error)
-        toast.error('Could not calculate delivery charge, using standard rate')
+        toast.error('Could not calculate delivery charge, using standard rate', { id: 'shipping-rate-error' })
       } finally {
         setCalculatingDelivery(false)
       }
@@ -259,7 +292,7 @@ export default function CheckoutClient() {
     if (selectedAddress?.pincode) {
       calculateDeliveryCharge()
     }
-  }, [selectedAddress, paymentMethod, displayedItems, hasTwoWayDelivery])
+  }, [selectedAddress, paymentMethod, displayedItems, hasTwoWayDelivery, cartLoaded, buyNowMode])
 
   // Calculate totals (based on displayed items - supports buy-now)
   const subtotal = displayedItems.reduce((sum, item) => sum + ((item.unitPrice || item.price) * item.quantity), 0)
