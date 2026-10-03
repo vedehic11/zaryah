@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { supabaseClient } from '@/lib/supabase-client'
+import { clearSupabaseAuthState, supabaseClient } from '@/lib/supabase-client'
 
 const AuthContext = createContext(undefined)
 
@@ -38,10 +38,7 @@ export const AuthProvider = ({ children }) => {
     setSupabaseUser(null)
     setIsLoading(false)
     sessionStorage.removeItem('zaryah_user_cache')
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('zaryah-auth-token')
-    }
+    clearSupabaseAuthState()
   }
 
   // Sync Supabase Auth user with our users table
@@ -814,9 +811,7 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false)
       sessionStorage.removeItem('zaryah_user_cache')
 
-      if (typeof window !== 'undefined') {
-        window.localStorage.removeItem('zaryah-auth-token')
-      }
+      clearSupabaseAuthState()
     }
 
     if (signOutError) {

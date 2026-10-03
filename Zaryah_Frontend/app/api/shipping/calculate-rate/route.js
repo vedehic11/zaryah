@@ -81,9 +81,11 @@ export async function POST(request) {
 
     // Same-pincode local-rate override (useful for hyperlocal cheap rates)
     const samePincodeRateRaw = process.env.LOCAL_SAME_PINCODE_RATE
-    const samePincodeRate = samePincodeRateRaw ? Number(samePincodeRateRaw) : NaN
+    const samePincodeRate = samePincodeRateRaw !== undefined && samePincodeRateRaw !== null && samePincodeRateRaw !== ''
+      ? Number(samePincodeRateRaw)
+      : 49
     if (pickupPincode && cleanDeliveryPincode && pickupPincode === cleanDeliveryPincode && Number.isFinite(samePincodeRate)) {
-      // Return the configured flat local rate (no additional markup/buffer applied)
+      // Same-city orders use a flat local delivery fee.
       return NextResponse.json({
         success: true,
         deliveryCharge: samePincodeRate,
@@ -92,8 +94,9 @@ export async function POST(request) {
         deliveryPincode: cleanDeliveryPincode,
         fallback: false,
         debug: {
-          note: 'LOCAL_SAME_PINCODE_RATE applied',
-          configuredRate: samePincodeRate
+          note: 'Same-city flat delivery rate applied',
+          configuredRate: samePincodeRate,
+          envVarSource: samePincodeRateRaw !== undefined && samePincodeRateRaw !== null && samePincodeRateRaw !== '' ? 'LOCAL_SAME_PINCODE_RATE' : 'default-49'
         }
       })
     }

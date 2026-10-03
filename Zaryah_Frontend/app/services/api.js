@@ -1,7 +1,7 @@
 // API Service for Next.js API routes with Supabase Auth
 // This replaces the old Express.js backend API calls
 
-import { supabaseClient } from '@/lib/supabase-client'
+import { clearSupabaseAuthState, supabaseClient } from '@/lib/supabase-client'
 
 class ApiService {
   constructor() {
@@ -38,8 +38,8 @@ class ApiService {
       const message = String(error?.message || error || '').toLowerCase()
       const isInvalidRefreshToken = message.includes('invalid refresh token') || message.includes('refresh token not found')
 
-      if (isInvalidRefreshToken && typeof window !== 'undefined') {
-        window.localStorage.removeItem('zaryah-auth-token')
+      if (isInvalidRefreshToken) {
+        clearSupabaseAuthState()
         this.clearAuthCookies()
       }
 

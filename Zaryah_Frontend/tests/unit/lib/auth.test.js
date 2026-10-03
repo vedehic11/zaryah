@@ -52,6 +52,63 @@ describe('lib/auth helpers', () => {
     await expect(requireAuth(new Request('http://localhost/api/test'))).rejects.toThrow('Unauthorized')
   })
 
+  it('ApiService clears stale auth storage when refresh token is missing', async () => {
+    vi.resetModules()
+
+    const refreshSession = vi.fn(async () => {
+      throw new Error('Invalid Refresh Token: Refresh Token Not Found')
+    })
+
+    const getSession = vi.fn(async () => ({
+      data: {
+        session: {
+          expires_at: Math.floor((Date.now() - 60000) / 1000),
+          access_token: 'stale-token',
+        },
+      },
+      error: null,
+    }))
+
+    const localStorageEntries = new Map()
+    const localStorageMock = {
+      getItem: vi.fn((key) => (localStorageEntries.has(key) ? localStorageEntries.get(key) : null)),
+      setItem: vi.fn((key, value) => localStorageEntries.set(key, value)),
+      removeItem: vi.fn((key) => localStorageEntries.delete(key)),
+      key: vi.fn((index) => Array.from(localStorageEntries.keys())[index] || null),
+      get length() {
+        return localStorageEntries.size
+      },
+      clear: vi.fn(() => localStorageEntries.clear()),
+    }
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: localStorageMock,
+      configurable: true,
+    })
+
+    vi.doMock('@/lib/supabase-client', () => ({
+      clearSupabaseAuthState: () => {
+        localStorageEntries.clear()
+      },
+      supabaseClient: {
+        auth: {
+          getSession,
+          refreshSession,
+        },
+      },
+    }))
+
+    const apiMod = await import('@/app/services/api')
+    const api = new apiMod.default()
+
+    localStorageEntries.set('zaryah-auth-token', JSON.stringify({ access_token: 'stale-token' }))
+    localStorageEntries.set('sb-project-auth-token', JSON.stringify({ access_token: 'stale-token' }))
+
+    await expect(api.getAuthToken()).resolves.toBeNull()
+    expect(localStorageEntries.has('zaryah-auth-token')).toBe(false)
+    expect(localStorageEntries.has('sb-project-auth-token')).toBe(false)
+  })
+
   it('getUserBySupabaseAuthId returns user row', async () => {
     const { getUserBySupabaseAuthId, mocks } = await loadAuthModule({
       fromImpl: (table) => {

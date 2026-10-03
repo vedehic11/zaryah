@@ -22,6 +22,61 @@ export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
+export function clearSupabaseAuthState() {
+  if (typeof window === 'undefined') return
+
+  try {
+    const storage = window.localStorage
+    const keysToRemove = []
+
+    for (let i = 0; i < storage.length; i += 1) {
+      const key = storage.key(i)
+      if (!key) continue
+      const shouldClear =
+        key === 'zaryah-auth-token' ||
+        key.startsWith('zaryah-auth-token.') ||
+        key.startsWith('sb-') ||
+        key.includes('-auth-token') ||
+        key.includes('-auth-user') ||
+        key.includes('-auth-provider')
+
+      if (shouldClear) {
+        keysToRemove.push(key)
+      }
+    }
+
+    keysToRemove.forEach((key) => storage.removeItem(key))
+  } catch {
+    // Ignore storage access failures while clearing stale auth state.
+  }
+
+  if (typeof document !== 'undefined') {
+    const cookiesToRemove = []
+    document.cookie.split(';').forEach((cookie) => {
+      const trimmed = cookie.trim()
+      if (!trimmed) return
+      const separatorIndex = trimmed.indexOf('=')
+      const key = separatorIndex >= 0 ? trimmed.slice(0, separatorIndex).trim() : trimmed
+      if (
+        key === 'zaryah-auth-token' ||
+        key.startsWith('sb-') ||
+        key.includes('-auth-token') ||
+        key.includes('-auth-user') ||
+        key.includes('-auth-provider')
+      ) {
+        cookiesToRemove.push(key)
+      }
+    })
+
+    cookiesToRemove.forEach((key) => {
+      const domain = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? ''
+        : `; Domain=${window.location.hostname}`
+      document.cookie = `${key}=; Path=/; Max-Age=0; SameSite=Lax${domain}`
+    })
+  }
+}
+
 function createHybridStorage() {
   const cookieStorage = createCookieStorage()
 

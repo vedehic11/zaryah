@@ -10,6 +10,7 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 import { useAddress } from '../contexts/AddressContext'
 import { useCart } from '../contexts/CartContext'
+import { normalizeWeightToKg } from '@/lib/weight'
 import { apiService } from '../services/api'
 import toast from 'react-hot-toast'
 import Script from 'next/script'
@@ -88,16 +89,11 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
 
       setCalculatingDelivery(true)
       try {
-        // compute aggregated total weight (kg) and send it to backend
+        // compute aggregated total weight (kg) using the canonical normalizer
         const totalWeight = cart.reduce((sum, item) => {
-          const raw = item.product?.weight || item.weight || item.product?.weight || 700
-          // reuse same conversion as backend: grams -> kg when numeric or string
-          let w = null
-          if (typeof raw === 'number') w = raw / 1000
-          else if (typeof raw === 'string' && raw.toLowerCase().includes('g')) w = parseFloat(raw) / 1000
-          else if (typeof raw === 'string' && raw.toLowerCase().includes('kg')) w = parseFloat(raw)
-          else w = Number(raw) ? Number(raw) / 1000 : 0.7
-          return sum + (w * (item.quantity || 1))
+          const raw = item.product?.weight ?? item.weight ?? null
+          const itemWeightKg = normalizeWeightToKg(raw, 0.7)
+          return sum + (itemWeightKg * (item.quantity || 1))
         }, 0)
 
         const response = await fetch('/api/shipping/calculate-rate', {
@@ -108,8 +104,8 @@ export const CheckoutModal = ({ isOpen, onClose, onSuccess }) => {
             totalWeight,
             cartItems: cart.map(item => ({
               product_id: item.product?.id || item.productId,
-              seller_id: item.product?.seller_id || item.sellerId,
-              weight: item.product?.weight || 700,
+              seller_id: item.product?.seller_id || item.sellerId || item.seller_id,
+              weight: item.product?.weight ?? item.weight ?? null,
               quantity: item.quantity
             })),
             twoWayDelivery: hasTwoWayDelivery,

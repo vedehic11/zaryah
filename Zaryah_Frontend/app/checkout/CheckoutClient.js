@@ -235,7 +235,7 @@ export default function CheckoutClient() {
                 cartItems: displayedItems.map(item => ({
                   product_id: item.id || item._id,
                   seller_id: item.sellerId || item.seller_id,
-                  weight: item.weight || 700,
+                  weight: item.weight ?? null,
                   quantity: item.quantity
                 })),
             twoWayDelivery: hasTwoWayDelivery,

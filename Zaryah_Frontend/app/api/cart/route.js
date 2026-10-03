@@ -54,6 +54,7 @@ export async function GET(request) {
           price,
           images,
           stock,
+          weight,
           seller_id,
           instant_delivery,
           two_way_delivery,
